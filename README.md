@@ -33,7 +33,7 @@ A clean, modern personal revenue and expense tracking application built with Rea
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/pocket_app.git
+git clone https://github.com/akk143/pocket_app.git
 cd pocket_app
 
 # Install dependencies
