@@ -165,9 +165,7 @@ export default function Home({
   // 1. Today's Spending (only expense type)
   const todayExpenses = activeExpenses.filter((e) => {
     if (e.type === "income") return false
-    if (isUsingFallback && e.date === "2026-09-07") return true
-    const createdDateKey = toLocalDateKey(new Date(e.createdAt))
-    return e.date === today || createdDateKey === today
+    return e.date === today
   })
   const todayTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0)
 
