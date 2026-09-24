@@ -500,7 +500,7 @@ function App() {
             <div className="flex items-center justify-between px-1 text-[11px] text-zinc-400">
               <div className="flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                <span>Version 1.0.0</span>
+                <span>Version 1.0.1</span>
               </div>
               <span>Online</span>
             </div>
