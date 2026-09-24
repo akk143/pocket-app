@@ -37,13 +37,14 @@ import type { Expense } from "../types/expense"
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
 import { useCurrency } from "../contexts/CurrencyContext"
 import { convertAndFormatCurrency } from "../lib/currency"
+import ConfirmDialog from "../components/ConfirmDialog"
 
 interface HomeProps {
   expenses: Expense[]
   userName?: string
   onAddExpense: (categoryId?: string) => void
   onEditExpense?: (expense: Expense) => void
-  onDeleteExpense?: (expenseId: string) => void
+  onDeleteExpense?: (expenseId: string) => void | Promise<void>
   onSeedDemoData?: () => void
 }
 
@@ -62,6 +63,7 @@ export default function Home({
   const [calendarViewMonth, setCalendarViewMonth] = useState(() => new Date())
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(() => new Date().getDate())
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null)
+  const [expensePendingDeletion, setExpensePendingDeletion] = useState<Expense | null>(null)
   const [monthlySpendingTimeframe, setMonthlySpendingTimeframe] = useState<"this_month" | "last_month" | "all_time">("this_month")
   const [topSpendingTimeframe, setTopSpendingTimeframe] = useState<"this_month" | "last_month">("this_month")
 
@@ -230,10 +232,8 @@ export default function Home({
     ? Math.round(((thisYearTotal - lastYearTotal) / lastYearTotal) * 100)
     : null
 
-  // Budget calculations
-  const budgetGoal = useMemo(() => {
-    return Number(localStorage.getItem("pocket_budget")) || 5000000
-  }, [])
+  // Budget calculations — read fresh every render so Settings changes reflect immediately
+  const budgetGoal = Number(localStorage.getItem("pocket_budget")) || 5000000
   const budgetSpentPct = Math.round((thisMonthTotal / budgetGoal) * 100)
 
   // Recent 5 transactions
@@ -951,9 +951,7 @@ export default function Home({
                               type="button"
                               onClick={() => {
                                 setOpenActionMenuId(null)
-                                if (confirm(`Delete "${expense.item}"?`)) {
-                                  onDeleteExpense(expense.id)
-                                }
+                                setExpensePendingDeletion(expense)
                               }}
                               className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
                             >
@@ -969,6 +967,22 @@ export default function Home({
               })}
             </div>
           </div>
+
+          <ConfirmDialog
+            open={expensePendingDeletion !== null}
+            title="Move transaction to Trash?"
+            subject={expensePendingDeletion?.item}
+            message="This will move"
+            confirmLabel="Move to Trash"
+            variant="soft"
+            onCancel={() => setExpensePendingDeletion(null)}
+            onConfirm={() => {
+              if (expensePendingDeletion) {
+                void onDeleteExpense?.(expensePendingDeletion.id)
+              }
+              setExpensePendingDeletion(null)
+            }}
+          />
 
           {/* Quick Add */}
           <div className="rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-xs">

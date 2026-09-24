@@ -19,6 +19,7 @@ import type { RecurringTransaction, TransactionType, RecurringFrequency } from "
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
 import { useCurrency } from "../contexts/CurrencyContext"
 import { convertAndFormatCurrency } from "../lib/currency"
+import ConfirmDialog from "../components/ConfirmDialog"
 
 interface RecurringProps {
   recurringList: RecurringTransaction[]
@@ -39,6 +40,7 @@ export default function Recurring({
   const [filterType, setFilterType] = useState<"all" | "expense" | "income">("all")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [triggeringId, setTriggeringId] = useState<string | null>(null)
+  const [recurringPendingDeletion, setRecurringPendingDeletion] = useState<RecurringTransaction | null>(null)
 
   // Form states for new recurring rule
   const [type, setType] = useState<TransactionType>("expense")
@@ -450,9 +452,7 @@ export default function Recurring({
                       <button
                         type="button"
                         onClick={() => {
-                          if (confirm(`Delete recurring schedule "${r.item}"?`)) {
-                            onDeleteRecurring(r.id)
-                          }
+                          setRecurringPendingDeletion(r)
                         }}
                         className="rounded-xl border border-zinc-200 bg-white p-1.5 text-zinc-400 transition hover:bg-red-50 hover:text-red-600 hover:border-red-200 shadow-2xs sm:p-2"
                         title="Delete schedule"
@@ -467,6 +467,19 @@ export default function Recurring({
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={recurringPendingDeletion !== null}
+        title="Delete recurring schedule?"
+        message={recurringPendingDeletion ? `Are you sure you want to delete "${recurringPendingDeletion.item}"? This action cannot be undone.` : ""}
+        onCancel={() => setRecurringPendingDeletion(null)}
+        onConfirm={() => {
+          if (recurringPendingDeletion) {
+            void onDeleteRecurring(recurringPendingDeletion.id)
+          }
+          setRecurringPendingDeletion(null)
+        }}
+      />
 
       {/* Add Recurring Schedule Modal */}
       {isModalOpen && (

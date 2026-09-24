@@ -13,7 +13,7 @@ import {
 } from "lucide-react"
 import type { Expense } from "../types/expense"
 import { useCurrency } from "../contexts/CurrencyContext"
-import { SUPPORTED_CURRENCIES, convertAndFormatCurrency } from "../lib/currency"
+import { SUPPORTED_CURRENCIES, convertAndFormatCurrency, STATIC_VND_RATES } from "../lib/currency"
 
 interface SettingsProps {
   user: User
@@ -276,10 +276,14 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
               <div className="flex items-center gap-2">
                 <RefreshCw className={`h-3.5 w-3.5 text-zinc-400 ${isLoadingRates ? "animate-spin" : ""}`} />
                 <span className="text-zinc-600">
-                  {rates && currency !== "VND" && rates[currency] && rates["VND"] ? (
-                    <>
-                      1 {currency} ≈ {new Intl.NumberFormat("vi-VN").format(Math.round(rates["VND"] / rates[currency]))} ₫
-                    </>
+                  {currency !== "VND" ? (
+                    STATIC_VND_RATES[currency] ? (
+                      <>1 {currency} ≈ {new Intl.NumberFormat("vi-VN").format(Math.round(STATIC_VND_RATES[currency]))} ₫</>
+                    ) : rates && rates[currency] && rates["VND"] ? (
+                      <>1 {currency} ≈ {new Intl.NumberFormat("vi-VN").format(Math.round(rates["VND"] / rates[currency]))} ₫</>
+                    ) : (
+                      "Loading live rates..."
+                    )
                   ) : rates ? (
                     <>1 USD ≈ {new Intl.NumberFormat("vi-VN").format(Math.round(rates["VND"]))} ₫</>
                   ) : (

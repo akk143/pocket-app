@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react"
-import { useSearchParams } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,6 +15,7 @@ import type { Expense } from "../types/expense"
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
 import { useCurrency } from "../contexts/CurrencyContext"
 import { convertAndFormatCurrency } from "../lib/currency"
+import ConfirmDialog from "../components/ConfirmDialog"
 
 const formatTimeStr = (timeStr: string) => {
   if (!timeStr) return ""
@@ -37,12 +38,14 @@ const formatTimeStr = (timeStr: string) => {
 
 interface HistoryProps {
   expenses: Expense[]
+  trashCount?: number
   onEditExpense?: (expense: Expense) => void
-  onDeleteExpense?: (id: string) => void
+  onDeleteExpense?: (id: string) => void | Promise<void>
 }
 
 export default function History({
   expenses,
+  trashCount = 0,
   onEditExpense,
   onDeleteExpense,
 }: HistoryProps) {
@@ -57,6 +60,7 @@ export default function History({
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all")
   const [viewDate, setViewDate] = useState(() => new Date())
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [expensePendingDeletion, setExpensePendingDeletion] = useState<Expense | null>(null)
 
   useEffect(() => {
     const q = searchParams.get("q") || ""
@@ -270,20 +274,29 @@ export default function History({
           </p>
         </div>
 
-        <div className="flex w-full items-center justify-between gap-1 rounded-xl border border-zinc-200 bg-white px-2 py-1 text-sm font-semibold text-zinc-700 shadow-2xs sm:w-auto">
-          <button
-            onClick={prevMonth}
-            className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700"
+        <div className="flex w-full items-center justify-between gap-2 sm:w-auto">
+          <Link
+            to="/trash"
+            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-2xs transition hover:bg-zinc-50"
           >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <span className="min-w-0 flex-1 text-center sm:min-w-[130px]">{monthLabel}</span>
-          <button
-            onClick={nextMonth}
-            className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
+            <Trash2 className="h-3.5 w-3.5 text-zinc-400" />
+            Trash{trashCount > 0 ? ` · ${trashCount}` : ""}
+          </Link>
+          <div className="flex min-w-0 flex-1 items-center justify-between gap-1 rounded-xl border border-zinc-200 bg-white px-2 py-1 text-sm font-semibold text-zinc-700 shadow-2xs sm:min-w-[180px] sm:flex-none">
+            <button
+              onClick={prevMonth}
+              className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="min-w-0 flex-1 text-center sm:min-w-[130px]">{monthLabel}</span>
+            <button
+              onClick={nextMonth}
+              className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -437,6 +450,7 @@ export default function History({
                           </div>
                           <p className="text-xs text-zinc-500">
                             {expense.categoryName} · {formatTimeStr(expense.time)}
+                            {expense.quantity && expense.quantity > 1 ? ` · Qty ${expense.quantity}` : ""}
                           </p>
                         </div>
                       </div>
@@ -480,9 +494,7 @@ export default function History({
                                   type="button"
                                   onClick={() => {
                                     setOpenMenuId(null)
-                                    if (confirm(`Delete "${expense.item}"?`)) {
-                                      onDeleteExpense(expense.id)
-                                    }
+                                    setExpensePendingDeletion(expense)
                                   }}
                                   className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
                                 >
@@ -503,6 +515,22 @@ export default function History({
           ))
         )}
       </div>
+
+      <ConfirmDialog
+        open={expensePendingDeletion !== null}
+        title="Move transaction to Trash?"
+        subject={expensePendingDeletion?.item}
+        message="This will move"
+        confirmLabel="Move to Trash"
+        variant="soft"
+        onCancel={() => setExpensePendingDeletion(null)}
+        onConfirm={() => {
+          if (expensePendingDeletion) {
+            void onDeleteExpense?.(expensePendingDeletion.id)
+          }
+          setExpensePendingDeletion(null)
+        }}
+      />
     </div>
   )
 }

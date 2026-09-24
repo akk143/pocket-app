@@ -3,8 +3,10 @@ export type RecurringFrequency = "monthly" | "weekly" | "daily"
 
 export interface Expense {
   id: string
-  type?: TransactionType
+  type: TransactionType
   amount: number
+  quantity?: number
+  unitPrice?: number
   categoryId: string
   categoryName: string
   item: string
@@ -12,12 +14,15 @@ export interface Expense {
   date: string       
   time: string       
   createdAt: number  
+  deletedAt?: number
 }
 
 export interface RecurringTransaction {
   id: string
   type: TransactionType
   amount: number
+  quantity?: number
+  unitPrice?: number
   categoryId: string
   categoryName: string
   item: string
