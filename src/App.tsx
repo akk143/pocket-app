@@ -24,12 +24,15 @@ import AnalyticsPage from "./pages/Analytics"
 import CategoriesPage from "./pages/Categories"
 import RecurringPage from "./pages/Recurring"
 import SettingsPage from "./pages/Settings"
+import TrashPage from "./pages/Trash"
 import LoginPage from "./pages/Login"
 import RegisterPage from "./pages/Register"
 
 import { auth } from "./lib/firebase"
 import {
   subscribeToExpenses,
+  subscribeToDeletedExpenses,
+  restoreExpense,
   addExpense,
   updateExpense,
   deleteExpense,
@@ -52,6 +55,7 @@ function App() {
   const [user, setUser] = useState<User | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [expenses, setExpenses] = useState<Expense[]>([])
+  const [trashCount, setTrashCount] = useState(0)
   const [recurringList, setRecurringList] = useState<RecurringTransaction[]>([])
   const [addExpenseOpen, setAddExpenseOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
@@ -61,10 +65,18 @@ function App() {
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     return localStorage.getItem("pocket_dark") === "true"
   })
-  const [toast, setToast] = useState<{ message: string; type?: "success" | "info" } | null>(null)
+  const [toast, setToast] = useState<{
+    message: string
+    type?: "success" | "info"
+    action?: { label: string; onClick: () => void }
+  } | null>(null)
 
-  const showToast = (message: string, type: "success" | "info" = "success") => {
-    setToast({ message, type })
+  const showToast = (
+    message: string,
+    type: "success" | "info" = "success",
+    action?: { label: string; onClick: () => void },
+  ) => {
+    setToast({ message, type, action })
     setTimeout(() => setToast(null), 3000)
   }
 
@@ -91,6 +103,19 @@ function App() {
     )
 
     return unsub
+  }, [user])
+
+  useEffect(() => {
+    if (!user) {
+      setTrashCount(0)
+      return
+    }
+
+    return subscribeToDeletedExpenses(
+      user.uid,
+      (deletedExpenses) => setTrashCount(deletedExpenses.length),
+      (err) => console.error("Trash count error:", err),
+    )
   }, [user])
 
   // Dark mode toggle
@@ -137,9 +162,24 @@ function App() {
     if (!user) return
     try {
       await deleteExpense(user.uid, expenseId)
-      showToast("Transaction deleted")
+      showToast("Transaction moved to Trash", "success", {
+        label: "Undo",
+        onClick: () => {
+          void handleRestoreExpense(expenseId)
+        },
+      })
     } catch {
       showToast("Delete failed. Check your connection.", "info")
+    }
+  }
+
+  async function handleRestoreExpense(expenseId: string) {
+    if (!user) return
+    try {
+      await restoreExpense(user.uid, expenseId)
+      showToast("Transaction restored")
+    } catch {
+      showToast("Could not restore transaction. Please try again.", "info")
     }
   }
 
@@ -439,6 +479,7 @@ function App() {
                 <SettingsIcon className="h-4 w-4" />
                 Settings
               </NavLink>
+
             </nav>
           </div>
 
@@ -607,6 +648,7 @@ function App() {
                 element={
                   <HistoryPage
                     expenses={expenses}
+                    trashCount={trashCount}
                     onEditExpense={openEditExpense}
                     onDeleteExpense={handleDeleteExpense}
                   />
@@ -648,6 +690,16 @@ function App() {
                   />
                 }
               />
+              <Route
+                path="/trash"
+                element={
+                  <TrashPage
+                    userId={user.uid}
+                    onRestore={handleRestoreExpense}
+                    onTrashEmptied={() => showToast("Trash emptied")}
+                  />
+                }
+              />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
@@ -656,7 +708,7 @@ function App() {
 
       {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-zinc-200 bg-white/95 backdrop-blur-md lg:hidden">
-        <div className="grid grid-cols-5 items-center">
+        <div className="grid grid-cols-6 items-center">
           <NavLink
             to="/"
             end
@@ -717,6 +769,7 @@ function App() {
             <SettingsIcon className="h-5 w-5" />
             Settings
           </NavLink>
+
         </div>
       </nav>
 
@@ -745,9 +798,23 @@ function App() {
       />
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 lg:bottom-6 lg:left-auto lg:right-6 lg:translate-x-0 z-50 flex items-center gap-2 rounded-2xl border border-zinc-200/80 bg-zinc-900 px-4 py-3 text-xs font-semibold text-white shadow-xl">
+        <div className="fixed bottom-20 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center justify-between gap-4 rounded-2xl border border-zinc-200/80 bg-zinc-900 px-4 py-3 text-xs font-semibold text-white shadow-xl lg:bottom-6 lg:left-auto lg:right-6 lg:w-auto lg:translate-x-0">
+          <div className="flex items-center gap-2">
           <span className="flex h-2 w-2 rounded-full bg-emerald-400" />
           {toast.message}
+          </div>
+          {toast.action && (
+            <button
+              type="button"
+              onClick={() => {
+                toast.action?.onClick()
+                setToast(null)
+              }}
+              className="shrink-0 rounded-lg px-2 py-1 text-emerald-300 transition hover:bg-white/10 hover:text-emerald-200"
+            >
+              {toast.action.label}
+            </button>
+          )}
         </div>
       )}
     </div>

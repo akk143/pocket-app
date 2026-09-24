@@ -62,6 +62,7 @@ export default function AddExpenseSheet({
 
   const [type, setType] = useState<TransactionType>("expense")
   const [amount, setAmount] = useState("")
+  const [quantity, setQuantity] = useState("1")
   const [categoryId, setCategoryId] = useState(defaultCategoryId)
   const [item, setItem] = useState("")
   const [note, setNote] = useState("")
@@ -93,9 +94,10 @@ export default function AddExpenseSheet({
       setFrequency("monthly")
       if (initialExpense) {
         setType(initialExpense.type || "expense")
+        setQuantity(String(initialExpense.quantity || 1))
         const initialVal = currency === "VND" 
-          ? initialExpense.amount 
-          : Math.round(convertAmount(initialExpense.amount, currency, rates) * 100) / 100
+          ? initialExpense.unitPrice ?? initialExpense.amount
+          : Math.round(convertAmount(initialExpense.unitPrice ?? initialExpense.amount, currency, rates) * 100) / 100
         setAmount(String(initialVal))
         setCategoryId(initialExpense.categoryId)
         setItem(initialExpense.item)
@@ -105,6 +107,7 @@ export default function AddExpenseSheet({
       } else {
         setType("expense")
         setAmount("")
+        setQuantity("1")
         setCategoryId(defaultCategoryId || "drinks")
         setItem("")
         setNote("")
@@ -141,6 +144,7 @@ export default function AddExpenseSheet({
   )
 
   const numericAmount = Number(amount.replace(/,/g, ""))
+  const numericQuantity = Number(quantity)
 
   const displayInputValue =
     currency === "VND"
@@ -172,8 +176,8 @@ export default function AddExpenseSheet({
   }
 
   const handleSave = () => {
-    // Amount guard
-    if (!amount || !isFinite(numericAmount) || numericAmount <= 0) {
+    // Quantity and unit price guard
+    if (!amount || !isFinite(numericAmount) || numericAmount <= 0 || !Number.isInteger(numericQuantity) || numericQuantity <= 0) {
       return
     }
 
@@ -185,12 +189,15 @@ export default function AddExpenseSheet({
     }
 
     // Convert amount in selected currency to base VND
-    const baseAmount = convertToBaseVND(numericAmount, currency, rates)
+    const baseUnitPrice = convertToBaseVND(numericAmount, currency, rates)
+    const totalAmount = baseUnitPrice * numericQuantity
 
     if (isEditing && initialExpense && onUpdate) {
       onUpdate(initialExpense.id, {
         type,
-        amount: baseAmount,
+        amount: totalAmount,
+        quantity: numericQuantity,
+        unitPrice: baseUnitPrice,
         categoryId,
         categoryName: selectedCategory?.name ?? "Other",
         item: trimmedItem,
@@ -202,7 +209,9 @@ export default function AddExpenseSheet({
       onSave({
         id: crypto.randomUUID(),
         type,
-        amount: baseAmount,
+        amount: totalAmount,
+        quantity: numericQuantity,
+        unitPrice: baseUnitPrice,
         categoryId,
         categoryName: selectedCategory?.name ?? "Other",
         item: trimmedItem,
@@ -217,7 +226,9 @@ export default function AddExpenseSheet({
         const dayOfWeek = new Date(date).getDay()
         onSaveRecurring({
           type,
-          amount: baseAmount,
+          amount: totalAmount,
+          quantity: numericQuantity,
+          unitPrice: baseUnitPrice,
           categoryId,
           categoryName: selectedCategory?.name ?? "Other",
           item: trimmedItem,
@@ -234,6 +245,7 @@ export default function AddExpenseSheet({
     }
 
     setAmount("")
+    setQuantity("1")
     setItem("")
     setNote("")
     onClose()
@@ -312,13 +324,29 @@ export default function AddExpenseSheet({
             </button>
           </div>
 
-          {/* Amount */}
+          {/* Quantity and unit price */}
+          <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2">
+            <div>
+              <label htmlFor="expense-quantity" className="mb-1 block text-[11px] font-medium text-zinc-700 md:text-xs">
+                Quantity
+              </label>
+              <input
+                id="expense-quantity"
+                type="number"
+                min="1"
+                step="1"
+                value={quantity}
+                onChange={(event) => setQuantity(event.target.value.replace(/\D/g, ""))}
+                className="w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-lg font-semibold tracking-tight text-zinc-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:text-2xl"
+              />
+            </div>
+            <div>
           <div>
             <label
               htmlFor="expense-amount"
               className="mb-1 block text-[11px] font-medium text-zinc-700 md:text-xs"
             >
-              Amount
+              Unit price
             </label>
 
             <div className="relative">
@@ -341,7 +369,16 @@ export default function AddExpenseSheet({
                 ≈ {new Intl.NumberFormat("vi-VN").format(convertToBaseVND(numericAmount, currency, rates))} ₫ (auto-converted to base)
               </p>
             )}
+            </div>
           </div>
+          </div>
+          {numericQuantity > 0 && numericAmount > 0 && (
+            <p className="text-right text-xs font-semibold text-zinc-500">
+              Total: {currency === "VND"
+                ? `${new Intl.NumberFormat("vi-VN").format(numericQuantity * numericAmount)} ${activeCurrencyConfig.symbol}`
+                : `${new Intl.NumberFormat("en-US", { style: "currency", currency }).format(numericQuantity * numericAmount)}`}
+            </p>
+          )}
 
           {/* Category */}
           <div>

@@ -30,11 +30,40 @@ export function subscribeToExpenses(
       const expenses: Expense[] = snapshot.docs.map((d) => {
         const data = d.data() as Omit<Expense, "id">
         return {
-          id: d.id,
-          type: data.type || "expense",
           ...data,
+          id: d.id,
+          type: data.type ?? "expense",
         }
       })
+      onData(expenses.filter((expense) => !expense.deletedAt))
+    },
+    (err) => onError(err),
+  )
+}
+
+export function subscribeToDeletedExpenses(
+  userId: string,
+  onData: (expenses: Expense[]) => void,
+  onError: (err: Error) => void,
+): Unsubscribe {
+  const q = query(
+    collection(db, "users", userId, "expenses"),
+    orderBy("createdAt", "desc"),
+  )
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const expenses: Expense[] = snapshot.docs
+        .map((d) => {
+          const data = d.data() as Omit<Expense, "id">
+          return {
+            ...data,
+            id: d.id,
+            type: data.type ?? "expense",
+          }
+        })
+        .filter((expense) => !!expense.deletedAt)
       onData(expenses)
     },
     (err) => onError(err),
@@ -64,6 +93,24 @@ export async function updateExpense(
 }
 
 export async function deleteExpense(
+  userId: string,
+  expenseId: string,
+): Promise<void> {
+  await updateDoc(doc(db, "users", userId, "expenses", expenseId), {
+    deletedAt: Date.now(),
+  })
+}
+
+export async function restoreExpense(
+  userId: string,
+  expenseId: string,
+): Promise<void> {
+  await updateDoc(doc(db, "users", userId, "expenses", expenseId), {
+    deletedAt: null,
+  })
+}
+
+export async function permanentlyDeleteExpense(
   userId: string,
   expenseId: string,
 ): Promise<void> {

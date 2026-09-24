@@ -25,7 +25,7 @@ const CACHE_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
 // Static VND rates for currencies not covered by the exchange rate API.
 // Value = how many VND per 1 unit of that currency.
 // e.g. 1 MMK = 5.85 VND
-const STATIC_VND_RATES: Record<string, number> = {
+export const STATIC_VND_RATES: Record<string, number> = {
   MMK: 5.85,
 };
 

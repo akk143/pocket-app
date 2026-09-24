@@ -25,7 +25,7 @@ export default function Analytics({ expenses }: AnalyticsProps) {
   const formatCurrency = (amount: number) => convertAndFormatCurrency(amount, currency, rates)
 
   const [period, setPeriod] = useState<Period>("month")
-  const [viewDate, setViewDate] = useState(new Date(2026, 8, 7))
+  const [viewDate, setViewDate] = useState(new Date())
 
   const periodLabel = useMemo(() => {
     if (period === "year") {
