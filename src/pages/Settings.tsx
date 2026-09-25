@@ -10,10 +10,14 @@ import {
   Repeat,
   Globe,
   RefreshCw,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react"
 import type { Expense } from "../types/expense"
 import { useCurrency } from "../contexts/CurrencyContext"
 import { SUPPORTED_CURRENCIES, convertAndFormatCurrency, STATIC_VND_RATES } from "../lib/currency"
+import { useTheme } from "../hooks/useTheme"
 
 interface SettingsProps {
   user: User
@@ -23,6 +27,7 @@ interface SettingsProps {
 
 export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
   const { currency, setCurrency, rates, isLoadingRates } = useCurrency()
+  const { themePreference, setThemePreference } = useTheme()
   const formatCurrency = (amount: number) => convertAndFormatCurrency(amount, currency, rates)
   const activeCurrencyConfig = SUPPORTED_CURRENCIES.find((c) => c.code === currency) || SUPPORTED_CURRENCIES[0]
 
@@ -111,30 +116,30 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
     <div className="mx-auto max-w-3xl px-4 py-4 lg:px-8 lg:py-6">
       {/* Title */}
       <div className="mb-5 lg:mb-7">
-        <h1 className="text-xl font-bold tracking-tight text-zinc-900 lg:text-2xl">
+        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white lg:text-2xl">
           Settings
         </h1>
-        <p className="mt-0.5 text-xs text-zinc-500">
+        <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
           Manage your profile, preferences, and financial budget
         </p>
       </div>
 
       <div className="space-y-4 lg:space-y-6">
         {/* Profile Card */}
-        <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs lg:p-6">
-          <div className="flex items-center gap-2.5 border-b border-zinc-100 pb-3 lg:pb-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 lg:h-9 lg:w-9 lg:rounded-xl">
+        <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs lg:p-6">
+          <div className="flex items-center gap-2.5 border-b border-zinc-100 dark:border-zinc-800 pb-3 lg:pb-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 lg:h-9 lg:w-9 lg:rounded-xl">
               <UserIcon className="h-4 w-4 lg:h-5 lg:w-5" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-zinc-900">Profile Details</h2>
-              <p className="text-xs text-zinc-400">Update your account display information</p>
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Profile Details</h2>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500">Update your account display information</p>
             </div>
           </div>
 
           <form onSubmit={handleSaveName} className="mt-4 space-y-3 lg:mt-5 lg:space-y-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-700">
+              <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
                 Full Name
               </label>
               <input
@@ -142,19 +147,19 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
+                className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-4 py-2.5 text-sm dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none transition focus:border-emerald-500 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-700">
+              <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
                 Email Address
               </label>
               <input
                 type="email"
                 disabled
                 value={user.email || ""}
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-100 px-4 py-2.5 text-sm text-zinc-500 cursor-not-allowed"
+                className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 px-4 py-2.5 text-sm text-zinc-500 dark:text-zinc-500 cursor-not-allowed"
               />
             </div>
 
@@ -172,27 +177,27 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
         </div>
 
         {/* Monthly Budget Goal */}
-        <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs lg:p-6">
-          <div className="flex items-center gap-2.5 border-b border-zinc-100 pb-3 lg:pb-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 text-purple-600 lg:h-9 lg:w-9 lg:rounded-xl">
+        <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs lg:p-6">
+          <div className="flex items-center gap-2.5 border-b border-zinc-100 dark:border-zinc-800 pb-3 lg:pb-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 lg:h-9 lg:w-9 lg:rounded-xl">
               <Target className="h-4 w-4 lg:h-5 lg:w-5" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-zinc-900">Monthly Spending Budget</h2>
-              <p className="text-xs text-zinc-400">Set a target to keep your spending on track</p>
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Monthly Spending Budget</h2>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500">Set a target to keep your spending on track</p>
             </div>
           </div>
 
           <div className="mt-4 space-y-3 lg:mt-5 lg:space-y-4">
             {/* Budget Progress Bar */}
-            <div className="rounded-2xl border border-zinc-100 bg-zinc-50/60 p-3 lg:p-4">
+            <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-800/50 p-3 lg:p-4">
               <div className="flex flex-col gap-1 text-xs lg:flex-row lg:items-center lg:justify-between">
-                <span className="font-medium text-zinc-500">This Month's Spending</span>
-                <span className="font-bold text-zinc-900">
+                <span className="font-medium text-zinc-500 dark:text-zinc-400">This Month's Spending</span>
+                <span className="font-bold text-zinc-900 dark:text-white">
                   {formatCurrency(thisMonthSpent)} / {formatCurrency(budgetNum)}
                 </span>
               </div>
-              <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-zinc-200">
+              <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
                     budgetPercent >= 100
@@ -204,7 +209,7 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
                   style={{ width: `${budgetPercent}%` }}
                 />
               </div>
-              <p className="mt-2 text-[11px] font-medium text-zinc-500">
+              <p className="mt-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
                 {budgetPercent >= 100
                   ? "⚠️ You have exceeded your monthly budget goal!"
                   : `${budgetPercent}% of monthly budget spent.`}
@@ -218,15 +223,15 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
                   value={budget}
                   onChange={(e) => setBudget(e.target.value)}
                   placeholder="5000000"
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 pr-8 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-4 py-2.5 pr-8 text-sm dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none transition focus:border-emerald-500 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-zinc-400">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-zinc-400 dark:text-zinc-500">
                   {activeCurrencyConfig.symbol}
                 </span>
               </div>
               <button
                 type="submit"
-                className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-zinc-800 lg:w-auto"
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-zinc-900 dark:bg-zinc-700 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-zinc-800 dark:hover:bg-zinc-600 lg:w-auto"
               >
                 {budgetSaved ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : null}
                 {budgetSaved ? "Saved!" : "Set Budget"}
@@ -236,32 +241,32 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
         </div>
 
         {/* Currency & Exchange Rates */}
-        <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs lg:p-6">
-          <div className="flex items-center gap-2.5 border-b border-zinc-100 pb-3 lg:pb-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 lg:h-9 lg:w-9 lg:rounded-xl">
+        <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs lg:p-6">
+          <div className="flex items-center gap-2.5 border-b border-zinc-100 dark:border-zinc-800 pb-3 lg:pb-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 lg:h-9 lg:w-9 lg:rounded-xl">
               <Globe className="h-4 w-4 lg:h-5 lg:w-5" />
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-zinc-900">Currency & Exchange Rates</h2>
-                <span className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-600">
+                <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Currency & Exchange Rates</h2>
+                <span className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Live Rates
                 </span>
               </div>
-              <p className="text-xs text-zinc-400">Choose your display currency with real-time conversion</p>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500">Choose your display currency with real-time conversion</p>
             </div>
           </div>
 
           <div className="mt-4 space-y-3 lg:mt-5 lg:space-y-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-700">
+              <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
                 Display Currency
               </label>
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm font-medium text-zinc-800 outline-none transition focus:border-emerald-500 focus:bg-white cursor-pointer"
+                className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-4 py-2.5 text-sm font-medium text-zinc-800 dark:text-zinc-100 outline-none transition focus:border-emerald-500 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 cursor-pointer"
               >
                 {SUPPORTED_CURRENCIES.map((c) => (
                   <option key={c.code} value={c.code}>
@@ -272,10 +277,10 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
             </div>
 
             {/* Exchange Rate Status banner */}
-            <div className="flex items-center justify-between rounded-xl bg-zinc-50 p-3 text-xs border border-zinc-100">
+            <div className="flex items-center justify-between rounded-xl bg-zinc-50 dark:bg-zinc-800/50 p-3 text-xs border border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center gap-2">
-                <RefreshCw className={`h-3.5 w-3.5 text-zinc-400 ${isLoadingRates ? "animate-spin" : ""}`} />
-                <span className="text-zinc-600">
+                <RefreshCw className={`h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500 ${isLoadingRates ? "animate-spin" : ""}`} />
+                <span className="text-zinc-600 dark:text-zinc-400">
                   {currency !== "VND" ? (
                     STATIC_VND_RATES[currency] ? (
                       <>1 {currency} ≈ {new Intl.NumberFormat("vi-VN").format(Math.round(STATIC_VND_RATES[currency]))} ₫</>
@@ -291,24 +296,61 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
                   )}
                 </span>
               </div>
-              <span className="text-[11px] text-zinc-400">
+              <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
                 Auto-updated daily via Open Exchange API
               </span>
             </div>
           </div>
         </div>
 
+        {/* Appearance Section */}
+        <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-xs">
+          <div className="px-5 py-4 border-b border-zinc-100 dark:border-zinc-800">
+            <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Appearance</h2>
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Choose how PocketTrack looks on this device</p>
+          </div>
+          <div className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">Theme</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Controls the color scheme across the app</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {(['light', 'dark', 'system'] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setThemePreference(option)}
+                  className={`flex flex-col items-center gap-2 rounded-xl border p-3 text-xs font-medium transition ${
+                    themePreference === option
+                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                      : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600'
+                  }`}
+                >
+                  {option === 'light' && <Sun className="h-5 w-5" />}
+                  {option === 'dark' && <Moon className="h-5 w-5" />}
+                  {option === 'system' && <Monitor className="h-5 w-5" />}
+                  <span className="capitalize">{option}</span>
+                  {themePreference === option && (
+                    <span className="text-emerald-600 dark:text-emerald-500 text-[10px] font-semibold">Active</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
 
         {/* Recurring Transactions Shortcut */}
-        <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs lg:p-6">
+        <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs lg:p-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 lg:h-9 lg:w-9 lg:rounded-xl">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 lg:h-9 lg:w-9 lg:rounded-xl">
                 <Repeat className="h-4 w-4 lg:h-5 lg:w-5" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-zinc-900">Recurring Transactions</h2>
-                <p className="text-xs text-zinc-400">
+                <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Recurring Transactions</h2>
+                <p className="text-xs text-zinc-400 dark:text-zinc-500">
                   Automate monthly rent, salary, bills, and regular subscriptions
                 </p>
               </div>
@@ -325,15 +367,15 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
         </div>
 
         {/* Data Export */}
-        <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs lg:p-6">
+        <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs lg:p-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 lg:h-9 lg:w-9 lg:rounded-xl">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 lg:h-9 lg:w-9 lg:rounded-xl">
                 <Download className="h-4 w-4 lg:h-5 lg:w-5" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-zinc-900">Export Transactions</h2>
-                <p className="text-xs text-zinc-400">
+                <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Export Transactions</h2>
+                <p className="text-xs text-zinc-400 dark:text-zinc-500">
                   Download all your expenses and income as a CSV file
                 </p>
               </div>
@@ -342,26 +384,26 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
             <button
               type="button"
               onClick={handleExportCSV}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-semibold text-zinc-700 shadow-2xs transition hover:border-zinc-300 hover:bg-zinc-50 lg:w-auto lg:py-2"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 shadow-2xs transition hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700 lg:w-auto lg:py-2"
             >
-              <Download className="h-3.5 w-3.5 text-zinc-500" />
+              <Download className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
               Export CSV
             </button>
           </div>
         </div>
 
         {/* Account Session & Sign Out */}
-        <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs lg:p-6">
+        <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs lg:p-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-zinc-900">Account Session</h2>
-              <p className="text-xs text-zinc-400">Sign out of PocketTrack on this browser</p>
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Account Session</h2>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500">Sign out of PocketTrack on this browser</p>
             </div>
 
             <button
               type="button"
               onClick={onSignOut}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50/50 px-4 py-2.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 lg:w-auto lg:py-2"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20 px-4 py-2.5 text-xs font-semibold text-red-600 dark:text-red-400 transition hover:bg-red-50 dark:hover:bg-red-950/30 lg:w-auto lg:py-2"
             >
               <LogOut className="h-3.5 w-3.5" />
               Sign out

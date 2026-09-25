@@ -200,11 +200,11 @@ export default function Recurring({
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
               <Repeat className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl">
+              <h1 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl dark:text-white">
                 Recurring Transactions
               </h1>
               <p className="text-xs text-zinc-400">
@@ -227,16 +227,16 @@ export default function Recurring({
       {/* Summary Cards */}
       <div className="mb-6 grid gap-3 sm:gap-4 sm:grid-cols-3">
         {/* Recurring Expenses */}
-        <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs sm:p-5">
+        <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs sm:p-5 dark:bg-zinc-900 dark:border-zinc-800">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-600">
               <TrendingDown className="h-4 w-4" />
             </div>
-            <span className="text-xs font-medium text-zinc-500">
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
               Monthly Fixed Expenses
             </span>
           </div>
-          <p className="mt-3 text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl">
+          <p className="mt-3 text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl dark:text-white">
             {convertAndFormatCurrency(totalMonthlyExpenses, currency, rates)}
           </p>
           <p className="mt-1 text-[11px] text-zinc-400">
@@ -245,16 +245,16 @@ export default function Recurring({
         </div>
 
         {/* Recurring Income */}
-        <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs sm:p-5">
+        <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs sm:p-5 dark:bg-zinc-900 dark:border-zinc-800">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
               <TrendingUp className="h-4 w-4" />
             </div>
-            <span className="text-xs font-medium text-zinc-500">
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
               Monthly Fixed Income
             </span>
           </div>
-          <p className="mt-3 text-xl font-bold tracking-tight text-emerald-600 sm:text-2xl">
+          <p className="mt-3 text-xl font-bold tracking-tight text-emerald-600 sm:text-2xl dark:text-emerald-400">
             +{convertAndFormatCurrency(totalMonthlyIncome, currency, rates)}
           </p>
           <p className="mt-1 text-[11px] text-zinc-400">
@@ -263,20 +263,20 @@ export default function Recurring({
         </div>
 
         {/* Net Monthly Baseline */}
-        <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs sm:p-5">
+        <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs sm:p-5 dark:bg-zinc-900 dark:border-zinc-800">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
               <DollarSign className="h-4 w-4" />
             </div>
-            <span className="text-xs font-medium text-zinc-500">
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
               Net Baseline Cashflow
             </span>
           </div>
           <p
             className={`mt-3 text-xl font-bold tracking-tight sm:text-2xl ${
               totalMonthlyIncome >= totalMonthlyExpenses
-                ? "text-emerald-600"
-                : "text-red-500"
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-red-500 dark:text-red-400"
             }`}
           >
             {totalMonthlyIncome >= totalMonthlyExpenses ? "+" : "-"}
@@ -290,14 +290,14 @@ export default function Recurring({
 
       {/* Filter Tabs */}
       <div className="mb-4 flex items-center justify-between">
-        <div className="inline-flex rounded-xl border border-zinc-200 bg-white p-1 text-xs shadow-2xs">
+        <div className="inline-flex rounded-xl border border-zinc-200 bg-white p-1 text-xs shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
           <button
             type="button"
             onClick={() => setFilterType("all")}
             className={`rounded-lg px-3 py-1 font-semibold transition ${
               filterType === "all"
-                ? "bg-zinc-900 text-white shadow-xs"
-                : "text-zinc-600 hover:text-zinc-900"
+                ? "bg-zinc-900 text-white shadow-xs dark:bg-zinc-100 dark:text-zinc-900"
+                : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
             }`}
           >
             All ({displayList.length})
@@ -307,8 +307,8 @@ export default function Recurring({
             onClick={() => setFilterType("expense")}
             className={`flex items-center gap-1 rounded-lg px-3 py-1 font-semibold transition ${
               filterType === "expense"
-                ? "bg-red-50 text-red-600 font-bold shadow-xs border border-red-200/50"
-                : "text-zinc-600 hover:text-zinc-900"
+                ? "bg-red-50 text-red-600 font-bold shadow-xs border border-red-200/50 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50"
+                : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
             }`}
           >
             Expenses
@@ -318,8 +318,8 @@ export default function Recurring({
             onClick={() => setFilterType("income")}
             className={`flex items-center gap-1 rounded-lg px-3 py-1 font-semibold transition ${
               filterType === "income"
-                ? "bg-emerald-50 text-emerald-700 font-bold shadow-xs border border-emerald-200/50"
-                : "text-zinc-600 hover:text-zinc-900"
+                ? "bg-emerald-50 text-emerald-700 font-bold shadow-xs border border-emerald-200/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50"
+                : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
             }`}
           >
             Income
@@ -328,19 +328,19 @@ export default function Recurring({
       </div>
 
       {/* List of Recurring Items */}
-      <div className="rounded-2xl border border-zinc-200/90 bg-white shadow-xs overflow-hidden">
+      <div className="rounded-2xl border border-zinc-200/90 bg-white shadow-xs overflow-hidden dark:bg-zinc-900 dark:border-zinc-800">
         {filteredList.length === 0 ? (
           <div className="py-12 text-center">
-            <Repeat className="mx-auto h-8 w-8 text-zinc-300" />
-            <p className="mt-2 text-sm font-semibold text-zinc-700">
+            <Repeat className="mx-auto h-8 w-8 text-zinc-300 dark:text-zinc-600" />
+            <p className="mt-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
               No recurring transactions
             </p>
-            <p className="mt-0.5 text-xs text-zinc-400">
+            <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
               Add your regular rent, bills, or salary to auto-track them.
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-zinc-100">
+          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {filteredList.map((r) => {
               const isIncome = r.type === "income"
               const activeCats = isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
@@ -353,7 +353,7 @@ export default function Recurring({
                 <div
                   key={r.id}
                   className={`flex flex-col gap-4 p-4 transition sm:flex-row sm:items-center sm:justify-between sm:p-5 ${
-                    r.active ? "hover:bg-zinc-50/50" : "bg-zinc-50/40 opacity-70"
+                    r.active ? "hover:bg-zinc-50/50 dark:hover:bg-zinc-800/40" : "bg-zinc-50/40 opacity-70 dark:bg-zinc-800/20"
                   }`}
                 >
                   {/* Left Side: Icon & Details */}
@@ -367,14 +367,14 @@ export default function Recurring({
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-bold text-sm text-zinc-900 truncate">
+                        <span className="font-bold text-sm text-zinc-900 truncate dark:text-white">
                           {r.item}
                         </span>
                         <span
                           className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
                             isIncome
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50"
-                              : "bg-zinc-100 text-zinc-600 border border-zinc-200/50"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50"
+                              : "bg-zinc-100 text-zinc-600 border border-zinc-200/50 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700/50"
                           }`}
                         >
                           {r.categoryName}
@@ -393,9 +393,9 @@ export default function Recurring({
                         )}
                       </div>
 
-                      <p className="text-[11px] sm:text-xs text-zinc-500 line-clamp-1">
+                      <p className="text-[11px] sm:text-xs text-zinc-500 line-clamp-1 dark:text-zinc-400">
                         {r.note || "Scheduled transaction"} <span className="mx-1.5 hidden sm:inline">·</span><br className="sm:hidden" />
-                        <span className="font-semibold text-zinc-700 mt-0.5 sm:mt-0 inline-block">
+                        <span className="font-semibold text-zinc-700 mt-0.5 sm:mt-0 inline-block dark:text-zinc-300">
                           Next due: {r.nextDueDate}
                         </span>
                       </p>
@@ -403,13 +403,13 @@ export default function Recurring({
                   </div>
 
                   {/* Right Side: Amount & Actions */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 pt-3 sm:pt-0 border-t sm:border-t-0 border-zinc-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 pt-3 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800">
                     <div className="flex justify-between sm:block sm:text-right w-full sm:w-auto items-center">
-                       <span className="text-[11px] font-medium text-zinc-500 sm:hidden">Amount:</span>
+                       <span className="text-[11px] font-medium text-zinc-500 sm:hidden dark:text-zinc-400">Amount:</span>
                        <div>
                          <p
                            className={`text-sm font-bold sm:text-[15px] ${
-                             isIncome ? "text-emerald-600" : "text-zinc-900"
+                             isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-900 dark:text-zinc-100"
                            }`}
                          >
                            {isIncome ? "+" : ""}{convertAndFormatCurrency(r.amount, currency, rates)}
@@ -428,8 +428,8 @@ export default function Recurring({
                         onClick={() => onToggleActive(r.id, !r.active)}
                         className={`flex-1 sm:flex-none rounded-xl px-3 py-1.5 text-[11px] font-semibold transition sm:px-3 sm:py-2 ${
                           r.active
-                            ? "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 shadow-2xs"
-                            : "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                            ? "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 shadow-2xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                            : "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50 dark:hover:bg-emerald-500/20"
                         }`}
                         title={r.active ? "Pause schedule" : "Resume schedule"}
                       >
@@ -441,7 +441,7 @@ export default function Recurring({
                         type="button"
                         onClick={() => handleTrigger(r)}
                         disabled={isTriggering}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-700 transition hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 disabled:opacity-50 shadow-2xs sm:px-3 sm:py-2"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-700 transition hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 disabled:opacity-50 shadow-2xs sm:px-3 sm:py-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400 dark:hover:border-emerald-900/50"
                         title="Record this transaction immediately for today"
                       >
                         <Zap className="h-3.5 w-3.5 text-amber-500" />
@@ -454,7 +454,7 @@ export default function Recurring({
                         onClick={() => {
                           setRecurringPendingDeletion(r)
                         }}
-                        className="rounded-xl border border-zinc-200 bg-white p-1.5 text-zinc-400 transition hover:bg-red-50 hover:text-red-600 hover:border-red-200 shadow-2xs sm:p-2"
+                        className="rounded-xl border border-zinc-200 bg-white p-1.5 text-zinc-400 transition hover:bg-red-50 hover:text-red-600 hover:border-red-200 shadow-2xs sm:p-2 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-red-950/30 dark:hover:text-red-400 dark:hover:border-red-900/50"
                         title="Delete schedule"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -483,19 +483,19 @@ export default function Recurring({
 
       {/* Add Recurring Schedule Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs dark:bg-black/70">
+          <div className="w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:bg-zinc-900 dark:border-zinc-800">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
               <div className="flex items-center gap-2">
-                <Repeat className="h-5 w-5 text-emerald-600" />
-                <h2 className="text-base font-bold text-zinc-900">
+                <Repeat className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                <h2 className="text-base font-bold text-zinc-900 dark:text-white">
                   New Recurring Schedule
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -503,14 +503,14 @@ export default function Recurring({
 
             <form onSubmit={handleCreateRule} className="mt-4 space-y-4">
               {/* Type Switcher */}
-              <div className="flex rounded-xl border border-zinc-200 bg-zinc-100 p-1">
+              <div className="flex rounded-xl border border-zinc-200 bg-zinc-100 p-1 dark:border-zinc-700 dark:bg-zinc-800">
                 <button
                   type="button"
                   onClick={() => handleTypeChange("expense")}
                   className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition ${
                     type === "expense"
-                      ? "bg-white text-zinc-900 shadow-xs"
-                      : "text-zinc-600 hover:text-zinc-900"
+                      ? "bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white"
+                      : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                   }`}
                 >
                   Expense
@@ -521,7 +521,7 @@ export default function Recurring({
                   className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition ${
                     type === "income"
                       ? "bg-emerald-600 text-white shadow-xs"
-                      : "text-zinc-600 hover:text-zinc-900"
+                      : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                   }`}
                 >
                   Income
@@ -530,7 +530,7 @@ export default function Recurring({
 
               {/* Amount */}
               <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-700">
+                <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
                   Amount
                 </label>
                 <div className="relative">
@@ -543,7 +543,7 @@ export default function Recurring({
                     }}
                     placeholder="5,000,000"
                     required
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white pr-8"
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white pr-8 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:bg-zinc-700"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-zinc-400">
                     ₫
@@ -553,13 +553,13 @@ export default function Recurring({
 
               {/* Category */}
               <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-700">
+                <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
                   Category
                 </label>
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:bg-zinc-700"
                 >
                   {(type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((c) => (
                     <option key={c.id} value={c.id}>
@@ -571,7 +571,7 @@ export default function Recurring({
 
               {/* Item Name */}
               <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-700">
+                <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
                   Description / Title
                 </label>
                 <input
@@ -580,20 +580,20 @@ export default function Recurring({
                   onChange={(e) => setItem(e.target.value)}
                   placeholder={type === "income" ? "e.g. Monthly Salary" : "e.g. Apartment Rent, Netflix"}
                   required
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:bg-zinc-700"
                 />
               </div>
 
               {/* Frequency & Due Day */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-zinc-700">
+                  <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
                     Frequency
                   </label>
                   <select
                     value={frequency}
                     onChange={(e) => setFrequency(e.target.value as RecurringFrequency)}
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
+                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:bg-zinc-700 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
                   >
                     <option value="monthly">Monthly</option>
                     <option value="weekly">Weekly</option>
@@ -603,13 +603,13 @@ export default function Recurring({
 
                 {frequency === "monthly" ? (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-zinc-700">
+                    <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
                       Day of Month
                     </label>
                     <select
                       value={dayOfMonth}
                       onChange={(e) => setDayOfMonth(Number(e.target.value))}
-                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
+                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:bg-zinc-700 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
                     >
                       {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
                         <option key={d} value={d}>
@@ -620,13 +620,13 @@ export default function Recurring({
                   </div>
                 ) : frequency === "weekly" ? (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-zinc-700">
+                    <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
                       Day of Week
                     </label>
                     <select
                       value={dayOfWeek}
                       onChange={(e) => setDayOfWeek(Number(e.target.value))}
-                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
+                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:bg-zinc-700 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
                     >
                       <option value={1}>Monday</option>
                       <option value={2}>Tuesday</option>
@@ -639,14 +639,14 @@ export default function Recurring({
                   </div>
                 ) : (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-zinc-700">
+                    <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
                       Starts on
                     </label>
                     <input
                       type="date"
                       value={firstDueDate}
                       onChange={(e) => setFirstDueDate(e.target.value)}
-                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
+                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:bg-zinc-700 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
                     />
                   </div>
                 )}
@@ -654,7 +654,7 @@ export default function Recurring({
 
               {/* Note */}
               <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-700">
+                <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
                   Note <span className="font-normal text-zinc-400">(optional)</span>
                 </label>
                 <input
@@ -662,15 +662,15 @@ export default function Recurring({
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="Additional details..."
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:bg-zinc-700"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-xl border border-zinc-200 px-4 py-2.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+                  className="rounded-xl border border-zinc-200 px-4 py-2.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                 >
                   Cancel
                 </button>
