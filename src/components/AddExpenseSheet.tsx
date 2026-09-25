@@ -257,23 +257,23 @@ export default function AddExpenseSheet({
       <div
         aria-label="Close modal"
         onClick={onClose}
-        className="fixed inset-0 bg-zinc-950/40 backdrop-blur-[2px] transition-opacity"
+        className="fixed inset-0 bg-zinc-950/50 dark:bg-zinc-950/70 backdrop-blur-[2px] transition-opacity"
       />
 
       {/* Sheet / Modal */}
-      <div className="relative z-10 mb-2 flex h-[80dvh] w-[calc(100%-1rem)] max-h-[80dvh] min-h-0 flex-col overflow-hidden overscroll-contain rounded-3xl bg-white shadow-2xl transition-all sm:mb-0 sm:max-h-[92vh] sm:w-[calc(100%-2rem)] sm:max-w-lg md:h-auto md:max-h-[90vh] md:w-[calc(100%-3rem)] md:max-w-xl">
+      <div className="relative z-10 mb-2 flex h-[80dvh] w-[calc(100%-1rem)] max-h-[80dvh] min-h-0 flex-col overflow-hidden overscroll-contain rounded-3xl bg-white dark:bg-zinc-900 shadow-2xl transition-all sm:mb-0 sm:max-h-[92vh] sm:w-[calc(100%-2rem)] sm:max-w-lg md:h-auto md:max-h-[90vh] md:w-[calc(100%-3rem)] md:max-w-xl">
 
         <div className="flex justify-center pt-2.5 md:hidden">
-          <div className="h-1 w-10 rounded-full bg-zinc-200" />
+          <div className="h-1 w-10 rounded-full bg-zinc-200 dark:bg-zinc-700" />
         </div>
 
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-100 bg-white px-4 py-2 md:px-6 md:py-3.5">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2 md:px-6 md:py-3.5">
           <div>
-            <h2 className="text-base font-semibold tracking-tight text-zinc-900 md:text-xl">
+            <h2 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-white md:text-xl">
               {isEditing ? "Edit Transaction" : type === "income" ? "Add Income" : "Add Expense"}
             </h2>
-            <p className="mt-0.5 text-xs text-zinc-500 md:text-sm">
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 md:text-sm">
               {isEditing ? "Update your transaction details" : type === "income" ? "Record your earnings" : "Record what you spent"}
             </p>
           </div>
@@ -281,7 +281,8 @@ export default function AddExpenseSheet({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 md:h-9 md:w-9"
+            aria-label="Close"
+            className="flex h-8 w-8 items-center justify-center rounded-xl text-zinc-400 dark:text-zinc-500 transition hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300 md:h-9 md:w-9"
           >
             <X className="h-5 w-5" />
           </button>
@@ -289,13 +290,13 @@ export default function AddExpenseSheet({
 
         {/* Scrollable body */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain no-scrollbar">
-          <div className="space-y-2 p-3 md:space-y-3 md:bg-zinc-50/40 md:p-5">
-          <div className="relative hidden rounded-2xl border border-zinc-200 bg-zinc-50 p-1 shadow-xs md:flex">
+          <div className="space-y-2 p-3 md:space-y-3 md:bg-zinc-50/40 md:dark:bg-zinc-900/40 md:p-5">
+          <div className="relative hidden rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 p-1 shadow-xs md:flex">
             <div
               className={`absolute inset-y-1 w-[calc(50%-0.25rem)] rounded-xl shadow-sm transition-all duration-300 ease-out ${
                 type === "expense"
-                  ? "left-1 bg-red-50 ring-1 ring-red-100"
-                  : "left-[calc(50%+0.125rem)] bg-emerald-50 ring-1 ring-emerald-100"
+                  ? "left-1 bg-red-50 dark:bg-red-950/40 ring-1 ring-red-100 dark:ring-red-900/50"
+                  : "left-[calc(50%+0.125rem)] bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-emerald-100 dark:ring-emerald-900/50"
               }`}
             />
             <button
@@ -303,8 +304,8 @@ export default function AddExpenseSheet({
               onClick={() => handleTypeChange("expense")}
               className={`relative z-10 flex-1 flex items-center justify-center gap-1 rounded-xl py-1.5 text-[11px] font-semibold transition-colors duration-300 md:gap-2 md:py-2 md:text-xs ${
                 type === "expense"
-                  ? "text-red-700"
-                  : "text-zinc-500 hover:text-zinc-900"
+                  ? "text-red-700 dark:text-red-400"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
               }`}
             >
               <TrendingDown className="h-3.5 w-3.5 text-red-500" />
@@ -315,11 +316,11 @@ export default function AddExpenseSheet({
               onClick={() => handleTypeChange("income")}
               className={`relative z-10 flex-1 flex items-center justify-center gap-1 rounded-xl py-1.5 text-[11px] font-semibold transition-colors duration-300 md:gap-2 md:py-2 md:text-xs ${
                 type === "income"
-                  ? "text-emerald-700"
-                  : "text-zinc-500 hover:text-zinc-900"
+                  ? "text-emerald-700 dark:text-emerald-400"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
               }`}
             >
-              <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+              <TrendingUp className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
               Income / Revenue
             </button>
           </div>
@@ -327,7 +328,7 @@ export default function AddExpenseSheet({
           {/* Quantity and unit price */}
           <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2">
             <div>
-              <label htmlFor="expense-quantity" className="mb-1 block text-[11px] font-medium text-zinc-700 md:text-xs">
+              <label htmlFor="expense-quantity" className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-300 md:text-xs">
                 Quantity
               </label>
               <input
@@ -337,14 +338,14 @@ export default function AddExpenseSheet({
                 step="1"
                 value={quantity}
                 onChange={(event) => setQuantity(event.target.value.replace(/\D/g, ""))}
-                className="w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-lg font-semibold tracking-tight text-zinc-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:text-2xl"
+                className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:text-2xl"
               />
             </div>
             <div>
           <div>
             <label
               htmlFor="expense-amount"
-              className="mb-1 block text-[11px] font-medium text-zinc-700 md:text-xs"
+              className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-300 md:text-xs"
             >
               Unit price
             </label>
@@ -357,7 +358,7 @@ export default function AddExpenseSheet({
                 value={displayInputValue}
                 onChange={handleAmountChange}
                 placeholder="0"
-                className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-2 pr-10 text-lg font-semibold tracking-tight text-zinc-900 outline-none transition placeholder:text-zinc-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:pr-12 md:text-2xl"
+                className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-2 pr-10 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 outline-none transition placeholder:text-zinc-300 dark:placeholder:text-zinc-600 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:pr-12 md:text-2xl"
               />
 
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-400 md:right-4 md:text-base">
@@ -365,7 +366,7 @@ export default function AddExpenseSheet({
               </span>
             </div>
             {currency !== "VND" && numericAmount > 0 && (
-              <p className="mt-1 text-[11px] text-zinc-400">
+              <p className="mt-1 text-[11px] text-zinc-400 dark:text-zinc-500">
                 ≈ {new Intl.NumberFormat("vi-VN").format(convertToBaseVND(numericAmount, currency, rates))} ₫ (auto-converted to base)
               </p>
             )}
@@ -373,7 +374,7 @@ export default function AddExpenseSheet({
           </div>
           </div>
           {numericQuantity > 0 && numericAmount > 0 && (
-            <p className="text-right text-xs font-semibold text-zinc-500">
+            <p className="text-right text-xs font-semibold text-zinc-500 dark:text-zinc-400">
               Total: {currency === "VND"
                 ? `${new Intl.NumberFormat("vi-VN").format(numericQuantity * numericAmount)} ${activeCurrencyConfig.symbol}`
                 : `${new Intl.NumberFormat("en-US", { style: "currency", currency }).format(numericQuantity * numericAmount)}`}
@@ -384,7 +385,7 @@ export default function AddExpenseSheet({
           <div>
             <label
               htmlFor="expense-category"
-              className="mb-1 block text-[11px] font-medium text-zinc-700 md:text-xs"
+              className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-300 md:text-xs"
             >
               Category
             </label>
@@ -397,10 +398,10 @@ export default function AddExpenseSheet({
                   setCategoryId(event.target.value)
                   setItem("")
                 }}
-                className="w-full appearance-none rounded-xl border border-zinc-200 bg-white px-3 py-2 pr-9 text-xs font-medium text-zinc-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:pr-10 md:text-sm"
+                className="w-full appearance-none rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 pr-9 text-xs font-medium text-zinc-800 dark:text-zinc-200 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:pr-10 md:text-sm"
               >
                 {activeCategories.map((category) => (
-                  <option key={category.id} value={category.id}>
+                  <option key={category.id} value={category.id} className="dark:bg-zinc-800 dark:text-zinc-200">
                     {category.icon} {category.name}
                   </option>
                 ))}
@@ -414,7 +415,7 @@ export default function AddExpenseSheet({
           <div>
             <label
               htmlFor="expense-item"
-              className="mb-1 block text-[11px] font-medium text-zinc-700 md:text-xs"
+              className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-300 md:text-xs"
             >
               {type === "income" ? "Source / Description" : "Item / What did you use?"}
             </label>
@@ -426,7 +427,7 @@ export default function AddExpenseSheet({
               onChange={(event) => setItem(event.target.value)}
               maxLength={120}
               placeholder={type === "income" ? "e.g. Monthly Salary, Freelance project" : "e.g. Vietnamese Coffee, Lunch"}
-              className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:text-sm"
+              className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-xs text-zinc-800 dark:text-zinc-200 outline-none transition placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:text-sm"
             />
 
             {/* Recent suggestions */}
@@ -444,8 +445,8 @@ export default function AddExpenseSheet({
                       onClick={() => setItem(recentItem)}
                       className={`rounded-lg border px-2 py-1 text-[11px] transition md:px-2.5 md:text-xs ${
                         item === recentItem
-                          ? "border-emerald-300 bg-emerald-50 font-medium text-emerald-700"
-                          : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100"
+                          ? "border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-500/10 font-medium text-emerald-700 dark:text-emerald-400"
+                          : "border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700"
                       }`}
                     >
                       {recentItem}
@@ -458,7 +459,7 @@ export default function AddExpenseSheet({
 
           {/* Date + Time */}
           <div>
-            <label className="mb-1 block text-[11px] font-medium text-zinc-700 md:text-xs">
+            <label className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-300 md:text-xs">
               When
             </label>
             <div className="grid grid-cols-2 gap-2 md:gap-2.5">
@@ -468,7 +469,7 @@ export default function AddExpenseSheet({
                   type="date"
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-2.5 py-2 text-xs font-medium text-zinc-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-3 md:py-2.5 md:pl-10 md:text-sm"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-2.5 py-2 text-xs font-medium text-zinc-800 dark:text-zinc-200 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-3 md:py-2.5 md:pl-10 md:text-sm"
                 />
               </div>
 
@@ -478,7 +479,7 @@ export default function AddExpenseSheet({
                   type="time"
                   value={time}
                   onChange={(event) => setTime(event.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-2.5 py-2 text-xs font-medium text-zinc-800 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-3 md:py-2.5 md:pl-10 md:text-sm"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-2.5 py-2 text-xs font-medium text-zinc-800 dark:text-zinc-200 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-3 md:py-2.5 md:pl-10 md:text-sm"
                 />
               </div>
             </div>
@@ -488,7 +489,7 @@ export default function AddExpenseSheet({
           <div>
             <label
               htmlFor="expense-note"
-              className="mb-1 block text-[11px] font-medium text-zinc-700 md:text-xs"
+              className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-300 md:text-xs"
             >
               Note <span className="normal-case font-normal text-zinc-400">(optional)</span>
             </label>
@@ -500,21 +501,21 @@ export default function AddExpenseSheet({
               onChange={(event) => setNote(event.target.value)}
               maxLength={500}
               placeholder="Any details you'd like to remember..."
-              className="w-full resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:text-sm"
+              className="w-full resize-none rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-xs text-zinc-800 dark:text-zinc-200 outline-none transition placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:text-sm"
             />
           </div>
 
           {/* Recurring Option */}
           {!isEditing && (
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-3">
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/70 dark:bg-zinc-800/50 p-3">
               <label className="flex items-center justify-between cursor-pointer">
                 <div className="flex items-center gap-2">
-                  <Repeat className="h-4 w-4 text-emerald-600" />
+                  <Repeat className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   <div>
-                    <span className="text-xs font-semibold text-zinc-800">
+                    <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                       Repeat this transaction
                     </span>
-                    <p className="text-[10px] text-zinc-400">
+                    <p className="text-[10px] text-zinc-400 dark:text-zinc-500">
                       Auto-generate regularly on schedule
                     </p>
                   </div>
@@ -523,17 +524,17 @@ export default function AddExpenseSheet({
                   type="checkbox"
                   checked={isRecurring}
                   onChange={(e) => setIsRecurring(e.target.checked)}
-                  className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer"
+                  className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer"
                 />
               </label>
 
               {isRecurring && (
-                <div className="mt-2.5 flex items-center justify-between pt-2.5 border-t border-zinc-200/80 text-xs">
-                  <span className="text-[11px] font-medium text-zinc-600">Frequency:</span>
+                <div className="mt-2.5 flex items-center justify-between pt-2.5 border-t border-zinc-200/80 dark:border-zinc-700 text-xs">
+                  <span className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Frequency:</span>
                   <select
                     value={frequency}
                     onChange={(e) => setFrequency(e.target.value as RecurringFrequency)}
-                    className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-800 outline-none"
+                    className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-2.5 py-1 text-xs font-medium text-zinc-800 dark:text-zinc-200 outline-none"
                   >
                     <option value="monthly">Monthly (day {Number(date.split("-")[2]) || 1})</option>
                     <option value="weekly">Weekly</option>
@@ -548,12 +549,12 @@ export default function AddExpenseSheet({
         </div>
 
         {/* Submit Button — always visible at bottom, never scrolls away */}
-        <div className="shrink-0 border-t border-zinc-200 bg-white px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 md:px-5 md:pb-5 md:pt-4">
+        <div className="shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 md:px-5 md:pb-5 md:pt-4">
           <button
             type="button"
             onClick={handleSave}
             disabled={!amount || numericAmount <= 0 || !item.trim()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400 md:py-3.5 md:text-sm"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-zinc-200 dark:disabled:bg-zinc-800 disabled:text-zinc-400 dark:disabled:text-zinc-600 md:py-3.5 md:text-sm"
           >
             <Check className="h-4 w-4" />
             {isEditing ? "Update Transaction" : type === "income" ? "Save Income" : "Save Expense"}
