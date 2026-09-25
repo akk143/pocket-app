@@ -35,27 +35,27 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f7f7f5] px-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#f7f7f5] dark:bg-zinc-950 px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50">
-            <Wallet className="h-7 w-7 text-emerald-600" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-500/10">
+            <Wallet className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="text-center">
             <h1 className="text-xl font-semibold tracking-tight">PocketTrack</h1>
-            <p className="mt-1 text-sm text-zinc-500">Sign in to your account</p>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">Sign in to your account</p>
           </div>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div>
               <label
                 htmlFor="login-email"
-                className="mb-1.5 block text-sm font-medium text-zinc-800"
+                className="mb-1.5 block text-sm font-medium text-zinc-800 dark:text-zinc-200"
               >
                 Email
               </label>
@@ -67,7 +67,7 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
+                className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:bg-white dark:bg-zinc-900"
               />
             </div>
 
@@ -75,7 +75,7 @@ export default function Login() {
             <div>
               <label
                 htmlFor="login-password"
-                className="mb-1.5 block text-sm font-medium text-zinc-800"
+                className="mb-1.5 block text-sm font-medium text-zinc-800 dark:text-zinc-200"
               >
                 Password
               </label>
@@ -88,12 +88,12 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 pr-11 text-sm outline-none transition focus:border-emerald-500 focus:bg-white"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 px-4 py-3 pr-11 text-sm outline-none transition focus:border-emerald-500 focus:bg-white dark:bg-zinc-900"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw((v) => !v)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600"
                 >
                   {showPw ? (
                     <EyeOff className="h-4 w-4" />
@@ -106,7 +106,7 @@ export default function Login() {
 
             {/* Error */}
             {error && (
-              <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+              <p className="rounded-xl bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-600">
                 {error}
               </p>
             )}
@@ -115,7 +115,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400"
+              className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400 dark:text-zinc-500"
             >
               {loading ? "Signing in…" : "Sign in"}
             </button>
@@ -123,11 +123,11 @@ export default function Login() {
         </div>
 
         {/* Register link */}
-        <p className="mt-5 text-center text-sm text-zinc-500">
+        <p className="mt-5 text-center text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">
           Don't have an account?{" "}
           <Link
             to="/register"
-            className="font-medium text-emerald-600 hover:text-emerald-700"
+            className="font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:text-emerald-400"
           >
             Create one
           </Link>
