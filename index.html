@@ -4,7 +4,21 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>pocket_app</title>
+    <title>PocketTrack</title>
+    <meta name="theme-color" content="#f7f7f5" id="theme-color-meta" />
+    <script>
+      (function() {
+        var preference = localStorage.getItem('pockettrack-theme') || 'system';
+        var isDark = preference === 'dark' || (preference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+          document.getElementById('theme-color-meta').content = '#171717';
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.getElementById('theme-color-meta').content = '#f7f7f5';
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
