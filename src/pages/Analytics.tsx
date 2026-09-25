@@ -13,6 +13,7 @@ import type { Expense } from "../types/expense"
 import { EXPENSE_CATEGORIES } from "../constants/categories"
 import { useCurrency } from "../contexts/CurrencyContext"
 import { convertAndFormatCurrency } from "../lib/currency"
+import { useTheme } from "../hooks/useTheme"
 
 interface AnalyticsProps {
   expenses: Expense[]
@@ -23,6 +24,8 @@ type Period = "week" | "month" | "year"
 export default function Analytics({ expenses }: AnalyticsProps) {
   const { currency, rates } = useCurrency()
   const formatCurrency = (amount: number) => convertAndFormatCurrency(amount, currency, rates)
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
 
   const [period, setPeriod] = useState<Period>("month")
   const [viewDate, setViewDate] = useState(new Date())
@@ -254,18 +257,25 @@ export default function Analytics({ expenses }: AnalyticsProps) {
     return categoryBreakdown.reduce((sum, c) => sum + c.amount, 0)
   }, [isUsingFallback, categoryBreakdown])
 
+  const chartTooltipStyle = isDark
+    ? { borderRadius: "12px", border: "1px solid #3f3f46", background: "#18181b", color: "#fafafa", fontSize: "12px" }
+    : { borderRadius: "12px", border: "1px solid #e4e4e7", background: "#fff", color: "#09090b", fontSize: "12px" }
+
+  const chartCursorStyle = isDark ? { fill: "#27272a" } : { fill: "#f4f4f5" }
+  const axisTickColor = isDark ? "#71717a" : "#a1a1aa"
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-4 sm:px-8 sm:py-6">
       {/* Title */}
       <div className="mb-6">
-        <h1 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl">
+        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-2xl">
           Analytics
         </h1>
       </div>
 
       {/* Week / Month / Year */}
       <div className="mb-4 flex items-center justify-center">
-        <div className="inline-flex w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-1 shadow-2xs">
+        <div className="inline-flex w-full max-w-md rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1 shadow-2xs">
           {(["week", "month", "year"] as Period[]).map((p) => (
             <button
               key={p}
@@ -273,7 +283,7 @@ export default function Analytics({ expenses }: AnalyticsProps) {
               className={`flex-1 rounded-xl py-2 text-xs font-semibold capitalize transition ${
                 period === p
                   ? "bg-emerald-600 text-white shadow-xs"
-                  : "text-zinc-500 hover:text-zinc-900"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
               }`}
             >
               {p}
@@ -283,17 +293,17 @@ export default function Analytics({ expenses }: AnalyticsProps) {
       </div>
 
       {/* Period Navigator */}
-      <div className="mb-6 flex items-center justify-center gap-4 text-sm font-semibold text-zinc-800">
+      <div className="mb-6 flex items-center justify-center gap-4 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
         <button
           onClick={prevPeriod}
-          className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+          className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
         <span className="min-w-[150px] text-center">{periodLabel}</span>
         <button
           onClick={nextPeriod}
-          className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+          className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -301,24 +311,24 @@ export default function Analytics({ expenses }: AnalyticsProps) {
 
       {/* Stats Cards: Total Spending & Average / day */}
       <div className="mb-4 grid grid-cols-2 gap-3 sm:mb-6 sm:gap-4">
-        <div className="rounded-2xl border border-zinc-200/90 bg-white p-3.5 shadow-xs sm:p-5">
+        <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3.5 shadow-xs sm:p-5">
           <p className="text-xs font-medium text-zinc-400">Total Spending</p>
-          <p className="mt-1 text-lg font-bold tracking-tight text-zinc-900 sm:mt-2 sm:text-2xl">
+          <p className="mt-1 text-lg font-bold tracking-tight text-zinc-900 dark:text-white sm:mt-2 sm:text-2xl">
             {formatCurrency(totalSpending)}
           </p>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200/90 bg-white p-3.5 shadow-xs sm:p-5">
+        <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3.5 shadow-xs sm:p-5">
           <p className="text-xs font-medium text-zinc-400">Average / day</p>
-          <p className="mt-1 text-lg font-bold tracking-tight text-zinc-900 sm:mt-2 sm:text-2xl">
+          <p className="mt-1 text-lg font-bold tracking-tight text-zinc-900 dark:text-white sm:mt-2 sm:text-2xl">
             {formatCurrency(avgPerDay)}
           </p>
         </div>
       </div>
 
       {/* Daily / Monthly Spending Bar Chart */}
-      <div className="mb-4 rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs sm:mb-6 sm:p-5">
-        <h2 className="text-sm font-semibold text-zinc-900">
+      <div className="mb-4 rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs sm:mb-6 sm:p-5">
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
           {period === "year" ? "Monthly Spending" : "Daily Spending"}
         </h2>
 
@@ -332,23 +342,19 @@ export default function Analytics({ expenses }: AnalyticsProps) {
                 dataKey="label"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fill: "#a1a1aa", fontSize: 10 }}
+                tick={{ fill: axisTickColor, fontSize: 10 }}
                 interval={period === "month" ? 4 : 0}
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tick={{ fill: "#a1a1aa", fontSize: 10 }}
+                tick={{ fill: axisTickColor, fontSize: 10 }}
                 tickFormatter={(v) => (v === 0 ? "0" : v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : `${v / 1000}k`)}
               />
               <Tooltip
                 formatter={(value: any) => [formatCurrency(value), "Spending"]}
-                contentStyle={{
-                  borderRadius: "12px",
-                  border: "1px solid #e4e4e7",
-                  fontSize: "12px",
-                }}
-                cursor={{ fill: "#f4f4f5" }}
+                contentStyle={chartTooltipStyle}
+                cursor={chartCursorStyle}
               />
               <Bar
                 dataKey="total"
@@ -362,12 +368,12 @@ export default function Analytics({ expenses }: AnalyticsProps) {
       </div>
 
       {/* Spending by Category List */}
-      <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs sm:p-5">
+      <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs sm:p-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-zinc-900">
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
             Spending by Category
           </h2>
-          <span className="text-xs font-semibold text-zinc-900">
+          <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
             {formatCurrency(categoryTotalAmount)}
           </span>
         </div>
@@ -385,11 +391,11 @@ export default function Analytics({ expenses }: AnalyticsProps) {
                   >
                     {Icon && <Icon className="h-4 w-4" style={{ color: cat.color }} />}
                   </div>
-                  <span className="truncate text-sm font-medium text-zinc-800">{cat.name}</span>
+                  <span className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-200">{cat.name}</span>
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-                  <span className="whitespace-nowrap text-xs font-semibold text-zinc-900 sm:text-sm">
+                  <span className="whitespace-nowrap text-xs font-semibold text-zinc-900 dark:text-zinc-100 sm:text-sm">
                     {formatCurrency(cat.amount)}
                   </span>
                   <span className="w-8 text-right text-xs font-medium text-zinc-400">
@@ -401,10 +407,10 @@ export default function Analytics({ expenses }: AnalyticsProps) {
           })}
         </div>
 
-        <div className="mt-5 border-t border-zinc-100 pt-3 text-right">
+        <div className="mt-5 border-t border-zinc-100 dark:border-zinc-800 pt-3 text-right">
           <Link
             to="/categories"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300"
           >
             View all &gt;
           </Link>

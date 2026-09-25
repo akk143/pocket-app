@@ -259,14 +259,28 @@ export default function History({
     }, 0)
   }, [filtered])
 
-  const allAvailableCategories = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES]
+  
+  const visibleCategories = useMemo(() => {
+    if (typeFilter === "expense") return EXPENSE_CATEGORIES;
+    if (typeFilter === "income") return INCOME_CATEGORIES;
+    return [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
+  }, [typeFilter]);
+
+  // Reset category if it doesn't match the new type filter
+  useEffect(() => {
+    if (selectedCategoryId !== "all") {
+      const isValid = visibleCategories.some(c => c.id === selectedCategoryId);
+      if (!isValid) setSelectedCategoryId("all");
+    }
+  }, [typeFilter, visibleCategories, selectedCategoryId]);
+
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-6 sm:px-8">
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
             History
           </h1>
           <p className="mt-0.5 text-xs text-zinc-400">
@@ -277,22 +291,22 @@ export default function History({
         <div className="flex w-full items-center justify-between gap-2 sm:w-auto">
           <Link
             to="/trash"
-            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-2xs transition hover:bg-zinc-50"
+            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-2xs transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
           >
             <Trash2 className="h-3.5 w-3.5 text-zinc-400" />
             Trash{trashCount > 0 ? ` · ${trashCount}` : ""}
           </Link>
-          <div className="flex min-w-0 flex-1 items-center justify-between gap-1 rounded-xl border border-zinc-200 bg-white px-2 py-1 text-sm font-semibold text-zinc-700 shadow-2xs sm:min-w-[180px] sm:flex-none">
+          <div className="flex min-w-0 flex-1 items-center justify-between gap-1 rounded-xl border border-zinc-200 bg-white px-2 py-1 text-sm font-semibold text-zinc-700 shadow-2xs sm:min-w-[180px] sm:flex-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
             <button
               onClick={prevMonth}
-              className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700"
+              className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <span className="min-w-0 flex-1 text-center sm:min-w-[130px]">{monthLabel}</span>
             <button
               onClick={nextMonth}
-              className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700"
+              className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -308,13 +322,13 @@ export default function History({
           value={query}
           onChange={(e) => handleQueryChange(e.target.value)}
           placeholder="Search expenses, items, or categories..."
-          className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-10 pr-4 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
+          className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-10 pr-4 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500"
         />
         {query && (
           <button
             type="button"
             onClick={() => handleQueryChange("")}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-zinc-400 hover:text-zinc-600"
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
           >
             Clear
           </button>
@@ -324,14 +338,14 @@ export default function History({
       {/* Type Filter & Category Filter */}
       <div className="mb-6 space-y-3">
         <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-xl border border-zinc-200 bg-white p-1 text-xs shadow-2xs">
+          <div className="inline-flex rounded-xl border border-zinc-200 bg-white p-1 text-xs shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
             <button
               type="button"
               onClick={() => setTypeFilter("all")}
               className={`rounded-lg px-3 py-1 font-semibold transition ${
                 typeFilter === "all"
-                  ? "bg-zinc-900 text-white shadow-xs"
-                  : "text-zinc-600 hover:text-zinc-900"
+                  ? "bg-zinc-900 text-white shadow-xs dark:bg-zinc-100 dark:text-zinc-900"
+                  : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
               }`}
             >
               All
@@ -341,8 +355,8 @@ export default function History({
               onClick={() => setTypeFilter("expense")}
               className={`flex items-center gap-1 rounded-lg px-3 py-1 font-semibold transition ${
                 typeFilter === "expense"
-                  ? "bg-red-50 text-red-600 font-bold shadow-xs border border-red-200/50"
-                  : "text-zinc-600 hover:text-zinc-900"
+                  ? "bg-red-50 text-red-600 font-bold shadow-xs border border-red-200/50 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50"
+                  : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
               }`}
             >
               <TrendingDown className="h-3 w-3" />
@@ -353,8 +367,8 @@ export default function History({
               onClick={() => setTypeFilter("income")}
               className={`flex items-center gap-1 rounded-lg px-3 py-1 font-semibold transition ${
                 typeFilter === "income"
-                  ? "bg-emerald-50 text-emerald-700 font-bold shadow-xs border border-emerald-200/50"
-                  : "text-zinc-600 hover:text-zinc-900"
+                  ? "bg-emerald-50 text-emerald-700 font-bold shadow-xs border border-emerald-200/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50"
+                  : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
               }`}
             >
               <TrendingUp className="h-3 w-3" />
@@ -371,12 +385,12 @@ export default function History({
             className={`shrink-0 rounded-full px-3 py-1 font-medium transition ${
               selectedCategoryId === "all"
                 ? "bg-emerald-600 text-white font-semibold shadow-xs"
-                : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
+                : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
             }`}
           >
             All Categories
           </button>
-          {allAvailableCategories.map((c) => {
+          {visibleCategories.map((c) => {
             const isSelected = selectedCategoryId === c.id
             return (
               <button
@@ -386,7 +400,7 @@ export default function History({
                 className={`shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1 font-medium transition ${
                   isSelected
                     ? "bg-emerald-600 text-white font-semibold shadow-xs"
-                    : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
+                    : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 }`}
               >
                 <span>{c.icon}</span>
@@ -400,23 +414,23 @@ export default function History({
       {/* Date Groups List */}
       <div className="space-y-6">
         {grouped.length === 0 ? (
-          <div className="rounded-2xl border border-zinc-200 bg-white py-16 text-center text-sm text-zinc-400">
+          <div className="rounded-2xl border border-zinc-200 bg-white py-16 text-center text-sm text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-500">
             No transactions found matching your filters.
           </div>
         ) : (
           grouped.map((group) => (
             <div key={group.dateStr}>
               <div className="mb-2 flex items-center justify-between px-1">
-                <span className="text-xs font-semibold text-zinc-700">
+                <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                   {group.dateLabel}
                 </span>
-                <span className="text-xs font-semibold text-zinc-900">
+                <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
                   {formatCurrency(group.total)}
                 </span>
               </div>
 
               {/* Expense List Card */}
-              <div className="divide-y divide-zinc-100 rounded-2xl border border-zinc-200/90 bg-white shadow-xs">
+              <div className="divide-y divide-zinc-100 rounded-2xl border border-zinc-200/90 bg-white shadow-xs dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
                 {group.items.map((expense) => {
                   const isIncome = expense.type === "income"
                   const activeCats = isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
@@ -428,7 +442,7 @@ export default function History({
                   return (
                     <div
                       key={expense.id}
-                      className="group relative flex items-center justify-between gap-2 px-3 py-3.5 transition hover:bg-zinc-50/50 sm:px-4"
+                      className="group relative flex items-center justify-between gap-2 px-3 py-3.5 transition hover:bg-zinc-50/50 sm:px-4 dark:hover:bg-zinc-800/30"
                     >
                       <div className="flex min-w-0 flex-1 items-center gap-3">
                         <div
@@ -439,16 +453,16 @@ export default function History({
                         </div>
                         <div className="min-w-0">
                           <div className="flex min-w-0 items-center gap-2">
-                            <p className="truncate text-sm font-medium text-zinc-900">
+                            <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
                               {expense.item}
                             </p>
                             {isIncome && (
-                              <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60">
+                              <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50">
                                 Income
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-zinc-500">
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">
                             {expense.categoryName} · {formatTimeStr(expense.time)}
                             {expense.quantity && expense.quantity > 1 ? ` · Qty ${expense.quantity}` : ""}
                           </p>
@@ -458,7 +472,7 @@ export default function History({
                       <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
                         <span
                           className={`whitespace-nowrap text-sm font-semibold ${
-                            isIncome ? "text-emerald-600" : "text-zinc-900"
+                            isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-900 dark:text-zinc-100"
                           }`}
                         >
                           {isIncome ? `+ ${formatCurrency(expense.amount)}` : formatCurrency(expense.amount)}
@@ -469,13 +483,13 @@ export default function History({
                           <button
                             type="button"
                             onClick={() => setOpenMenuId(isMenuOpen ? null : expense.id)}
-                            className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+                            className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
                           >
                             <MoreVertical className="h-4 w-4" />
                           </button>
 
                           {isMenuOpen && (
-                            <div className="absolute right-0 top-full mt-1 w-32 rounded-xl border border-zinc-200 bg-white py-1 shadow-lg z-30">
+                            <div className="absolute right-0 top-full mt-1 w-32 rounded-xl border border-zinc-200 bg-white py-1 shadow-lg z-30 dark:border-zinc-800 dark:bg-zinc-900">
                               {onEditExpense && (
                                 <button
                                   type="button"
@@ -483,7 +497,7 @@ export default function History({
                                     setOpenMenuId(null)
                                     onEditExpense(expense)
                                   }}
-                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
                                 >
                                   <Pencil className="h-3 w-3 text-zinc-400" />
                                   Edit
@@ -496,7 +510,7 @@ export default function History({
                                     setOpenMenuId(null)
                                     setExpensePendingDeletion(expense)
                                   }}
-                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
                                 >
                                   <Trash2 className="h-3 w-3" />
                                   Delete
