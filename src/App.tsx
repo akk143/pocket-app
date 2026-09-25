@@ -8,16 +8,15 @@ import {
   Home,
   LayoutGrid,
   LogOut,
-  Moon,
   Plus,
   ReceiptText,
   Repeat,
   Settings as SettingsIcon,
-  Sun,
   Wallet,
 } from "lucide-react"
 
 import AddExpenseSheet from "./components/AddExpenseSheet"
+import { ThemeToggle } from "./components/ThemeToggle"
 import HomePage from "./pages/Home"
 import HistoryPage from "./pages/History"
 import AnalyticsPage from "./pages/Analytics"
@@ -62,9 +61,6 @@ function App() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("drinks")
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [headerSearch, setHeaderSearch] = useState("")
-  const [darkMode, setDarkMode] = useState<boolean>(() => {
-    return localStorage.getItem("pocket_dark") === "true"
-  })
   const [toast, setToast] = useState<{
     message: string
     type?: "success" | "info"
@@ -118,17 +114,6 @@ function App() {
     )
   }, [user])
 
-  // Dark mode toggle
-  const toggleDarkMode = () => {
-    const next = !darkMode
-    setDarkMode(next)
-    localStorage.setItem("pocket_dark", String(next))
-    if (next) {
-      document.documentElement.classList.add("dark")
-    } else {
-      document.documentElement.classList.remove("dark")
-    }
-  }
 
   // Save new expense
   async function handleSaveExpense(expense: Expense) {
@@ -345,10 +330,10 @@ function App() {
   // Auth loading
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f7f7f5]">
+      <div className="flex min-h-screen items-center justify-center bg-[#f7f7f5] dark:bg-zinc-950">
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50">
-            <Wallet className="h-6 w-6 text-emerald-600" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-500/10">
+            <Wallet className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
           </div>
           <p className="text-sm font-medium text-zinc-400">Loading PocketTrack…</p>
         </div>
@@ -378,17 +363,17 @@ function App() {
     .slice(0, 2) || "JD"
 
   return (
-    <div className={`min-h-screen bg-[#f7f7f5] text-zinc-900 ${darkMode ? "dark" : ""}`}>
+    <div className="min-h-screen bg-[#f7f7f5] text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
       <div className="mx-auto flex min-h-screen max-w-[1600px]">
 
-        <aside className="hidden w-64 shrink-0 flex-col justify-between border-r border-zinc-200 bg-white p-5 lg:flex lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
+        <aside className="hidden w-64 shrink-0 flex-col justify-between border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 p-5 lg:flex lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
           <div>
             {/* Logo */}
             <div className="mb-8 flex items-center gap-2.5 px-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50">
-                <Wallet className="h-5 w-5 text-emerald-600" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-500/10">
+                <Wallet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <span className="text-lg font-bold tracking-tight text-zinc-900">
+              <span className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">
                 PocketTrack
               </span>
             </div>
@@ -401,8 +386,8 @@ function App() {
                 className={({ isActive }) =>
                   `flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition ${
                     isActive
-                      ? "bg-emerald-50 text-emerald-700 font-semibold"
-                      : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+                      ? "bg-emerald-50 text-emerald-700 font-semibold dark:bg-emerald-500/10 dark:text-emerald-400"
+                      : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-100"
                   }`
                 }
               >
@@ -415,8 +400,8 @@ function App() {
                 className={({ isActive }) =>
                   `flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition ${
                     isActive
-                      ? "bg-emerald-50 text-emerald-700 font-semibold"
-                      : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+                      ? "bg-emerald-50 text-emerald-700 font-semibold dark:bg-emerald-500/10 dark:text-emerald-400"
+                      : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-100"
                   }`
                 }
               >
@@ -429,8 +414,8 @@ function App() {
                 className={({ isActive }) =>
                   `flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition ${
                     isActive
-                      ? "bg-emerald-50 text-emerald-700 font-semibold"
-                      : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+                      ? "bg-emerald-50 text-emerald-700 font-semibold dark:bg-emerald-500/10 dark:text-emerald-400"
+                      : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-100"
                   }`
                 }
               >
@@ -443,8 +428,8 @@ function App() {
                 className={({ isActive }) =>
                   `flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition ${
                     isActive
-                      ? "bg-emerald-50 text-emerald-700 font-semibold"
-                      : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+                      ? "bg-emerald-50 text-emerald-700 font-semibold dark:bg-emerald-500/10 dark:text-emerald-400"
+                      : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-100"
                   }`
                 }
               >
@@ -457,8 +442,8 @@ function App() {
                 className={({ isActive }) =>
                   `flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition ${
                     isActive
-                      ? "bg-emerald-50 text-emerald-700 font-semibold"
-                      : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+                      ? "bg-emerald-50 text-emerald-700 font-semibold dark:bg-emerald-500/10 dark:text-emerald-400"
+                      : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-100"
                   }`
                 }
               >
@@ -471,27 +456,26 @@ function App() {
                 className={({ isActive }) =>
                   `flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition ${
                     isActive
-                      ? "bg-emerald-50 text-emerald-700 font-semibold"
-                      : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+                      ? "bg-emerald-50 text-emerald-700 font-semibold dark:bg-emerald-500/10 dark:text-emerald-400"
+                      : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-100"
                   }`
                 }
               >
                 <SettingsIcon className="h-4 w-4" />
                 Settings
               </NavLink>
-
             </nav>
-          </div>
+</div>
 
           <div className="pt-6 space-y-3">
-            <div className="rounded-2xl border border-emerald-100 bg-[#f0fdf4] p-4">
-              <div className="mb-2.5 flex h-8 w-8 items-center justify-center rounded-xl bg-white shadow-2xs">
-                <Wallet className="h-4 w-4 text-emerald-600" />
+            <div className="rounded-2xl border border-emerald-100 bg-[#f0fdf4] dark:border-emerald-900/50 dark:bg-emerald-500/5 p-4">
+              <div className="mb-2.5 flex h-8 w-8 items-center justify-center rounded-xl bg-white dark:bg-emerald-950 shadow-2xs">
+                <Wallet className="h-4 w-4 text-emerald-600 dark:text-emerald-500" />
               </div>
-              <p className="text-xs font-semibold text-zinc-900 leading-snug">
+              <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 leading-snug">
                 Better tracking, brighter tomorrow.
               </p>
-              <p className="mt-0.5 text-[11px] text-zinc-500">
+              <p className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
                 Small steps. Big goals.
               </p>
             </div>
@@ -510,11 +494,11 @@ function App() {
         {/* ── Main Content Area ── */}
         <main className="flex min-w-0 flex-1 flex-col pb-24 lg:pb-0">
           {/* Header */}
-          <header className="sticky top-0 z-20 flex items-center justify-between border-b border-zinc-200 bg-white/95 px-5 py-3.5 backdrop-blur-md sm:px-8">
+          <header className="sticky top-0 z-20 flex items-center justify-between border-b border-zinc-200 bg-white/95 dark:border-zinc-800 dark:bg-zinc-950/95 px-5 py-3.5 backdrop-blur-md sm:px-8">
             {/* Mobile Logo */}
-            <div className="flex items-center gap-2 font-bold tracking-tight text-zinc-900 lg:hidden">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50">
-                <Wallet className="h-4 w-4 text-emerald-600" />
+            <div className="flex items-center gap-2 font-bold tracking-tight text-zinc-900 dark:text-white lg:hidden">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-500/10">
+                <Wallet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </div>
               PocketTrack
             </div>
@@ -526,7 +510,7 @@ function App() {
                 value={headerSearch}
                 onChange={(e) => setHeaderSearch(e.target.value)}
                 placeholder="Search expenses, items, or categories..."
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50/80 px-4 py-2 text-sm outline-none transition placeholder:text-zinc-400 focus:border-emerald-500 focus:bg-white"
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50/80 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 px-4 py-2 text-sm outline-none transition placeholder:text-zinc-400 dark:focus:border-emerald-500 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-900"
               />
             </form>
 
@@ -536,11 +520,11 @@ function App() {
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
-                  className="rounded-lg border border-zinc-200 bg-zinc-50/90 py-1 pl-2 pr-5 text-[11px] font-semibold text-zinc-700 outline-none transition hover:bg-zinc-100 focus:border-emerald-500 focus:bg-white cursor-pointer shadow-2xs appearance-none sm:rounded-xl sm:py-1.5 sm:pl-2.5 sm:pr-6 sm:text-xs"
+                  className="rounded-lg border border-zinc-200 bg-zinc-50/90 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-300 py-1 pl-2 pr-5 text-[11px] font-semibold text-zinc-700 outline-none transition hover:bg-zinc-100 dark:hover:bg-zinc-800 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-900 cursor-pointer shadow-2xs appearance-none sm:rounded-xl sm:py-1.5 sm:pl-2.5 sm:pr-6 sm:text-xs"
                   title="Switch Currency"
                 >
                   {SUPPORTED_CURRENCIES.map((c) => (
-                    <option key={c.code} value={c.code}>
+                    <option key={c.code} value={c.code} className="dark:bg-zinc-900 dark:text-white">
                       {c.symbol} {c.code}
                     </option>
                   ))}
@@ -551,25 +535,16 @@ function App() {
               {/* Notifications — hidden on mobile to save space */}
               <button
                 type="button"
-                className="relative hidden rounded-xl p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 sm:flex"
+                className="relative hidden rounded-xl p-2 text-zinc-400 dark:text-zinc-500 transition hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300 sm:flex"
               >
                 <Bell className="h-4 w-4" />
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white" />
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white dark:ring-zinc-900" />
               </button>
 
-              {/* Dark mode — hidden on mobile to save space */}
-              <button
-                type="button"
-                onClick={toggleDarkMode}
-                className="hidden rounded-xl p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 sm:flex"
-                title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              >
-                {darkMode ? (
-                  <Sun className="h-4 w-4 text-amber-500" />
-                ) : (
-                  <Moon className="h-4 w-4" />
-                )}
-              </button>
+              {/* Theme toggle */}
+              <div className="flex">
+                <ThemeToggle compact />
+              </div>
 
               {/* User Profile — always visible */}
               <div className="relative">
@@ -578,11 +553,11 @@ function App() {
                   onClick={() => setUserMenuOpen((prev) => !prev)}
                   className="flex items-center gap-2 rounded-full p-0.5 transition hover:ring-2 hover:ring-emerald-500/20"
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-xs font-semibold text-white">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 dark:bg-zinc-800 text-xs font-semibold text-white">
                     {initials}
                   </div>
                   <div className="hidden items-center gap-1.5 sm:flex">
-                    <span className="text-xs font-semibold text-zinc-800">
+                    <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                       {displayName}
                     </span>
                     <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
@@ -591,20 +566,31 @@ function App() {
 
                 {/* Dropdown Menu */}
                 {userMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl border border-zinc-200 bg-white py-1.5 shadow-xl z-50">
-                    <div className="border-b border-zinc-100 px-4 py-2">
-                      <p className="text-xs font-semibold text-zinc-900 truncate">
+                  <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 py-1.5 shadow-xl z-50">
+                    <div className="border-b border-zinc-100 dark:border-zinc-800 px-4 py-2">
+                      <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
                         {displayName}
                       </p>
-                      <p className="text-[11px] text-zinc-400 truncate">
+                      <p className="text-[11px] text-zinc-400 dark:text-zinc-500 truncate">
                         {user.email}
                       </p>
                     </div>
 
                     <NavLink
+                      to="/categories"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex w-full items-center gap-2 px-4 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 lg:hidden"
+                    >
+                      <LayoutGrid className="h-3.5 w-3.5 text-zinc-400" />
+                      Categories
+                    </NavLink>
+                    
+                    
+
+                    <NavLink
                       to="/settings"
                       onClick={() => setUserMenuOpen(false)}
-                      className="flex w-full items-center gap-2 px-4 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+                      className="flex w-full items-center gap-2 px-4 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                     >
                       <SettingsIcon className="h-3.5 w-3.5 text-zinc-400" />
                       Settings
@@ -616,7 +602,7 @@ function App() {
                         setUserMenuOpen(false)
                         handleSignOut()
                       }}
-                      className="flex w-full items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+                      className="flex w-full items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
                     >
                       <LogOut className="h-3.5 w-3.5" />
                       Sign out
@@ -707,14 +693,14 @@ function App() {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-zinc-200 bg-white/95 backdrop-blur-md lg:hidden">
-        <div className="grid grid-cols-6 items-center">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md lg:hidden">
+        <div className="grid grid-cols-5 items-center">
           <NavLink
             to="/"
             end
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition ${
-                isActive ? "text-emerald-600 font-semibold" : "text-zinc-400"
+                isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
               }`
             }
           >
@@ -726,7 +712,7 @@ function App() {
             to="/history"
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition ${
-                isActive ? "text-emerald-600 font-semibold" : "text-zinc-400"
+                isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
               }`
             }
           >
@@ -734,11 +720,16 @@ function App() {
             History
           </NavLink>
 
+          
+
+
+
+          
           <NavLink
             to="/recurring"
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition ${
-                isActive ? "text-emerald-600 font-semibold" : "text-zinc-400"
+                isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
               }`
             }
           >
@@ -750,7 +741,7 @@ function App() {
             to="/analytics"
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition ${
-                isActive ? "text-emerald-600 font-semibold" : "text-zinc-400"
+                isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
               }`
             }
           >
@@ -762,7 +753,7 @@ function App() {
             to="/settings"
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition ${
-                isActive ? "text-emerald-600 font-semibold" : "text-zinc-400"
+                isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
               }`
             }
           >
@@ -778,10 +769,12 @@ function App() {
         type="button"
         aria-label="Add expense"
         onClick={() => openAddExpense()}
-        className="fixed bottom-18 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 transition hover:bg-emerald-700 active:scale-95 lg:hidden"
+        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-600/30 transition hover:bg-emerald-700 active:scale-95 lg:hidden"
       >
-        <Plus className="h-5 w-5" />
+        <Plus className="h-6 w-6" />
       </button>
+
+      
 
       {/* Add / Edit Transaction */}
       <AddExpenseSheet
