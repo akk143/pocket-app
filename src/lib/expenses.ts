@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore"
 import { db } from "./firebase"
 import type { Expense } from "../types/expense"
+import { TRANSACTION_CATEGORIES } from "../constants/categories"
 
 // Firestore path: users/{userId}/expenses/{expenseId}
 
@@ -29,6 +30,13 @@ export function subscribeToExpenses(
     (snapshot) => {
       const expenses: Expense[] = snapshot.docs.map((d) => {
         const data = d.data() as Omit<Expense, "id">
+
+        // Audit Check
+        const catDef = TRANSACTION_CATEGORIES.find(c => c.id === data.categoryId);
+        if (catDef && catDef.type !== (data.type || "expense")) {
+          console.warn(`[AUDIT] Invalid Transaction Found: ID ${d.id} is type '${data.type || "expense"}' but uses category '${data.categoryId}' which is for '${catDef.type}'. Manual review required.`);
+        }
+
         return {
           ...data,
           id: d.id,
@@ -70,10 +78,19 @@ export function subscribeToDeletedExpenses(
   )
 }
 
+function validateTransactionCategory(type: string, categoryId: string) {
+  if (!categoryId) return;
+  const cat = TRANSACTION_CATEGORIES.find(c => c.id === categoryId);
+  if (cat && cat.type !== type) {
+    throw new Error(`Category ${categoryId} is not allowed for transaction type ${type}`);
+  }
+}
+
 export async function addExpense(
   userId: string,
   expense: Omit<Expense, "id">,
 ): Promise<string> {
+  validateTransactionCategory(expense.type || "expense", expense.categoryId);
   const ref = await addDoc(
     collection(db, "users", userId, "expenses"),
     {
@@ -89,6 +106,13 @@ export async function updateExpense(
   expenseId: string,
   data: Partial<Omit<Expense, "id">>,
 ): Promise<void> {
+  if (data.type || data.categoryId) {
+    // If either type or category is being updated, we should ideally validate the final state.
+    // Since we only have partial data here, we validate the data being sent if both are present.
+    if (data.type && data.categoryId) {
+      validateTransactionCategory(data.type, data.categoryId);
+    }
+  }
   await updateDoc(doc(db, "users", userId, "expenses", expenseId), data)
 }
 

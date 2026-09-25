@@ -1,3 +1,4 @@
+import { TRANSACTION_CATEGORIES } from "../constants/categories"
 import {
   addDoc,
   collection,
@@ -53,10 +54,19 @@ export function subscribeToRecurring(
   )
 }
 
+function validateTransactionCategory(type: string, categoryId: string) {
+  if (!categoryId) return;
+  const cat = TRANSACTION_CATEGORIES.find(c => c.id === categoryId);
+  if (cat && cat.type !== type) {
+    throw new Error(`Category ${categoryId} is not allowed for transaction type ${type}`);
+  }
+}
+
 export async function addRecurring(
   userId: string,
   item: Omit<RecurringTransaction, "id">,
 ): Promise<string> {
+  validateTransactionCategory(item.type || "expense", item.categoryId);
   const ref = await addDoc(
     collection(db, "users", userId, "recurring"),
     {

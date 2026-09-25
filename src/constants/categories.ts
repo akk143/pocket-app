@@ -19,6 +19,7 @@ import {
 
 export interface CategoryDef {
   id: string
+  type: "expense" | "income"
   name: string
   icon: string
   component: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
@@ -28,8 +29,9 @@ export interface CategoryDef {
   softBg: string
 }
 
-export const EXPENSE_CATEGORIES = [
+export const EXPENSE_CATEGORIES: readonly CategoryDef[] = [
   {
+    type: "expense",
     id: "food",
     name: "Food",
     icon: "🍜",
@@ -40,6 +42,7 @@ export const EXPENSE_CATEGORIES = [
     softBg: "bg-orange-50 text-orange-600",
   },
   {
+    type: "expense",
     id: "drinks",
     name: "Drinks",
     icon: "☕",
@@ -50,6 +53,7 @@ export const EXPENSE_CATEGORIES = [
     softBg: "bg-emerald-50 text-emerald-600",
   },
   {
+    type: "expense",
     id: "transportation",
     name: "Transportation",
     icon: "🚕",
@@ -60,6 +64,7 @@ export const EXPENSE_CATEGORIES = [
     softBg: "bg-blue-50 text-blue-600",
   },
   {
+    type: "expense",
     id: "shopping",
     name: "Shopping",
     icon: "🛍️",
@@ -70,6 +75,7 @@ export const EXPENSE_CATEGORIES = [
     softBg: "bg-pink-50 text-pink-600",
   },
   {
+    type: "expense",
     id: "rent",
     name: "Housing",
     icon: "🏠",
@@ -80,6 +86,7 @@ export const EXPENSE_CATEGORIES = [
     softBg: "bg-purple-50 text-purple-600",
   },
   {
+    type: "expense",
     id: "bills",
     name: "Bills & Services",
     icon: "💡",
@@ -90,6 +97,7 @@ export const EXPENSE_CATEGORIES = [
     softBg: "bg-amber-50 text-amber-600",
   },
   {
+    type: "expense",
     id: "entertainment",
     name: "Entertainment",
     icon: "🎮",
@@ -100,6 +108,7 @@ export const EXPENSE_CATEGORIES = [
     softBg: "bg-indigo-50 text-indigo-600",
   },
   {
+    type: "expense",
     id: "education",
     name: "Education",
     icon: "📚",
@@ -110,6 +119,7 @@ export const EXPENSE_CATEGORIES = [
     softBg: "bg-cyan-50 text-cyan-600",
   },
   {
+    type: "expense",
     id: "health",
     name: "Health",
     icon: "💊",
@@ -120,6 +130,7 @@ export const EXPENSE_CATEGORIES = [
     softBg: "bg-red-50 text-red-600",
   },
   {
+    type: "expense",
     id: "technology",
     name: "Technology",
     icon: "💻",
@@ -130,6 +141,7 @@ export const EXPENSE_CATEGORIES = [
     softBg: "bg-slate-50 text-slate-600",
   },
   {
+    type: "expense",
     id: "other",
     name: "Other",
     icon: "📦",
@@ -141,8 +153,9 @@ export const EXPENSE_CATEGORIES = [
   },
 ] as const
 
-export const INCOME_CATEGORIES = [
+export const INCOME_CATEGORIES: readonly CategoryDef[] = [
   {
+    type: "income",
     id: "salary",
     name: "Salary",
     icon: "💼",
@@ -153,6 +166,7 @@ export const INCOME_CATEGORIES = [
     softBg: "bg-emerald-50 text-emerald-600",
   },
   {
+    type: "income",
     id: "freelance",
     name: "Freelance",
     icon: "💻",
@@ -163,6 +177,7 @@ export const INCOME_CATEGORIES = [
     softBg: "bg-blue-50 text-blue-600",
   },
   {
+    type: "income",
     id: "investments",
     name: "Investments",
     icon: "📈",
@@ -173,6 +188,7 @@ export const INCOME_CATEGORIES = [
     softBg: "bg-purple-50 text-purple-600",
   },
   {
+    type: "income",
     id: "gift",
     name: "Gift",
     icon: "🎁",
@@ -183,6 +199,7 @@ export const INCOME_CATEGORIES = [
     softBg: "bg-pink-50 text-pink-600",
   },
   {
+    type: "income",
     id: "sales",
     name: "Sales",
     icon: "🏷️",
@@ -193,6 +210,7 @@ export const INCOME_CATEGORIES = [
     softBg: "bg-amber-50 text-amber-600",
   },
   {
+    type: "income",
     id: "other_income",
     name: "Other Income",
     icon: "💵",
@@ -203,3 +221,5 @@ export const INCOME_CATEGORIES = [
     softBg: "bg-teal-50 text-teal-600",
   },
 ] as const
+
+export const TRANSACTION_CATEGORIES = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
