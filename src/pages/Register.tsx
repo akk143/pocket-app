@@ -57,8 +57,8 @@ export default function Register() {
             <Wallet className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="text-center">
-            <h1 className="text-xl font-semibold tracking-tight">PocketTrack</h1>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">Create your account</p>
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-white">PocketTrack</h1>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Create your account</p>
           </div>
         </div>
 
@@ -81,7 +81,7 @@ export default function Register() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
                 required
-                className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:bg-white dark:bg-zinc-900"
+                className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none transition focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800"
               />
             </div>
 
@@ -101,7 +101,7 @@ export default function Register() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:bg-white dark:bg-zinc-900"
+                className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none transition focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800"
               />
             </div>
 
@@ -122,12 +122,12 @@ export default function Register() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Min. 6 characters"
                   required
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 px-4 py-3 pr-11 text-sm outline-none transition focus:border-emerald-500 focus:bg-white dark:bg-zinc-900"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-4 py-3 pr-11 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none transition focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw((v) => !v)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
                 >
                   {showPw ? (
                     <EyeOff className="h-4 w-4" />
@@ -155,12 +155,12 @@ export default function Register() {
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder="Re-enter your password"
                   required
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 px-4 py-3 pr-11 text-sm outline-none transition focus:border-emerald-500 focus:bg-white dark:bg-zinc-900"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-4 py-3 pr-11 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none transition focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirm((v) => !v)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
                 >
                   {showConfirm ? (
                     <EyeOff className="h-4 w-4" />
@@ -173,7 +173,7 @@ export default function Register() {
 
             {/* Error */}
             {error && (
-              <p className="rounded-xl bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-600">
+              <p className="rounded-xl bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-600 dark:text-red-400">
                 {error}
               </p>
             )}
@@ -182,7 +182,7 @@ export default function Register() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400 dark:text-zinc-500"
+              className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-zinc-200 dark:disabled:bg-zinc-800 disabled:text-zinc-400 dark:disabled:text-zinc-600"
             >
               {loading ? "Creating account…" : "Create account"}
             </button>
@@ -190,11 +190,11 @@ export default function Register() {
         </div>
 
         {/* Login link */}
-        <p className="mt-5 text-center text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">
+        <p className="mt-5 text-center text-sm text-zinc-500 dark:text-zinc-400">
           Already have an account?{" "}
           <Link
             to="/login"
-            className="font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:text-emerald-400"
+            className="font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300"
           >
             Sign in
           </Link>
