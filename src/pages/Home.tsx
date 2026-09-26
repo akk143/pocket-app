@@ -493,7 +493,7 @@ const thisYearTotal = isUsingFallback
 
             <div className="mt-4">
               <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-widest">Today's Spending</p>
-              <p className="mt-1 text-3xl font-bold tracking-tight text-white">
+              <p className="mt-1.5 text-4xl font-extrabold tracking-tight text-white">
                 {formatCurrency(todayTotal)}
               </p>
               {todayVsYesterdayDiff !== null ? (
@@ -513,14 +513,14 @@ const thisYearTotal = isUsingFallback
 
           {/* Two compact tiles: This Month + This Year */}
           <div className="mt-2.5 grid grid-cols-2 gap-2.5">
-            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 px-4 py-3.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="rounded-2xl border border-zinc-200/90 bg-white px-5 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex items-center gap-1.5">
                 <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400 dark:bg-purple-900/20 dark:text-purple-400">
                   <Calendar className="h-3.5 w-3.5" />
                 </div>
                 <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-400">This Month</span>
               </div>
-              <p className="mt-2 text-lg font-bold tracking-tight text-zinc-900 dark:text-white dark:text-white">{formatCurrency(thisMonthTotal)}</p>
+              <p className="mt-2 text-xl font-bold tracking-tight text-zinc-900 dark:text-white">{formatCurrency(thisMonthTotal)}</p>
               {monthVsLastMonthDiff !== null ? (
                 <div className={`mt-1 flex items-center gap-0.5 text-[11px] font-medium ${monthVsLastMonthDiff <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600"}`}>
                   {monthVsLastMonthDiff <= 0 ? <ArrowDownRight className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
@@ -531,7 +531,7 @@ const thisYearTotal = isUsingFallback
               )}
             </div>
 
-            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 px-4 py-3.5 shadow-xs">
+            <div className="rounded-2xl border border-zinc-200/90 bg-white px-5 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex items-center gap-1.5">
                 <div className={`flex h-6 w-6 items-center justify-center rounded-lg ${
                   thisMonthNet >= 0
@@ -542,7 +542,7 @@ const thisYearTotal = isUsingFallback
                 </div>
                 <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Net Flow</span>
               </div>
-              <p className={`mt-2 text-lg font-bold tracking-tight ${
+              <p className={`mt-2 text-xl font-bold tracking-tight ${
                 thisMonthNet >= 0 ? "text-zinc-900 dark:text-white" : "text-red-600 dark:text-red-400"
               }`}>
                 {thisMonthNet >= 0 ? "+" : ""}{formatCurrency(thisMonthNet)}
@@ -578,16 +578,16 @@ const thisYearTotal = isUsingFallback
           </div>
 
           {/* ── Stat Cards (desktop only) ── */}
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {/* Today's Spending */}
-            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-5 shadow-xs">
+            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-6 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
                   <CalendarDays className="h-5 w-5" />
                 </div>
                 <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Today's Spending</span>
               </div>
-              <p className="mt-4 text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+              <p className="mt-5 text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
                 {formatCurrency(todayTotal)}
               </p>
               {todayVsYesterdayDiff !== null ? (
@@ -601,14 +601,14 @@ const thisYearTotal = isUsingFallback
             </div>
 
             {/* This Month Spending */}
-            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-5 shadow-xs">
+            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-6 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400">
                   <Calendar className="h-5 w-5" />
                 </div>
                 <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">This Month's Spending</span>
               </div>
-              <p className="mt-4 text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+              <p className="mt-5 text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
                 {formatCurrency(thisMonthTotal)}
               </p>
               <div className="mt-2 flex items-center justify-between text-xs font-medium">
@@ -625,14 +625,14 @@ const thisYearTotal = isUsingFallback
             </div>
 
             {/* This Month Income */}
-            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-5 shadow-xs">
+            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-6 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
                   <TrendingUp className="h-5 w-5" />
                 </div>
                 <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">This Month's Income</span>
               </div>
-              <p className="mt-4 text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+              <p className="mt-5 text-3xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(thisMonthIncome)}
               </p>
               <div className="mt-2 text-xs font-medium text-zinc-400">
@@ -641,7 +641,7 @@ const thisYearTotal = isUsingFallback
             </div>
 
             {/* Net Cash Flow */}
-            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-5 shadow-xs">
+            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-6 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
                   thisMonthNet >= 0
@@ -724,7 +724,7 @@ const thisYearTotal = isUsingFallback
         </section>
 
         {/* Monthly Spending + Spending by Category */}
-        <section className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-2">
+        <section className="mt-5 grid gap-5 sm:mt-8 sm:gap-8 lg:grid-cols-2">
           {/* Monthly Spending Chart */}
           <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-4 shadow-xs sm:p-5">
             <div className="flex items-center justify-between">
@@ -1030,7 +1030,7 @@ const thisYearTotal = isUsingFallback
           />
 
           {/* Quick Add */}
-          <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-5 shadow-xs">
+          <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-6 shadow-sm">
             <div className="flex items-center gap-2">
               <Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               <div>
