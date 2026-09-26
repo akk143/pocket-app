@@ -49,8 +49,85 @@ interface HomeProps {
   onSeedDemoData?: () => void
 }
 
-export default function Home({
+const FALLBACK_EXPENSES: Expense[] = [
+  {
+    id: "demo-1",
+    type: "expense",
+    amount: 25000,
+    categoryId: "drinks",
+    categoryName: "Drinks",
+    item: "Vietnamese Coffee",
+    note: "Morning coffee",
+    date: "2026-09-07",
+    time: "8:30 AM",
+    createdAt: 1725673800000,
+  },
+  {
+    id: "demo-2",
+    type: "expense",
+    amount: 100000,
+    categoryId: "food",
+    categoryName: "Food",
+    item: "Lunch",
+    note: "With teammates",
+    date: "2026-09-07",
+    time: "1:00 PM",
+    createdAt: 1725690000000,
+  },
+  {
+    id: "demo-3",
+    type: "expense",
+    amount: 30000,
+    categoryId: "transportation",
+    categoryName: "Transportation",
+    item: "Grab",
+    note: "",
+    date: "2026-09-07",
+    time: "12:15 PM",
+    createdAt: 1725687300000,
+  },
+  {
+    id: "demo-4",
+    type: "expense",
+    amount: 250000,
+    categoryId: "shopping",
+    categoryName: "Shopping",
+    item: "T-Shirt",
+    note: "",
+    date: "2026-09-06",
+    time: "6:00 PM",
+    createdAt: 1725620400000,
+  },
+  {
+    id: "demo-5",
+    type: "expense",
+    amount: 45000,
+    categoryId: "drinks",
+    categoryName: "Drinks",
+    item: "Milk Tea",
+    note: "",
+    date: "2026-09-06",
+    time: "5:30 PM",
+    createdAt: 1725618600000,
+  },
+]
 
+function toLocalDateKey(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+function monthKey(date: Date): string {
+  return toLocalDateKey(date).slice(0, 7)
+}
+
+function transactionMonthKey(value: string): string {
+  return value.slice(0, 7)
+}
+
+export default function Home({
   expenses,
   userName = "John",
   onAddExpense,
@@ -58,8 +135,8 @@ export default function Home({
   onDeleteExpense,
   onSeedDemoData,
 }: HomeProps) {
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
   const { currency, rates } = useCurrency()
   const formatCurrency = (amount: number) => convertAndFormatCurrency(amount, currency, rates)
 
@@ -84,88 +161,11 @@ export default function Home({
   }
 
   const isUsingFallback = expenses.length === 0
-
-  const activeExpenses = useMemo(() => {
-    if (expenses.length > 0) return expenses
-
-    const dateStr = "2026-09-07"
-    const yesterdayStr = "2026-09-06"
-    return [
-      {
-        id: "demo-1",
-        type: "expense",
-        amount: 25000,
-        categoryId: "drinks",
-        categoryName: "Drinks",
-        item: "Vietnamese Coffee",
-        note: "Morning coffee",
-        date: dateStr,
-        time: "8:30 AM",
-        createdAt: Date.now() - 3600000 * 2,
-      },
-      {
-        id: "demo-2",
-        type: "expense",
-        amount: 100000,
-        categoryId: "food",
-        categoryName: "Food",
-        item: "Lunch",
-        note: "With teammates",
-        date: dateStr,
-        time: "1:00 PM",
-        createdAt: Date.now() - 3600000 * 1,
-      },
-      {
-        id: "demo-3",
-        type: "expense",
-        amount: 30000,
-        categoryId: "transportation",
-        categoryName: "Transportation",
-        item: "Grab",
-        note: "",
-        date: dateStr,
-        time: "12:15 PM",
-        createdAt: Date.now() - 3600000 * 1.5,
-      },
-      {
-        id: "demo-4",
-        type: "expense",
-        amount: 250000,
-        categoryId: "shopping",
-        categoryName: "Shopping",
-        item: "T-Shirt",
-        note: "",
-        date: yesterdayStr,
-        time: "6:00 PM",
-        createdAt: Date.now() - 86400000 - 3600000 * 3,
-      },
-      {
-        id: "demo-5",
-        type: "expense",
-        amount: 45000,
-        categoryId: "drinks",
-        categoryName: "Drinks",
-        item: "Milk Tea",
-        note: "",
-        date: yesterdayStr,
-        time: "5:30 PM",
-        createdAt: Date.now() - 86400000 - 3600000 * 4,
-      },
-    ] as Expense[]
-  }, [expenses])
+  const activeExpenses = expenses.length > 0 ? expenses : FALLBACK_EXPENSES
 
   // Current dates
   const now = new Date()
-  const toLocalDateKey = (date: Date) => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-    return `${year}-${month}-${day}`
-  }
-  const monthKey = (date: Date) => toLocalDateKey(date).slice(0, 7)
-  const transactionMonthKey = (value: string) => value.slice(0, 7)
   const today = toLocalDateKey(now)
-  const thisMonthKey = monthKey(now)
   const lastMonthKey = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1))
 
   // 1. Today's Spending (only expense type)
@@ -216,12 +216,8 @@ const thisYearTotal = isUsingFallback
           const now = new Date();
           return Number(e.date.split("-")[0]) === now.getFullYear();
         })
-        .reduce((sum, e) => sum + e.amount, 0);
-
-  // We expose these for the UI if needed
-  console.log("Net this month:", thisMonthIncome - thisMonthTotal);
-  console.log("Net this year:", thisYearIncome - thisYearTotal);
-
+        .reduce((sum, e) => sum + e.amount, 0)
+  const thisMonthNet = thisMonthIncome - thisMonthTotal
 
   // Deltas vs previous periods
   const yesterday = toLocalDateKey(new Date(now.getTime() - 86400000))
@@ -247,19 +243,6 @@ const thisYearTotal = isUsingFallback
     : lastMonthExpenses.reduce((sum, e) => sum + e.amount, 0)
   const monthVsLastMonthDiff = lastMonthTotal > 0
     ? Math.round(((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100)
-    : null
-
-  const lastYear = now.getFullYear() - 1
-  const lastYearExpenses = activeExpenses.filter(
-    (e) =>
-      e.type !== "income" &&
-      Number(e.date.split("-")[0]) === lastYear
-  )
-  const lastYearTotal = isUsingFallback
-    ? 39000000
-    : lastYearExpenses.reduce((sum, e) => sum + e.amount, 0)
-  const yearVsLastYearDiff = lastYearTotal > 0
-    ? Math.round(((thisYearTotal - lastYearTotal) / lastYearTotal) * 100)
     : null
 
   // Budget calculations — read fresh every render so Settings changes reflect immediately
@@ -309,11 +292,16 @@ const thisYearTotal = isUsingFallback
 
   // Daily Data for the Month (30 days)
   const dailyBarData = useMemo(() => {
+    const curDate = new Date()
+    const curMonthKey = `${curDate.getFullYear()}-${String(curDate.getMonth() + 1).padStart(2, "0")}`
+    const prevMonthDate = new Date(curDate.getFullYear(), curDate.getMonth() - 1, 1)
+    const prevMonthKey = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, "0")}`
+
     const selectedMonthKey =
       monthlySpendingTimeframe === "this_month"
-        ? thisMonthKey
+        ? curMonthKey
         : monthlySpendingTimeframe === "last_month"
-        ? lastMonthKey
+        ? prevMonthKey
         : null
     const timeframeExpenses =
       isUsingFallback && monthlySpendingTimeframe === "this_month"
@@ -362,9 +350,7 @@ const thisYearTotal = isUsingFallback
   }, [
     activeExpenses,
     isUsingFallback,
-    lastMonthKey,
     monthlySpendingTimeframe,
-    thisMonthKey,
   ])
 
   const calendarDaysInMonth = new Date(
@@ -421,16 +407,21 @@ const thisYearTotal = isUsingFallback
   const topSpendingItems = useMemo(() => {
     if (isUsingFallback && topSpendingTimeframe === "this_month") {
       return [
-        { name: "Food & Drinks", amount: formatCurrency(1800000), percent: "37%", color: "#f97316", icon: EXPENSE_CATEGORIES[0].component },
-        { name: "Transportation", amount: formatCurrency(550000), percent: "11%", color: "#10b981", icon: EXPENSE_CATEGORIES[2].component },
-        { name: "Shopping", amount: formatCurrency(450000), percent: "9%", color: "#a855f7", icon: EXPENSE_CATEGORIES[3].component },
-        { name: "Housing", amount: formatCurrency(400000), percent: "8%", color: "#3b82f6", icon: EXPENSE_CATEGORIES[4].component },
-        { name: "Other", amount: formatCurrency(1000000), percent: "21%", color: "#9ca3af", icon: EXPENSE_CATEGORIES[10].component },
+        { name: "Food & Drinks", amount: convertAndFormatCurrency(1800000, currency, rates), percent: "37%", color: "#f97316", icon: EXPENSE_CATEGORIES[0].component },
+        { name: "Transportation", amount: convertAndFormatCurrency(550000, currency, rates), percent: "11%", color: "#10b981", icon: EXPENSE_CATEGORIES[2].component },
+        { name: "Shopping", amount: convertAndFormatCurrency(450000, currency, rates), percent: "9%", color: "#a855f7", icon: EXPENSE_CATEGORIES[3].component },
+        { name: "Housing", amount: convertAndFormatCurrency(400000, currency, rates), percent: "8%", color: "#3b82f6", icon: EXPENSE_CATEGORIES[4].component },
+        { name: "Other", amount: convertAndFormatCurrency(1000000, currency, rates), percent: "21%", color: "#9ca3af", icon: EXPENSE_CATEGORIES[10].component },
       ]
     }
 
+    const curDate = new Date()
+    const curMonthKey = `${curDate.getFullYear()}-${String(curDate.getMonth() + 1).padStart(2, "0")}`
+    const prevMonthDate = new Date(curDate.getFullYear(), curDate.getMonth() - 1, 1)
+    const prevMonthKey = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, "0")}`
+
     const selectedMonthKey =
-      topSpendingTimeframe === "this_month" ? thisMonthKey : lastMonthKey
+      topSpendingTimeframe === "this_month" ? curMonthKey : prevMonthKey
     const totals = activeExpenses
       .filter(
         (expense) =>
@@ -449,7 +440,7 @@ const thisYearTotal = isUsingFallback
         const category = EXPENSE_CATEGORIES.find((item) => item.id === categoryId)
         return {
           name: category?.name || categoryId,
-          amount: formatCurrency(amount),
+          amount: convertAndFormatCurrency(amount, currency, rates),
           percent: `${total ? Math.round((amount / total) * 100) : 0}%`,
           color: category?.color || "#9ca3af",
           icon: category?.component || EXPENSE_CATEGORIES[10].component,
@@ -459,8 +450,6 @@ const thisYearTotal = isUsingFallback
   }, [
     activeExpenses,
     isUsingFallback,
-    lastMonthKey,
-    thisMonthKey,
     topSpendingTimeframe,
     currency,
     rates,
@@ -542,22 +531,27 @@ const thisYearTotal = isUsingFallback
               )}
             </div>
 
-            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 px-4 py-3.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 px-4 py-3.5 shadow-xs">
               <div className="flex items-center gap-1.5">
-                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 dark:bg-blue-900/20 dark:text-blue-400">
-                  <BarChart3 className="h-3.5 w-3.5" />
+                <div className={`flex h-6 w-6 items-center justify-center rounded-lg ${
+                  thisMonthNet >= 0
+                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
+                    : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                }`}>
+                  <TrendingUp className="h-3.5 w-3.5" />
                 </div>
-                <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-400">This Year</span>
+                <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Net Flow</span>
               </div>
-              <p className="mt-2 text-lg font-bold tracking-tight text-zinc-900 dark:text-white dark:text-white">{formatCurrency(thisYearTotal)}</p>
-              {yearVsLastYearDiff !== null ? (
-                <div className={`mt-1 flex items-center gap-0.5 text-[11px] font-medium ${yearVsLastYearDiff <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600"}`}>
-                  {yearVsLastYearDiff <= 0 ? <ArrowDownRight className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
-                  {Math.abs(yearVsLastYearDiff)}% vs last
-                </div>
-              ) : (
-                <p className="mt-1 text-[11px] text-zinc-400">No prev. data</p>
-              )}
+              <p className={`mt-2 text-lg font-bold tracking-tight ${
+                thisMonthNet >= 0 ? "text-zinc-900 dark:text-white" : "text-red-600 dark:text-red-400"
+              }`}>
+                {thisMonthNet >= 0 ? "+" : ""}{formatCurrency(thisMonthNet)}
+              </p>
+              <p className={`mt-1 text-[11px] font-medium ${
+                thisMonthNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+              }`}>
+                {thisMonthNet >= 0 ? "Savings on track" : "Over spending"}
+              </p>
             </div>
           </div>
         </div>
@@ -584,16 +578,16 @@ const thisYearTotal = isUsingFallback
           </div>
 
           {/* ── Stat Cards (desktop only) ── */}
-          <section className="grid gap-4 sm:grid-cols-3">
+          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {/* Today's Spending */}
-            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-5 shadow-xs">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:text-emerald-400 dark:bg-emerald-500/10 dark:text-emerald-400 dark:bg-emerald-500/10 dark:text-emerald-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
                   <CalendarDays className="h-5 w-5" />
                 </div>
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-400">Today's Spending</span>
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Today's Spending</span>
               </div>
-              <p className="mt-4 text-2xl font-bold tracking-tight text-zinc-900 dark:text-white dark:text-white">
+              <p className="mt-4 text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
                 {formatCurrency(todayTotal)}
               </p>
               {todayVsYesterdayDiff !== null ? (
@@ -606,46 +600,67 @@ const thisYearTotal = isUsingFallback
               )}
             </div>
 
-            {/* This Month */}
-            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+            {/* This Month Spending */}
+            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-5 shadow-xs">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400 dark:bg-purple-900/20 dark:text-purple-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400">
                   <Calendar className="h-5 w-5" />
                 </div>
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-400">This Month</span>
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">This Month's Spending</span>
               </div>
-              <p className="mt-4 text-2xl font-bold tracking-tight text-zinc-900 dark:text-white dark:text-white">
+              <p className="mt-4 text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
                 {formatCurrency(thisMonthTotal)}
               </p>
-              {monthVsLastMonthDiff !== null ? (
-                <div className={`mt-2 flex items-center gap-1 text-xs font-medium ${monthVsLastMonthDiff <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600"}`}>
-                  {monthVsLastMonthDiff <= 0 ? <ArrowDownRight className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
-                  {Math.abs(monthVsLastMonthDiff)}% vs. last month
-                </div>
-              ) : (
-                <div className="mt-2 text-xs font-medium text-zinc-400">No data last month</div>
-              )}
+              <div className="mt-2 flex items-center justify-between text-xs font-medium">
+                {monthVsLastMonthDiff !== null ? (
+                  <div className={`flex items-center gap-1 ${monthVsLastMonthDiff <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600"}`}>
+                    {monthVsLastMonthDiff <= 0 ? <ArrowDownRight className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
+                    {Math.abs(monthVsLastMonthDiff)}% vs. last
+                  </div>
+                ) : (
+                  <span className="text-zinc-400">First month</span>
+                )}
+                <span className="text-[11px] text-zinc-400">YTD: {formatCurrency(thisYearTotal)}</span>
+              </div>
             </div>
 
-            {/* This Year */}
-            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+            {/* This Month Income */}
+            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-5 shadow-xs">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 dark:bg-blue-900/20 dark:text-blue-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">This Month's Income</span>
+              </div>
+              <p className="mt-4 text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+                {formatCurrency(thisMonthIncome)}
+              </p>
+              <div className="mt-2 text-xs font-medium text-zinc-400">
+                {thisYearIncome > 0 ? `Year: ${formatCurrency(thisYearIncome)}` : "Earned this month"}
+              </div>
+            </div>
+
+            {/* Net Cash Flow */}
+            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-5 shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                  thisMonthNet >= 0
+                    ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                    : "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
+                }`}>
                   <BarChart3 className="h-5 w-5" />
                 </div>
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-400">This Year</span>
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Net Cash Flow</span>
               </div>
-              <p className="mt-4 text-2xl font-bold tracking-tight text-zinc-900 dark:text-white dark:text-white">
-                {formatCurrency(thisYearTotal)}
+              <p className={`mt-4 text-2xl font-bold tracking-tight ${
+                thisMonthNet >= 0 ? "text-zinc-900 dark:text-white" : "text-red-600 dark:text-red-400"
+              }`}>
+                {thisMonthNet >= 0 ? "+" : ""}{formatCurrency(thisMonthNet)}
               </p>
-              {yearVsLastYearDiff !== null ? (
-                <div className={`mt-2 flex items-center gap-1 text-xs font-medium ${yearVsLastYearDiff <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600"}`}>
-                  {yearVsLastYearDiff <= 0 ? <ArrowDownRight className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
-                  {Math.abs(yearVsLastYearDiff)}% vs. last year
-                </div>
-              ) : (
-                <div className="mt-2 text-xs font-medium text-zinc-400">No data last year</div>
-              )}
+              <div className={`mt-2 flex items-center gap-1 text-xs font-medium ${thisMonthNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                {thisMonthNet >= 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+                {thisMonthNet >= 0 ? "Savings on track" : "Spending exceeds income"}
+              </div>
             </div>
           </section>
         </div>
@@ -728,7 +743,7 @@ const thisYearTotal = isUsingFallback
 
               <select
                 value={monthlySpendingTimeframe}
-                onChange={(e) => setMonthlySpendingTimeframe(e.target.value as any)}
+                onChange={(e) => setMonthlySpendingTimeframe(e.target.value as "this_month" | "last_month" | "all_time")}
                 className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:text-zinc-300 outline-none transition focus:border-emerald-500 cursor-pointer shadow-2xs"
               >
                 <option value="this_month">This Month</option>
@@ -760,7 +775,7 @@ const thisYearTotal = isUsingFallback
                     ticks={[0, 100000, 200000, 300000, 400000]}
                   />
                   <Tooltip
-                    formatter={(value: any) => [formatCurrency(value), "Spending"]}
+                    formatter={(value: unknown) => [formatCurrency(Number(value) || 0), "Spending"]}
                     contentStyle={{
                       borderRadius: "12px",
                       border: "1px solid #e4e4e7",
