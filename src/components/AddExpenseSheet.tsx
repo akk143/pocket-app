@@ -105,10 +105,11 @@ export default function AddExpenseSheet({
         setDate(initialExpense.date)
         setTime(initialExpense.time)
       } else {
-        setType("expense")
+        const isIncomeCat = INCOME_CATEGORIES.some((c) => c.id === defaultCategoryId)
+        setType(isIncomeCat ? "income" : "expense")
         setAmount("")
         setQuantity("1")
-        setCategoryId(defaultCategoryId || "drinks")
+        setCategoryId(defaultCategoryId || (isIncomeCat ? "salary" : "drinks"))
         setItem("")
         setNote("")
         setDate(getTodayLocalString())
