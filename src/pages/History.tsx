@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import {
   ChevronLeft,
@@ -53,26 +53,19 @@ export default function History({
   const formatCurrency = (amount: number) => convertAndFormatCurrency(amount, currency, rates)
 
   const [searchParams, setSearchParams] = useSearchParams()
-  const initialQuery = searchParams.get("q") || ""
+  const query = searchParams.get("q") || ""
 
-  const [query, setQuery] = useState(initialQuery)
   const [typeFilter, setTypeFilter] = useState<"all" | "expense" | "income">("all")
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all")
   const [viewDate, setViewDate] = useState(() => new Date())
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [expensePendingDeletion, setExpensePendingDeletion] = useState<Expense | null>(null)
 
-  useEffect(() => {
-    const q = searchParams.get("q") || ""
-    setQuery(q)
-  }, [searchParams])
-
   const handleQueryChange = (val: string) => {
-    setQuery(val)
     if (val) {
-      setSearchParams({ q: val })
+      setSearchParams({ q: val }, { replace: true })
     } else {
-      setSearchParams({})
+      setSearchParams({}, { replace: true })
     }
   }
 
@@ -184,6 +177,17 @@ export default function History({
     ] as Expense[]
   }, [expenses])
 
+  const visibleCategories = useMemo(() => {
+    if (typeFilter === "expense") return EXPENSE_CATEGORIES
+    if (typeFilter === "income") return INCOME_CATEGORIES
+    return [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES]
+  }, [typeFilter])
+
+  const effectiveCategoryId =
+    selectedCategoryId !== "all" && visibleCategories.some((c) => c.id === selectedCategoryId)
+      ? selectedCategoryId
+      : "all"
+
   // Filter by query, type, and category
   const filtered = useMemo(() => {
     const selectedMonth = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}`
@@ -195,7 +199,7 @@ export default function History({
       if (typeFilter === "income" && e.type !== "income") return false
 
       // Category filter
-      if (selectedCategoryId !== "all" && e.categoryId !== selectedCategoryId) {
+      if (effectiveCategoryId !== "all" && e.categoryId !== effectiveCategoryId) {
         return false
       }
 
@@ -208,7 +212,7 @@ export default function History({
         (e.note && e.note.toLowerCase().includes(q))
       )
     })
-  }, [displayExpenses, query, typeFilter, selectedCategoryId, viewDate])
+  }, [displayExpenses, query, typeFilter, effectiveCategoryId, viewDate])
 
   // Group by date
   const grouped = useMemo(() => {
@@ -253,27 +257,23 @@ export default function History({
     return Object.values(map).sort((a, b) => b.dateStr.localeCompare(a.dateStr))
   }, [filtered])
 
-  const totalFilteredAmount = useMemo(() => {
-    return filtered.reduce((sum, e) => {
-      return e.type === "income" ? sum : sum + e.amount
-    }, 0)
+  const { totalExpense, totalIncome } = useMemo(() => {
+    let exp = 0
+    let inc = 0
+    for (const e of filtered) {
+      if (e.type === "income") {
+        inc += e.amount
+      } else {
+        exp += e.amount
+      }
+    }
+    return { totalExpense: exp, totalIncome: inc }
   }, [filtered])
 
-  
-  const visibleCategories = useMemo(() => {
-    if (typeFilter === "expense") return EXPENSE_CATEGORIES;
-    if (typeFilter === "income") return INCOME_CATEGORIES;
-    return [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
-  }, [typeFilter]);
-
-  // Reset category if it doesn't match the new type filter
-  useEffect(() => {
-    if (selectedCategoryId !== "all") {
-      const isValid = visibleCategories.some(c => c.id === selectedCategoryId);
-      if (!isValid) setSelectedCategoryId("all");
-    }
-  }, [typeFilter, visibleCategories, selectedCategoryId]);
-
+  const handleTypeFilterChange = (next: "all" | "expense" | "income") => {
+    setTypeFilter(next)
+    setSelectedCategoryId("all")
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-6 sm:px-8">
@@ -284,7 +284,12 @@ export default function History({
             History
           </h1>
           <p className="mt-0.5 text-xs text-zinc-400">
-            {filtered.length} {filtered.length === 1 ? "transaction" : "transactions"} · Total spending: {formatCurrency(totalFilteredAmount)}
+            {filtered.length} {filtered.length === 1 ? "transaction" : "transactions"} ·{" "}
+            {typeFilter === "expense"
+              ? `Total spending: ${formatCurrency(totalExpense)}`
+              : typeFilter === "income"
+              ? `Total income: ${formatCurrency(totalIncome)}`
+              : `Spent: ${formatCurrency(totalExpense)} · Received: ${formatCurrency(totalIncome)}`}
           </p>
         </div>
 
@@ -341,7 +346,7 @@ export default function History({
           <div className="inline-flex rounded-xl border border-zinc-200 bg-white p-1 text-xs shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
             <button
               type="button"
-              onClick={() => setTypeFilter("all")}
+              onClick={() => handleTypeFilterChange("all")}
               className={`rounded-lg px-3 py-1 font-semibold transition ${
                 typeFilter === "all"
                   ? "bg-zinc-900 text-white shadow-xs dark:bg-zinc-100 dark:text-zinc-900"
@@ -352,7 +357,7 @@ export default function History({
             </button>
             <button
               type="button"
-              onClick={() => setTypeFilter("expense")}
+              onClick={() => handleTypeFilterChange("expense")}
               className={`flex items-center gap-1 rounded-lg px-3 py-1 font-semibold transition ${
                 typeFilter === "expense"
                   ? "bg-red-50 text-red-600 font-bold shadow-xs border border-red-200/50 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50"
@@ -364,7 +369,7 @@ export default function History({
             </button>
             <button
               type="button"
-              onClick={() => setTypeFilter("income")}
+              onClick={() => handleTypeFilterChange("income")}
               className={`flex items-center gap-1 rounded-lg px-3 py-1 font-semibold transition ${
                 typeFilter === "income"
                   ? "bg-emerald-50 text-emerald-700 font-bold shadow-xs border border-emerald-200/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50"
