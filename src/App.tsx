@@ -236,71 +236,6 @@ function App() {
   }
 
   // Seeding demo expenses to Firestore
-  async function handleSeedDemoData() {
-    if (!user) return
-    const now = Date.now()
-    const demoItems: Omit<Expense, "id">[] = [
-      {
-        type: "expense",
-        amount: 25000,
-        categoryId: "drinks",
-        categoryName: "Drinks",
-        item: "Vietnamese Coffee",
-        note: "Morning coffee",
-        date: "2026-09-07",
-        time: "8:30 AM",
-        createdAt: now - 3600000 * 3,
-      },
-      {
-        type: "expense",
-        amount: 100000,
-        categoryId: "food",
-        categoryName: "Food",
-        item: "Lunch",
-        note: "",
-        date: "2026-09-07",
-        time: "1:00 PM",
-        createdAt: now - 3600000 * 2,
-      },
-      {
-        type: "expense",
-        amount: 30000,
-        categoryId: "transportation",
-        categoryName: "Transportation",
-        item: "Grab",
-        note: "",
-        date: "2026-09-07",
-        time: "12:15 PM",
-        createdAt: now - 3600000 * 2.5,
-      },
-      {
-        type: "expense",
-        amount: 250000,
-        categoryId: "shopping",
-        categoryName: "Shopping",
-        item: "T-Shirt",
-        note: "",
-        date: "2026-09-06",
-        time: "6:00 PM",
-        createdAt: now - 86400000 - 3600000 * 2,
-      },
-      {
-        type: "expense",
-        amount: 45000,
-        categoryId: "drinks",
-        categoryName: "Drinks",
-        item: "Milk Tea",
-        note: "",
-        date: "2026-09-06",
-        time: "5:30 PM",
-        createdAt: now - 86400000 - 3600000 * 3,
-      },
-    ]
-
-    for (const item of demoItems) {
-      await addExpense(user.uid, item)
-    }
-  }
 
   const openAddExpense = (categoryId?: string) => {
     setEditingExpense(null)
@@ -625,7 +560,7 @@ function App() {
                     onAddExpense={openAddExpense}
                     onEditExpense={openEditExpense}
                     onDeleteExpense={handleDeleteExpense}
-                    onSeedDemoData={handleSeedDemoData}
+                    
                   />
                 }
               />

@@ -46,71 +46,7 @@ interface HomeProps {
   onAddExpense: (categoryId?: string) => void
   onEditExpense?: (expense: Expense) => void
   onDeleteExpense?: (expenseId: string) => void | Promise<void>
-  onSeedDemoData?: () => void
 }
-
-const FALLBACK_EXPENSES: Expense[] = [
-  {
-    id: "demo-1",
-    type: "expense",
-    amount: 25000,
-    categoryId: "drinks",
-    categoryName: "Drinks",
-    item: "Vietnamese Coffee",
-    note: "Morning coffee",
-    date: "2026-09-07",
-    time: "8:30 AM",
-    createdAt: 1725673800000,
-  },
-  {
-    id: "demo-2",
-    type: "expense",
-    amount: 100000,
-    categoryId: "food",
-    categoryName: "Food",
-    item: "Lunch",
-    note: "With teammates",
-    date: "2026-09-07",
-    time: "1:00 PM",
-    createdAt: 1725690000000,
-  },
-  {
-    id: "demo-3",
-    type: "expense",
-    amount: 30000,
-    categoryId: "transportation",
-    categoryName: "Transportation",
-    item: "Grab",
-    note: "",
-    date: "2026-09-07",
-    time: "12:15 PM",
-    createdAt: 1725687300000,
-  },
-  {
-    id: "demo-4",
-    type: "expense",
-    amount: 250000,
-    categoryId: "shopping",
-    categoryName: "Shopping",
-    item: "T-Shirt",
-    note: "",
-    date: "2026-09-06",
-    time: "6:00 PM",
-    createdAt: 1725620400000,
-  },
-  {
-    id: "demo-5",
-    type: "expense",
-    amount: 45000,
-    categoryId: "drinks",
-    categoryName: "Drinks",
-    item: "Milk Tea",
-    note: "",
-    date: "2026-09-06",
-    time: "5:30 PM",
-    createdAt: 1725618600000,
-  },
-]
 
 function toLocalDateKey(date: Date): string {
   const year = date.getFullYear()
@@ -133,7 +69,6 @@ export default function Home({
   onAddExpense,
   onEditExpense,
   onDeleteExpense,
-  onSeedDemoData,
 }: HomeProps) {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === "dark"
@@ -160,75 +95,54 @@ export default function Home({
     setCalendarViewMonth(d)
   }
 
-  const isUsingFallback = expenses.length === 0
-  const activeExpenses = expenses.length > 0 ? expenses : FALLBACK_EXPENSES
+  const activeExpenses = expenses
 
-  // Current dates
   const now = new Date()
   const today = toLocalDateKey(now)
   const lastMonthKey = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1))
 
-  // 1. Today's Spending (only expense type)
   const todayExpenses = activeExpenses.filter((e) => {
     if (e.type === "income") return false
     return e.date === today
   })
   const todayTotal = todayExpenses.reduce((sum, e) => sum + e.amount, 0)
 
-  // 2. This Month's Spending
-  const thisMonthTotal = isUsingFallback
-    ? 4850000
-    : activeExpenses
-        .filter((e) => {
-          if (e.type === "income") return false
-          const [y, m] = e.date.split("-").map(Number)
-          return y === now.getFullYear() && m === now.getMonth() + 1
-        })
-        .reduce((sum, e) => sum + e.amount, 0)
+  const thisMonthTotal = activeExpenses
+    .filter((e) => {
+      if (e.type === "income") return false
+      const [y, m] = e.date.split("-").map(Number)
+      return y === now.getFullYear() && m === now.getMonth() + 1
+    })
+    .reduce((sum, e) => sum + e.amount, 0)
 
-  // 3. This Year's Spending
-  
-const thisYearTotal = isUsingFallback
-    ? 42300000
-    : activeExpenses
-        .filter((e) => {
-          if (e.type === "income") return false
-          const now = new Date()
-          return Number(e.date.split("-")[0]) === now.getFullYear()
-        })
-        .reduce((sum, e) => sum + e.amount, 0)
+  const thisYearTotal = activeExpenses
+    .filter((e) => {
+      if (e.type === "income") return false
+      return Number(e.date.split("-")[0]) === now.getFullYear()
+    })
+    .reduce((sum, e) => sum + e.amount, 0)
 
-  const thisMonthIncome = isUsingFallback
-    ? 25000000
-    : activeExpenses
-        .filter((e) => {
-          if (e.type !== "income") return false;
-          const [y, m] = e.date.split("-").map(Number);
-          return y === now.getFullYear() && m === now.getMonth() + 1;
-        })
-        .reduce((sum, e) => sum + e.amount, 0);
-        
-  const thisYearIncome = isUsingFallback
-    ? 300000000
-    : activeExpenses
-        .filter((e) => {
-          if (e.type !== "income") return false;
-          const now = new Date();
-          return Number(e.date.split("-")[0]) === now.getFullYear();
-        })
-        .reduce((sum, e) => sum + e.amount, 0)
+  const thisMonthIncome = activeExpenses
+    .filter((e) => {
+      if (e.type !== "income") return false
+      const [y, m] = e.date.split("-").map(Number)
+      return y === now.getFullYear() && m === now.getMonth() + 1
+    })
+    .reduce((sum, e) => sum + e.amount, 0)
+
+  const thisYearIncome = activeExpenses
+    .filter((e) => {
+      if (e.type !== "income") return false
+      return Number(e.date.split("-")[0]) === now.getFullYear()
+    })
+    .reduce((sum, e) => sum + e.amount, 0)
   const thisMonthNet = thisMonthIncome - thisMonthTotal
 
-  // Deltas vs previous periods
   const yesterday = toLocalDateKey(new Date(now.getTime() - 86400000))
   const yesterdayExpenses = activeExpenses.filter(
-    (e) =>
-      e.type !== "income" &&
-      (e.date === yesterday || (isUsingFallback && e.date === "2026-09-06"))
+    (e) => e.type !== "income" && e.date === yesterday,
   )
-  const yesterdayTotal = isUsingFallback
-    ? 295000
-    : yesterdayExpenses.reduce((sum, e) => sum + e.amount, 0)
+  const yesterdayTotal = yesterdayExpenses.reduce((sum, e) => sum + e.amount, 0)
   const todayVsYesterdayDiff = yesterdayTotal > 0
     ? Math.round(((todayTotal - yesterdayTotal) / yesterdayTotal) * 100)
     : null
@@ -238,9 +152,7 @@ const thisYearTotal = isUsingFallback
       e.type !== "income" &&
       transactionMonthKey(e.date) === lastMonthKey
   )
-  const lastMonthTotal = isUsingFallback
-    ? 5500000
-    : lastMonthExpenses.reduce((sum, e) => sum + e.amount, 0)
+  const lastMonthTotal = lastMonthExpenses.reduce((sum, e) => sum + e.amount, 0)
   const monthVsLastMonthDiff = lastMonthTotal > 0
     ? Math.round(((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100)
     : null
@@ -256,17 +168,6 @@ const thisYearTotal = isUsingFallback
 
   // Category Chart Table
   const categoryData = useMemo(() => {
-    if (isUsingFallback) {
-      return [
-        { name: "Food", amount: 1800000, percent: 37, color: "#f97316", id: "food" },
-        { name: "Drinks", amount: 650000, percent: 13, color: "#10b981", id: "drinks" },
-        { name: "Transportation", amount: 550000, percent: 11, color: "#3b82f6", id: "transportation" },
-        { name: "Shopping", amount: 450000, percent: 9, color: "#ec4899", id: "shopping" },
-        { name: "Housing", amount: 400000, percent: 8, color: "#8b5cf6", id: "rent" },
-        { name: "Other", amount: 1000000, percent: 22, color: "#9ca3af", id: "other" },
-      ]
-    }
-
     const catMap: Record<string, number> = {}
     activeExpenses
       .filter((e) => e.type !== "income")
@@ -288,9 +189,8 @@ const thisYearTotal = isUsingFallback
         }
       })
       .sort((a, b) => b.amount - a.amount)
-  }, [activeExpenses, isUsingFallback])
+  }, [activeExpenses])
 
-  // Daily Data for the Month (30 days)
   const dailyBarData = useMemo(() => {
     const curDate = new Date()
     const curMonthKey = `${curDate.getFullYear()}-${String(curDate.getMonth() + 1).padStart(2, "0")}`
@@ -303,28 +203,12 @@ const thisYearTotal = isUsingFallback
         : monthlySpendingTimeframe === "last_month"
         ? prevMonthKey
         : null
-    const timeframeExpenses =
-      isUsingFallback && monthlySpendingTimeframe === "this_month"
-        ? activeExpenses
-        : activeExpenses.filter(
-            (expense) =>
-              expense.type !== "income" &&
-              (selectedMonthKey === null ||
-                transactionMonthKey(expense.date) === selectedMonthKey),
-          )
-
-    if (isUsingFallback && monthlySpendingTimeframe === "this_month") {
-      const mockAmounts = [
-        0, 120000, 150000, 130000, 240000, 180000, 160000, 290000, 140000, 150000,
-        170000, 130000, 220000, 250000, 350000, 240000, 190000, 170000, 150000,
-        140000, 210000, 190000, 160000, 230000, 200000, 180000, 150000, 120000,
-        110000, 140000,
-      ]
-      return Array.from({ length: 30 }, (_, i) => ({
-        day: i + 1,
-        spending: mockAmounts[i] || 100000,
-      }))
-    }
+    const timeframeExpenses = activeExpenses.filter(
+      (expense) =>
+        expense.type !== "income" &&
+        (selectedMonthKey === null ||
+          transactionMonthKey(expense.date) === selectedMonthKey),
+    )
 
     const daysInMonth =
       selectedMonthKey === null
@@ -349,7 +233,6 @@ const thisYearTotal = isUsingFallback
     }))
   }, [
     activeExpenses,
-    isUsingFallback,
     monthlySpendingTimeframe,
   ])
 
@@ -364,13 +247,10 @@ const thisYearTotal = isUsingFallback
     const dayStr = String(selectedCalendarDay).padStart(2, "0")
     const fullDateKey = `${targetMonthStr}-${dayStr}`
     return activeExpenses.filter((e) => {
-      if (isUsingFallback && (selectedCalendarDay === 7 || selectedCalendarDay === 8)) {
-        return true
-      }
       const createdDateKey = toLocalDateKey(new Date(e.createdAt))
       return e.date === fullDateKey || createdDateKey === fullDateKey
     })
-  }, [activeExpenses, calendarViewMonth, selectedCalendarDay, isUsingFallback])
+  }, [activeExpenses, calendarViewMonth, selectedCalendarDay])
 
   const isCalendarDayToday =
     calendarViewMonth.getFullYear() === now.getFullYear() &&
@@ -378,11 +258,10 @@ const thisYearTotal = isUsingFallback
     selectedCalendarDay === now.getDate()
 
   const calendarDaySpent = useMemo(() => {
-    if (isUsingFallback && (selectedCalendarDay === 8 || selectedCalendarDay === 7)) return 155000
     return selectedDayExpenses
       .filter((e) => e.type !== "income")
       .reduce((s, e) => s + e.amount, 0)
-  }, [selectedDayExpenses, selectedCalendarDay, isUsingFallback])
+  }, [selectedDayExpenses])
 
   const calendarDayIncome = useMemo(() => {
     return selectedDayExpenses
@@ -405,16 +284,6 @@ const thisYearTotal = isUsingFallback
   ]
 
   const topSpendingItems = useMemo(() => {
-    if (isUsingFallback && topSpendingTimeframe === "this_month") {
-      return [
-        { name: "Food & Drinks", amount: convertAndFormatCurrency(1800000, currency, rates), percent: "37%", color: "#f97316", icon: EXPENSE_CATEGORIES[0].component },
-        { name: "Transportation", amount: convertAndFormatCurrency(550000, currency, rates), percent: "11%", color: "#10b981", icon: EXPENSE_CATEGORIES[2].component },
-        { name: "Shopping", amount: convertAndFormatCurrency(450000, currency, rates), percent: "9%", color: "#a855f7", icon: EXPENSE_CATEGORIES[3].component },
-        { name: "Housing", amount: convertAndFormatCurrency(400000, currency, rates), percent: "8%", color: "#3b82f6", icon: EXPENSE_CATEGORIES[4].component },
-        { name: "Other", amount: convertAndFormatCurrency(1000000, currency, rates), percent: "21%", color: "#9ca3af", icon: EXPENSE_CATEGORIES[10].component },
-      ]
-    }
-
     const curDate = new Date()
     const curMonthKey = `${curDate.getFullYear()}-${String(curDate.getMonth() + 1).padStart(2, "0")}`
     const prevMonthDate = new Date(curDate.getFullYear(), curDate.getMonth() - 1, 1)
@@ -449,7 +318,6 @@ const thisYearTotal = isUsingFallback
       .sort((a, b) => Number.parseInt(b.percent) - Number.parseInt(a.percent))
   }, [
     activeExpenses,
-    isUsingFallback,
     topSpendingTimeframe,
     currency,
     rates,
@@ -458,23 +326,6 @@ const thisYearTotal = isUsingFallback
   return (
     <div className="flex flex-col xl:flex-row">
       <div className="flex-1 px-4 py-4 sm:px-8 sm:py-6">
-        {isUsingFallback && onSeedDemoData && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-xs text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-500/10 dark:text-emerald-200">
-            <div className="flex items-center gap-2">
-              <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>
-                <strong>Design Preview Active:</strong> Dashboard shows mockup baseline values. Click button to save to your Firestore.
-              </span>
-            </div>
-            <button
-              onClick={onSeedDemoData}
-              className="rounded-lg bg-emerald-600 px-3 py-1.5 font-semibold text-white transition hover:bg-emerald-700 shadow-xs"
-            >
-              Seed Demo Data to Firestore
-            </button>
-          </div>
-        )}
-
         {/* ── Mobile Hero: greeting + today's spending ── */}
         <div className="sm:hidden mb-4">
           <div className="relative overflow-hidden rounded-2xl bg-zinc-900 px-5 pt-5 pb-6 shadow-md">
@@ -710,7 +561,9 @@ const thisYearTotal = isUsingFallback
               <div>
                 <p className="text-xs font-semibold text-zinc-900 dark:text-white dark:text-white">Spending Insight</p>
                 <p className="mt-0.5 text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed dark:text-zinc-400">
-                  Food & Drinks accounts for {categoryData[0]?.percent || 37}% of your spending this month.
+                  {categoryData[0]
+                    ? `${categoryData[0].name} accounts for ${categoryData[0].percent}% of your spending this month.`
+                    : "No spending recorded yet."}
                 </p>
               </div>
             </div>
@@ -901,7 +754,11 @@ const thisYearTotal = isUsingFallback
             </div>
 
             <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-              {recentExpenses.map((expense) => {
+              {recentExpenses.length === 0 ? (
+                <p className="px-4 py-8 text-center text-xs text-zinc-400 sm:px-5">
+                  No transactions yet.
+                </p>
+              ) : recentExpenses.map((expense) => {
                 const isIncome = expense.type === "income"
                 const activeCats = isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
                 const cat = activeCats.find((c) => c.id === expense.categoryId)
@@ -1134,7 +991,7 @@ const thisYearTotal = isUsingFallback
             <div className="flex items-center gap-1.5">
               <CalendarDays className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
               <span>
-                {isCalendarDayToday || (isUsingFallback && (selectedCalendarDay === 8 || selectedCalendarDay === 7))
+                {isCalendarDayToday
                   ? "Today's Summary"
                   : `${new Intl.DateTimeFormat("en-US", { month: "short" }).format(calendarViewMonth)} ${selectedCalendarDay} Summary`}
               </span>

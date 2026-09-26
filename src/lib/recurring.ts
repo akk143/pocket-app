@@ -43,7 +43,7 @@ export function subscribeToRecurring(
           dayOfMonth: data.dayOfMonth ?? 1,
           dayOfWeek: data.dayOfWeek ?? 1,
           lastRunDate: data.lastRunDate,
-          nextDueDate: data.nextDueDate || new Date().toISOString().split("T")[0],
+          nextDueDate: data.nextDueDate || getLocalDateString(),
           active: data.active !== false,
           createdAt: data.createdAt || Date.now(),
         }
@@ -100,12 +100,16 @@ export function computeNextDueDate(
   dayOfWeek: number = 1,
   afterDateStr?: string,
 ): string {
-  const baseDate = afterDateStr ? new Date(afterDateStr) : new Date()
+  let baseDate = new Date();
+  if (afterDateStr) {
+    const [y, m, d] = afterDateStr.split("-").map(Number);
+    baseDate = new Date(y, m - 1, d);
+  }
 
   if (frequency === "daily") {
     const next = new Date(baseDate)
     next.setDate(next.getDate() + 1)
-    return next.toISOString().split("T")[0]
+    return getLocalDateString(next)
   }
 
   if (frequency === "weekly") {
@@ -114,7 +118,7 @@ export function computeNextDueDate(
     let daysToAdd = (dayOfWeek - currentDay + 7) % 7
     if (daysToAdd === 0) daysToAdd = 7
     next.setDate(next.getDate() + daysToAdd)
-    return next.toISOString().split("T")[0]
+    return getLocalDateString(next)
   }
 
   // Monthly
@@ -128,7 +132,7 @@ export function computeNextDueDate(
   ).getDate()
   const validDay = Math.min(dayOfMonth, daysInNextMonth)
   nextMonthDate.setDate(validDay)
-  return nextMonthDate.toISOString().split("T")[0]
+  return getLocalDateString(nextMonthDate)
 }
 
 export function getLocalDateString(d: Date = new Date()): string {

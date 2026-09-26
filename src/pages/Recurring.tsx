@@ -20,6 +20,7 @@ import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
 import { useCurrency } from "../contexts/CurrencyContext"
 import { convertAndFormatCurrency } from "../lib/currency"
 import ConfirmDialog from "../components/ConfirmDialog"
+import { getLocalDateString } from "../lib/recurring"
 
 interface RecurringProps {
   recurringList: RecurringTransaction[]
@@ -51,7 +52,7 @@ export default function Recurring({
   const [frequency, setFrequency] = useState<RecurringFrequency>("monthly")
   const [dayOfMonth, setDayOfMonth] = useState<number>(1)
   const [dayOfWeek, setDayOfWeek] = useState<number>(1)
-  const [firstDueDate, setFirstDueDate] = useState(() => new Date().toISOString().split("T")[0])
+  const [firstDueDate, setFirstDueDate] = useState(() => getLocalDateString())
   const [isSaving, setIsSaving] = useState(false)
 
   // Fallback demo data if user has no recurring schedules yet
@@ -145,7 +146,7 @@ export default function Recurring({
     setFrequency("monthly")
     setDayOfMonth(1)
     setDayOfWeek(1)
-    setFirstDueDate(new Date().toISOString().split("T")[0])
+    setFirstDueDate(getLocalDateString())
     setIsModalOpen(true)
   }
 
