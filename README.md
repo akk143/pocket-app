@@ -4,7 +4,7 @@
 
 Built with **React, TypeScript, Firebase, Tailwind CSS, and Recharts**, PocketTrack is designed for everyday personal money tracking with a responsive interface that works across desktop, mobile, and installed PWA environments.
 
-**Live Demo:** https://pocket-app-two-chi.vercel.app
+**Live Demo:** https://pocket-app-beige.vercel.app/
 
 ## ✨ Features
 
