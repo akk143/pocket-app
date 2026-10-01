@@ -94,10 +94,14 @@ export default function AddExpenseSheet({
       setFrequency("monthly")
       if (initialExpense) {
         setType(initialExpense.type || "expense")
-        setQuantity(String(initialExpense.quantity || 1))
+        setQuantity(String(initialExpense.type === "income" ? 1 : initialExpense.quantity || 1))
         const initialVal = currency === "VND" 
-          ? initialExpense.unitPrice ?? initialExpense.amount
-          : Math.round(convertAmount(initialExpense.unitPrice ?? initialExpense.amount, currency, rates) * 100) / 100
+          ? initialExpense.type === "income" ? initialExpense.amount : initialExpense.unitPrice ?? initialExpense.amount
+          : Math.round(convertAmount(
+              initialExpense.type === "income" ? initialExpense.amount : initialExpense.unitPrice ?? initialExpense.amount,
+              currency,
+              rates,
+            ) * 100) / 100
         setAmount(String(initialVal))
         setCategoryId(initialExpense.categoryId)
         setItem(initialExpense.item)
@@ -145,7 +149,7 @@ export default function AddExpenseSheet({
   )
 
   const numericAmount = Number(amount.replace(/,/g, ""))
-  const numericQuantity = Number(quantity)
+  const numericQuantity = type === "income" ? 1 : Number(quantity)
 
   const displayInputValue =
     currency === "VND"
@@ -170,6 +174,7 @@ export default function AddExpenseSheet({
 
   const handleTypeChange = (newType: TransactionType) => {
     setType(newType)
+    setQuantity("1")
     // Switch to first category of new type
     const newCats = newType === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
     setCategoryId(newCats[0].id)
@@ -177,7 +182,7 @@ export default function AddExpenseSheet({
   }
 
   const handleSave = () => {
-    // Quantity and unit price guard
+    // Income entries are single amounts; only expenses can use quantity.
     if (!amount || !isFinite(numericAmount) || numericAmount <= 0 || !Number.isInteger(numericQuantity) || numericQuantity <= 0) {
       return
     }
@@ -326,55 +331,55 @@ export default function AddExpenseSheet({
             </button>
           </div>
 
-          {/* Quantity and unit price */}
-          <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2">
-            <div>
-              <label htmlFor="expense-quantity" className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-300 md:text-xs">
-                Quantity
-              </label>
-              <input
-                id="expense-quantity"
-                type="number"
-                min="1"
-                step="1"
-                value={quantity}
-                onChange={(event) => setQuantity(event.target.value.replace(/\D/g, ""))}
-                className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:text-2xl"
-              />
-            </div>
-            <div>
-          <div>
-            <label
-              htmlFor="expense-amount"
-              className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-300 md:text-xs"
-            >
-              Unit price
-            </label>
-
-            <div className="relative">
-              <input
-                id="expense-amount"
-                type="text"
-                inputMode={currency === "VND" ? "numeric" : "decimal"}
-                value={displayInputValue}
-                onChange={handleAmountChange}
-                placeholder="0"
-                className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-2 pr-10 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 outline-none transition placeholder:text-zinc-300 dark:placeholder:text-zinc-600 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:pr-12 md:text-2xl"
-              />
-
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-400 md:right-4 md:text-base">
-                {activeCurrencyConfig.symbol}
-              </span>
-            </div>
-            {currency !== "VND" && numericAmount > 0 && (
-              <p className="mt-1 text-[11px] text-zinc-400 dark:text-zinc-500">
-                ≈ {new Intl.NumberFormat("vi-VN").format(convertToBaseVND(numericAmount, currency, rates))} ₫ (auto-converted to base)
-              </p>
+          {/* Amount and optional expense quantity */}
+          <div className={type === "income" ? "" : "grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-2"}>
+            {type !== "income" && (
+              <div>
+                <label htmlFor="expense-quantity" className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-300 md:text-xs">
+                  Quantity
+                </label>
+                <input
+                  id="expense-quantity"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={quantity}
+                  onChange={(event) => setQuantity(event.target.value.replace(/\D/g, ""))}
+                  className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:text-2xl"
+                />
+              </div>
             )}
+            <div>
+              <label
+                htmlFor="expense-amount"
+                className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-300 md:text-xs"
+              >
+                {type === "income" ? "Amount" : "Unit price"}
+              </label>
+
+              <div className="relative">
+                <input
+                  id="expense-amount"
+                  type="text"
+                  inputMode={currency === "VND" ? "numeric" : "decimal"}
+                  value={displayInputValue}
+                  onChange={handleAmountChange}
+                  placeholder="0"
+                  className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-2 pr-10 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 outline-none transition placeholder:text-zinc-300 dark:placeholder:text-zinc-600 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:pr-12 md:text-2xl"
+                />
+
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-400 md:right-4 md:text-base">
+                  {activeCurrencyConfig.symbol}
+                </span>
+              </div>
+              {currency !== "VND" && numericAmount > 0 && (
+                <p className="mt-1 text-[11px] text-zinc-400 dark:text-zinc-500">
+                  ≈ {new Intl.NumberFormat("vi-VN").format(convertToBaseVND(numericAmount, currency, rates))} ₫ (auto-converted to base)
+                </p>
+              )}
             </div>
           </div>
-          </div>
-          {numericQuantity > 0 && numericAmount > 0 && (
+          {type !== "income" && numericQuantity > 0 && numericAmount > 0 && (
             <p className="text-right text-xs font-semibold text-zinc-500 dark:text-zinc-400">
               Total: {currency === "VND"
                 ? `${new Intl.NumberFormat("vi-VN").format(numericQuantity * numericAmount)} ${activeCurrencyConfig.symbol}`
