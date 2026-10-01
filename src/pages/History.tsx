@@ -5,8 +5,6 @@ import {
   ChevronRight,
   Search,
   Trash2,
-  Pencil,
-  MoreVertical,
   TrendingDown,
   TrendingUp,
   
@@ -16,6 +14,7 @@ import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
 import { useCurrency } from "../contexts/CurrencyContext"
 import { convertAndFormatCurrency } from "../lib/currency"
 import ConfirmDialog from "../components/ConfirmDialog"
+import TransactionActionsMenu from "../components/TransactionActionsMenu"
 
 const formatTimeStr = (timeStr: string) => {
   if (!timeStr) return ""
@@ -483,48 +482,13 @@ export default function History({
                           {isIncome ? `+ ${formatCurrency(expense.amount)}` : formatCurrency(expense.amount)}
                         </span>
 
-                        {/* Start Menu Buttons */}
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => setOpenMenuId(isMenuOpen ? null : expense.id)}
-                            className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </button>
-
-                          {isMenuOpen && (
-                            <div className="absolute right-0 top-full mt-1 w-32 rounded-xl border border-zinc-200 bg-white py-1 shadow-lg z-30 dark:border-zinc-800 dark:bg-zinc-900">
-                              {onEditExpense && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setOpenMenuId(null)
-                                    onEditExpense(expense)
-                                  }}
-                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                                >
-                                  <Pencil className="h-3 w-3 text-zinc-400" />
-                                  Edit
-                                </button>
-                              )}
-                              {onDeleteExpense && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setOpenMenuId(null)
-                                    setExpensePendingDeletion(expense)
-                                  }}
-                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                  Delete
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        {/* End Menu Buttons */}
+                        <TransactionActionsMenu
+                          itemName={expense.item}
+                          open={isMenuOpen}
+                          onOpenChange={(open) => setOpenMenuId(open ? expense.id : null)}
+                          onEdit={onEditExpense ? () => onEditExpense(expense) : undefined}
+                          onDelete={onDeleteExpense ? () => setExpensePendingDeletion(expense) : undefined}
+                        />
                       </div>
                     </div>
                   )
