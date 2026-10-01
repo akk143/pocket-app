@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Clock3,
   LayoutGrid,
-  MoreVertical,
   Plus,
   
   TrendingUp,
@@ -17,8 +16,6 @@ import {
   Sprout,
   BarChart3,
   Calendar,
-  Pencil,
-  Trash2,
   Target,
   Lightbulb,
 } from "lucide-react"
@@ -37,8 +34,10 @@ import { Link, useNavigate } from "react-router-dom"
 import type { Expense } from "../types/expense"
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
 import { useCurrency } from "../contexts/CurrencyContext"
-import { convertAndFormatCurrency } from "../lib/currency"
+import { convertAndFormatCurrency, compactFormatCurrency } from "../lib/currency"
 import ConfirmDialog from "../components/ConfirmDialog"
+import FinancialSummaryCard from "../components/FinancialSummaryCard"
+import TransactionActionsMenu from "../components/TransactionActionsMenu"
 
 interface HomeProps {
   expenses: Expense[]
@@ -63,17 +62,12 @@ function transactionMonthKey(value: string): string {
   return value.slice(0, 7)
 }
 
-function getDynamicAmountClass(str: string, base: "4xl" | "3xl" | "2xl" | "xl"): string {
-  const len = str.length
-  const scale: Record<"4xl" | "3xl" | "2xl" | "xl", [string, string, string]> = {
-    "4xl": ["text-4xl", "text-2xl", "text-xl"],
-    "3xl": ["text-3xl", "text-xl",  "text-lg"],
-    "2xl": ["text-2xl", "text-lg",  "text-base"],
-    "xl":  ["text-xl",  "text-base","text-sm"],
-  }
-  const [full, mid, small] = scale[base]
-  return len > 18 ? small : len > 12 ? mid : full
+function formatCategoryPercent(percent: number): string {
+  if (percent < 0.1) return "<0.1%"
+  if (percent < 10) return `${Number(percent.toFixed(1))}%`
+  return `${Math.round(percent)}%`
 }
+
 
 export default function Home({
   expenses,
@@ -86,6 +80,7 @@ export default function Home({
   const isDark = resolvedTheme === "dark"
   const { currency, rates } = useCurrency()
   const formatCurrency = (amount: number) => convertAndFormatCurrency(amount, currency, rates)
+  const formatCompact = (amount: number) => compactFormatCurrency(amount, currency, rates)
 
   const navigate = useNavigate()
   const [calendarViewMonth, setCalendarViewMonth] = useState(() => new Date())
@@ -111,6 +106,7 @@ export default function Home({
 
   const now = new Date()
   const today = toLocalDateKey(now)
+  const currentMonthKey = monthKey(now)
   const lastMonthKey = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1))
 
   const todayExpenses = activeExpenses.filter((e) => {
@@ -178,30 +174,40 @@ export default function Home({
     return [...activeExpenses].sort((a, b) => b.createdAt - a.createdAt).slice(0, 5)
   }, [activeExpenses])
 
-  // Category Chart Table
-  const categoryData = useMemo(() => {
-    const catMap: Record<string, number> = {}
-    activeExpenses
-      .filter((e) => e.type !== "income")
-      .forEach((e) => {
-        catMap[e.categoryId] = (catMap[e.categoryId] || 0) + e.amount
-      })
+  // Current-month spending by category
+  const categoryTotals: Record<string, number> = {}
+  activeExpenses
+    .filter((e) => e.type !== "income" && e.amount > 0 && transactionMonthKey(e.date) === currentMonthKey)
+    .forEach((e) => {
+      categoryTotals[e.categoryId] = (categoryTotals[e.categoryId] || 0) + e.amount
+    })
 
-    const total = Object.values(catMap).reduce((a, b) => a + b, 0) || 1
+  const categoryTotal = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0)
+  const categoryData = Object.entries(categoryTotals)
+    .map(([categoryId, amount]) => {
+      const category = EXPENSE_CATEGORIES.find((item) => item.id === categoryId)
+      return {
+        id: categoryId,
+        name: category?.name || categoryId,
+        amount,
+        percent: categoryTotal > 0 ? (amount / categoryTotal) * 100 : 0,
+        color: category?.color || "#9ca3af",
+      }
+    })
+    .sort((a, b) => b.amount - a.amount)
 
-    return Object.entries(catMap)
-      .map(([catId, amount]) => {
-        const cat = EXPENSE_CATEGORIES.find((c) => c.id === catId)
-        return {
-          id: catId,
-          name: cat?.name || catId,
-          amount,
-          percent: Math.round((amount / total) * 100),
-          color: cat?.color || "#9ca3af",
-        }
-      })
-      .sort((a, b) => b.amount - a.amount)
-  }, [activeExpenses])
+  const visibleCategoryData = categoryData.slice(0, 4)
+  const remainingCategories = categoryData.slice(4)
+  if (remainingCategories.length > 0) {
+    const otherAmount = remainingCategories.reduce((sum, category) => sum + category.amount, 0)
+    visibleCategoryData.push({
+      id: "other",
+      name: "Other",
+      amount: otherAmount,
+      percent: categoryTotal > 0 ? (otherAmount / categoryTotal) * 100 : 0,
+      color: "#9ca3af",
+    })
+  }
 
   const dailyBarData = useMemo(() => {
     const curDate = new Date()
@@ -321,7 +327,7 @@ export default function Home({
         const category = EXPENSE_CATEGORIES.find((item) => item.id === categoryId)
         return {
           name: category?.name || categoryId,
-          amount: convertAndFormatCurrency(amount, currency, rates),
+          amount: compactFormatCurrency(amount, currency, rates),
           percent: `${total ? Math.round((amount / total) * 100) : 0}%`,
           color: category?.color || "#9ca3af",
           icon: category?.component || EXPENSE_CATEGORIES[10].component,
@@ -356,8 +362,8 @@ export default function Home({
 
             <div className="mt-4">
               <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-widest">Today's Spending</p>
-              <p className={`mt-1.5 font-extrabold tracking-tight text-white tabular-nums whitespace-nowrap ${getDynamicAmountClass(formatCurrency(todayTotal), "4xl")}`}>
-                {formatCurrency(todayTotal)}
+              <p className="mt-1.5 text-4xl font-extrabold tracking-tight text-white tabular-nums whitespace-nowrap">
+                {formatCompact(todayTotal)}
               </p>
               {todayVsYesterdayDiff !== null ? (
                 <div className={`mt-1.5 flex items-center gap-1 text-xs font-medium ${todayVsYesterdayDiff <= 0 ? "text-emerald-400" : "text-amber-400"}`}>
@@ -383,7 +389,7 @@ export default function Home({
                 </div>
                 <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-400">This Month</span>
               </div>
-              <p className={`mt-2 font-bold tracking-tight text-zinc-900 dark:text-white tabular-nums whitespace-nowrap ${getDynamicAmountClass(formatCurrency(thisMonthTotal), "xl")}`}>{formatCurrency(thisMonthTotal)}</p>
+              <p className="mt-2 text-xl font-bold tracking-tight text-zinc-900 dark:text-white tabular-nums whitespace-nowrap">{formatCompact(thisMonthTotal)}</p>
               {monthVsLastMonthDiff !== null ? (
                 <div className={`mt-1 flex items-center gap-0.5 text-[11px] font-medium ${monthVsLastMonthDiff <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600"}`}>
                   {monthVsLastMonthDiff <= 0 ? <ArrowDownRight className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
@@ -405,10 +411,10 @@ export default function Home({
                 </div>
                 <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Net Flow</span>
               </div>
-              <p className={`mt-2 font-bold tracking-tight tabular-nums whitespace-nowrap ${getDynamicAmountClass((thisMonthNet >= 0 ? "+" : "") + formatCurrency(thisMonthNet), "xl")} ${
+              <p className={`mt-2 text-xl font-bold tracking-tight tabular-nums whitespace-nowrap ${
                 thisMonthNet >= 0 ? "text-zinc-900 dark:text-white" : "text-red-600 dark:text-red-400"
               }`}>
-                {thisMonthNet >= 0 ? "+" : ""}{formatCurrency(thisMonthNet)}
+                {thisMonthNet >= 0 ? "+" : ""}{formatCompact(thisMonthNet)}
               </p>
               <p className={`mt-1 text-[11px] font-medium ${
                 thisMonthNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
@@ -442,89 +448,73 @@ export default function Home({
 
           {/* ── Stat Cards (desktop only) ── */}
           <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-            {/* Today's Spending */}
-            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-6 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
-                  <CalendarDays className="h-5 w-5" />
-                </div>
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Today's Spending</span>
-              </div>
-              <p className={`mt-5 font-extrabold tracking-tight text-zinc-900 dark:text-white tabular-nums whitespace-nowrap ${getDynamicAmountClass(formatCurrency(todayTotal), "3xl")}`}>
-                {formatCurrency(todayTotal)}
-              </p>
-              {todayVsYesterdayDiff !== null ? (
-                <div className={`mt-2 flex items-center gap-1 text-xs font-medium ${todayVsYesterdayDiff <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600"}`}>
-                  {todayVsYesterdayDiff <= 0 ? <ArrowDownRight className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
-                  {Math.abs(todayVsYesterdayDiff)}% vs. yesterday
-                </div>
-              ) : (
-                <div className="mt-2 text-xs font-medium text-zinc-400">No data yesterday</div>
-              )}
-            </div>
-
-            {/* This Month Spending */}
-            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-6 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400">
-                  <Calendar className="h-5 w-5" />
-                </div>
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">This Month's Spending</span>
-              </div>
-              <p className={`mt-5 font-extrabold tracking-tight text-zinc-900 dark:text-white tabular-nums whitespace-nowrap ${getDynamicAmountClass(formatCurrency(thisMonthTotal), "3xl")}`}>
-                {formatCurrency(thisMonthTotal)}
-              </p>
-              <div className="mt-2 flex items-center justify-between text-xs font-medium">
-                {monthVsLastMonthDiff !== null ? (
-                  <div className={`flex items-center gap-1 ${monthVsLastMonthDiff <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600"}`}>
-                    {monthVsLastMonthDiff <= 0 ? <ArrowDownRight className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
-                    {Math.abs(monthVsLastMonthDiff)}% vs. last
-                  </div>
+            <FinancialSummaryCard
+              title="Today's spending"
+              amountCompact={formatCompact(todayTotal)}
+              amountFull={formatCurrency(todayTotal)}
+              trendNode={
+                todayVsYesterdayDiff !== null ? (
+                  <span className={`font-medium ${todayVsYesterdayDiff <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
+                    {Math.abs(todayVsYesterdayDiff)}% {todayVsYesterdayDiff <= 0 ? "lower" : "higher"} than yesterday
+                  </span>
                 ) : (
-                  <span className="text-zinc-400">First month</span>
-                )}
-                <span className="text-[11px] text-zinc-400">YTD: {formatCurrency(thisYearTotal)}</span>
-              </div>
-            </div>
+                  <span>No data yesterday</span>
+                )
+              }
+            />
 
-            {/* This Month Income */}
-            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-6 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
-                  <TrendingUp className="h-5 w-5" />
+            <FinancialSummaryCard
+              title="Monthly spending"
+              amountCompact={formatCompact(thisMonthTotal)}
+              amountFull={formatCurrency(thisMonthTotal)}
+              trendNode={
+                <div className="space-y-1">
+                  <div className="flex justify-between gap-2">
+                    <span>vs. last month</span>
+                    {monthVsLastMonthDiff !== null ? (
+                      <span className={`font-medium ${monthVsLastMonthDiff <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
+                        {Math.abs(monthVsLastMonthDiff)}% {monthVsLastMonthDiff <= 0 ? "lower" : "higher"}
+                      </span>
+                    ) : (
+                      <span>No data</span>
+                    )}
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span>Year total</span>
+                    <span className="font-medium text-zinc-700 dark:text-zinc-300">{formatCompact(thisYearTotal)}</span>
+                  </div>
                 </div>
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">This Month's Income</span>
-              </div>
-              <p className={`mt-5 font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400 tabular-nums whitespace-nowrap ${getDynamicAmountClass(formatCurrency(thisMonthIncome), "3xl")}`}>
-                {formatCurrency(thisMonthIncome)}
-              </p>
-              <div className="mt-2 text-xs font-medium text-zinc-400">
-                {thisYearIncome > 0 ? `Year: ${formatCurrency(thisYearIncome)}` : "Earned this month"}
-              </div>
-            </div>
+              }
+            />
 
-            {/* Net Cash Flow */}
-            <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-6 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                  thisMonthNet >= 0
-                    ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                    : "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
-                }`}>
-                  <BarChart3 className="h-5 w-5" />
+            <FinancialSummaryCard
+              title="Monthly income"
+              amountCompact={formatCompact(thisMonthIncome)}
+              amountFull={formatCurrency(thisMonthIncome)}
+              amountColorClass="text-emerald-600 dark:text-emerald-400"
+              trendNode={
+                <div className="flex justify-between gap-2">
+                  <span>Year total</span>
+                  <span className="font-medium text-zinc-700 dark:text-zinc-300">{formatCompact(thisYearIncome)}</span>
                 </div>
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Net Cash Flow</span>
-              </div>
-              <p className={`mt-4 font-bold tracking-tight tabular-nums whitespace-nowrap ${getDynamicAmountClass((thisMonthNet >= 0 ? "+" : "") + formatCurrency(thisMonthNet), "2xl")} ${
-                thisMonthNet >= 0 ? "text-zinc-900 dark:text-white" : "text-red-600 dark:text-red-400"
-              }`}>
-                {thisMonthNet >= 0 ? "+" : ""}{formatCurrency(thisMonthNet)}
-              </p>
-              <div className={`mt-2 flex items-center gap-1 text-xs font-medium ${thisMonthNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
-                {thisMonthNet >= 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-                {thisMonthNet >= 0 ? "Savings on track" : "Spending exceeds income"}
-              </div>
-            </div>
+              }
+            />
+
+            <FinancialSummaryCard
+              title="Monthly net"
+              amountCompact={(thisMonthNet > 0 ? "+" : "") + formatCompact(thisMonthNet)}
+              amountFull={(thisMonthNet > 0 ? "+" : "") + formatCurrency(thisMonthNet)}
+              amountColorClass={thisMonthNet >= 0 ? "text-zinc-900 dark:text-white" : "text-red-600 dark:text-red-400"}
+              trendNode={
+                <span className={`font-medium ${thisMonthNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>
+                  {thisMonthNet > 0
+                    ? "More income than spending"
+                    : thisMonthNet < 0
+                    ? "More spending than income"
+                    : "Income equals spending"}
+                </span>
+              }
+            />
           </section>
         </div>
 
@@ -574,7 +564,7 @@ export default function Home({
                 <p className="text-xs font-semibold text-zinc-900 dark:text-white dark:text-white">Spending Insight</p>
                 <p className="mt-0.5 text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed dark:text-zinc-400">
                   {categoryData[0]
-                    ? `${categoryData[0].name} accounts for ${categoryData[0].percent}% of your spending this month.`
+                    ? `${categoryData[0].name} is your top category at ${formatCategoryPercent(categoryData[0].percent)} this month.`
                     : "No spending recorded yet."}
                 </p>
               </div>
@@ -662,80 +652,89 @@ export default function Home({
 
           {/* Spending by Category */}
           <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-4 shadow-xs sm:p-5">
-            <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <div>
-                <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
-                  Spending by Category
-                </h2>
-                <p className="text-xs text-zinc-400">
-                  {new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(now)}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <div>
+                  <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
+                    Spending by Category
+                  </h2>
+                  <p className="text-xs text-zinc-400">
+                    {new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(now)}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-zinc-400">Total spent</p>
+                <p className="text-sm font-semibold tabular-nums text-zinc-900 dark:text-white">
+                  {formatCompact(categoryData.reduce((sum, category) => sum + category.amount, 0))}
                 </p>
               </div>
             </div>
 
-            <div className="mt-3 flex flex-col items-center gap-2 sm:mt-4 sm:gap-3 sm:flex-row sm:justify-between">
-              <div className="relative flex h-28 w-28 shrink-0 items-center justify-center sm:h-40 sm:w-40">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      dataKey="amount"
-                      nameKey="name"
-                      innerRadius={42}
-                      outerRadius={60}
-                      paddingAngle={3}
-                      stroke="none"
-                    >
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <span className="text-xs font-bold text-zinc-900 dark:text-white whitespace-nowrap">
-                    {formatCurrency(thisMonthTotal)}
-                  </span>
-                  <span className="text-[10px] font-medium text-zinc-400">
-                    Total
-                  </span>
-                </div>
-              </div>
-
-              {/* Category list */}
-              <div className="w-full min-w-0 flex-1 space-y-2 text-xs">
-                {categoryData.slice(0, 6).map((cat) => (
-                  <div
-                    key={cat.name}
-                    className="flex items-center justify-between gap-2 text-zinc-700 dark:text-zinc-300"
-                  >
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span
-                        className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: cat.color }}
-                      />
-                      <span className="font-medium text-zinc-800 dark:text-zinc-200 truncate" title={cat.name}>
-                        {cat.name}
+            <div className="mt-4">
+              {visibleCategoryData.length > 0 ? (
+                <div className="flex flex-col items-center gap-4 sm:flex-row">
+                  <div className="relative h-32 w-32 shrink-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={visibleCategoryData}
+                          dataKey="amount"
+                          nameKey="name"
+                          innerRadius={38}
+                          outerRadius={58}
+                          paddingAngle={2}
+                          stroke="none"
+                        >
+                          {visibleCategoryData.map((category) => (
+                            <Cell key={category.id} fill={category.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+                      <span className="max-w-[88px] truncate text-xs font-bold tabular-nums text-zinc-900 dark:text-white" title={formatCurrency(categoryTotal)}>
+                        {formatCompact(categoryTotal)}
                       </span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 text-right">
-                      <span className="font-medium text-zinc-600 dark:text-zinc-400 whitespace-nowrap">
-                        {formatCurrency(cat.amount)}
-                      </span>
-                      <span className="w-7 text-right font-medium text-zinc-400">
-                        {cat.percent}%
-                      </span>
+                      <span className="text-[10px] text-zinc-400">Total</span>
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="w-full min-w-0 flex-1 space-y-2">
+                    {visibleCategoryData.map((category) => (
+                      <div key={category.id} className="flex items-center justify-between gap-2 text-xs">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span
+                            className="h-2 w-2 shrink-0 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <span className="truncate font-medium text-zinc-800 dark:text-zinc-200" title={category.name}>
+                            {category.name}
+                          </span>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2 tabular-nums">
+                          <span className="font-medium text-zinc-700 dark:text-zinc-300" title={formatCurrency(category.amount)}>
+                            {formatCompact(category.amount)}
+                          </span>
+                          <span className="w-10 text-right text-zinc-400">
+                            {formatCategoryPercent(category.percent)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="py-8 text-center text-xs text-zinc-400">
+                  No spending recorded this month.
+                </p>
+              )}
             </div>
           </div>
         </section>
 
         {/* Recent Expenses Table */}
-        <section className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+        <section className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)]">
           <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-xs">
             <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 px-4 py-3.5 sm:px-5 sm:py-4">
               <div className="flex items-center gap-2.5">
@@ -757,7 +756,7 @@ export default function Home({
             </div>
 
 
-            <div className="hidden border-b border-zinc-100 dark:border-zinc-800 px-5 py-2.5 text-[11px] font-medium text-zinc-400 uppercase tracking-wider sm:grid sm:grid-cols-[90px_minmax(0,1.8fr)_minmax(0,1fr)_minmax(0,1fr)_28px] sm:items-center sm:gap-3">
+            <div className="hidden border-b border-zinc-100 px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:border-zinc-800 2xl:grid 2xl:grid-cols-[5rem_minmax(0,1.8fr)_minmax(0,1fr)_minmax(0,0.9fr)_2.75rem] 2xl:items-center 2xl:gap-3">
               <span>Date</span>
               <span>Item</span>
               <span>Category</span>
@@ -794,10 +793,10 @@ export default function Home({
                 return (
                   <div
                     key={expense.id}
-                    className="relative grid grid-cols-[70px_minmax(0,1fr)_auto_24px] items-center gap-2 px-3 py-3 sm:grid-cols-[90px_minmax(0,1.8fr)_minmax(0,1fr)_minmax(0,1fr)_28px] sm:gap-3 sm:px-5 sm:py-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 dark:hover:bg-zinc-800/30 transition"
+                    className="grid grid-cols-[minmax(0,1fr)_auto_2.75rem] items-center gap-2 px-3 py-3 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/30 sm:gap-3 sm:px-5 sm:py-3.5 2xl:grid-cols-[5rem_minmax(0,1.8fr)_minmax(0,1fr)_minmax(0,0.9fr)_2.75rem]"
                   >
                     {/* Date */}
-                    <div className="min-w-0 text-xs font-semibold text-zinc-600 dark:text-zinc-400 truncate">
+                    <div className="hidden min-w-0 truncate text-xs font-semibold text-zinc-600 dark:text-zinc-400 2xl:block">
                       {formatRecentDate(expense.date)}
                     </div>
 
@@ -809,19 +808,28 @@ export default function Home({
                       >
                         {Icon && <Icon className="h-4 w-4" style={{ color }} />}
                       </div>
-                      <span className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-white truncate" title={expense.item}>
-                        {expense.item}
-                      </span>
+                      <div className="min-w-0 flex-1">
+                        <span className="block truncate text-xs font-semibold text-zinc-900 dark:text-white sm:text-sm" title={expense.item}>
+                          {expense.item}
+                        </span>
+                        <span
+                          title={cat?.name || expense.categoryName}
+                          className="mt-0.5 block truncate text-[11px] text-zinc-500 dark:text-zinc-400 2xl:hidden"
+                        >
+                          {formatRecentDate(expense.date)} · {cat?.name || expense.categoryName}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Category */}
-                    <div className="hidden sm:block">
+                    <div className="hidden min-w-0 2xl:block">
                       <span
+                        title={cat?.name || expense.categoryName}
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           isIncome
                             ? "bg-emerald-50 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50"
                             : cat?.badgeBg || "bg-zinc-100 dark:bg-zinc-800"
-                        } ${isIncome ? "" : cat?.badgeText || "text-zinc-700 dark:text-zinc-300"}`}
+                        } ${isIncome ? "" : cat?.badgeText || "text-zinc-700 dark:text-zinc-300"} max-w-full truncate`}
                       >
                         {cat?.name || expense.categoryName}
                       </span>
@@ -829,53 +837,21 @@ export default function Home({
 
                     {/* Amount */}
                     <div
-                      className={`whitespace-nowrap text-right text-xs font-semibold sm:text-sm ${
+                      className={`whitespace-nowrap text-right text-xs font-semibold tabular-nums sm:text-sm ${
                         isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-900 dark:text-white"
                       }`}
+                      title={isIncome ? `+ ${formatCurrency(expense.amount)}` : formatCurrency(expense.amount)}
                     >
-                      {isIncome ? `+ ${formatCurrency(expense.amount)}` : formatCurrency(expense.amount)}
+                      {isIncome ? `+ ${formatCompact(expense.amount)}` : formatCompact(expense.amount)}
                     </div>
 
-                    <div className="relative text-right">
-                      <button
-                        type="button"
-                        onClick={() => setOpenActionMenuId(isMenuOpen ? null : expense.id)}
-                        className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 dark:bg-zinc-800 hover:text-zinc-700 dark:text-zinc-300"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
-
-                      {isMenuOpen && (
-                        <div className="absolute right-0 top-full mt-1 w-32 rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 py-1 shadow-lg z-30">
-                          {onEditExpense && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setOpenActionMenuId(null)
-                                onEditExpense(expense)
-                              }}
-                              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                            >
-                              <Pencil className="h-3 w-3 text-zinc-400" />
-                              Edit
-                            </button>
-                          )}
-                          {onDeleteExpense && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setOpenActionMenuId(null)
-                                setExpensePendingDeletion(expense)
-                              }}
-                              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                              Delete
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    <TransactionActionsMenu
+                      itemName={expense.item}
+                      open={isMenuOpen}
+                      onOpenChange={(open) => setOpenActionMenuId(open ? expense.id : null)}
+                      onEdit={onEditExpense ? () => onEditExpense(expense) : undefined}
+                      onDelete={onDeleteExpense ? () => setExpensePendingDeletion(expense) : undefined}
+                    />
                   </div>
                 )
               })}
@@ -1016,17 +992,17 @@ export default function Home({
           <div className="mt-3 space-y-2.5 text-xs">
             <div className="flex items-center justify-between">
               <span className="text-zinc-500 dark:text-zinc-400">Expenses</span>
-              <span className="flex items-center gap-1 font-semibold text-zinc-900 dark:text-white">
-                {formatCurrency(calendarDaySpent)}{" "}
+              <span className="flex items-center gap-1 font-semibold text-zinc-900 dark:text-white" title={formatCurrency(calendarDaySpent)}>
+                {formatCompact(calendarDaySpent)}{" "}
                 <ArrowUpRight className="h-3 w-3 text-red-500 dark:text-red-400" />
               </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-zinc-500 dark:text-zinc-400">Income</span>
-              <span className="flex items-center gap-1 font-semibold text-zinc-900 dark:text-white">
+              <span className="flex items-center gap-1 font-semibold text-zinc-900 dark:text-white" title={formatCurrency(calendarDayIncome)}>
                 {calendarDayIncome > 0 ? (
                   <>
-                    {formatCurrency(calendarDayIncome)}{" "}
+                    {formatCompact(calendarDayIncome)}{" "}
                     <ArrowDownRight className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                   </>
                 ) : (
@@ -1040,8 +1016,9 @@ export default function Home({
                 className={`flex items-center gap-1 font-semibold ${
                   calendarDayNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
                 }`}
+                title={formatCurrency(calendarDayNet)}
               >
-                {formatCurrency(Math.abs(calendarDayNet))}
+                {formatCompact(Math.abs(calendarDayNet))}
                 {calendarDayNet >= 0 ? (
                   <TrendingUp className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                 ) : (

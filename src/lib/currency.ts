@@ -134,3 +134,20 @@ export function convertToBaseVND(
 
   return amount;
 }
+
+// Compact formatter for dashboard amounts; the full value remains available in the card tooltip.
+export function compactFormatCurrency(
+  amountInVND: number,
+  targetCurrencyCode: string,
+  rates: Record<string, number> | null
+): string {
+  const targetConfig = SUPPORTED_CURRENCIES.find(c => c.code === targetCurrencyCode) || SUPPORTED_CURRENCIES[0]
+  const converted = convertAmount(amountInVND, targetCurrencyCode, rates)
+
+  return new Intl.NumberFormat(targetConfig.locale, {
+    style: "currency",
+    currency: targetConfig.code,
+    notation: "compact",
+    maximumSignificantDigits: 3,
+  }).format(converted)
+}
