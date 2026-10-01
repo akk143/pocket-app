@@ -40,6 +40,7 @@ interface HistoryProps {
   trashCount?: number
   onEditExpense?: (expense: Expense) => void
   onDeleteExpense?: (id: string) => void | Promise<void>
+  onBulkDeleteExpenses?: (ids: string[]) => Promise<void>
 }
 
 export default function History({
@@ -47,6 +48,7 @@ export default function History({
   trashCount = 0,
   onEditExpense,
   onDeleteExpense,
+  onBulkDeleteExpenses,
 }: HistoryProps) {
   const { currency, rates } = useCurrency()
   const formatCurrency = (amount: number) => convertAndFormatCurrency(amount, currency, rates)
@@ -59,6 +61,11 @@ export default function History({
   const [viewDate, setViewDate] = useState(() => new Date())
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [expensePendingDeletion, setExpensePendingDeletion] = useState<Expense | null>(null)
+  const [selectedExpenseIds, setSelectedExpenseIds] = useState<string[]>([])
+  const [bulkDeleteSnapshot, setBulkDeleteSnapshot] = useState<Expense[] | null>(null)
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null)
 
   const handleQueryChange = (val: string) => {
     if (val) {
@@ -212,6 +219,15 @@ export default function History({
       )
     })
   }, [displayExpenses, query, typeFilter, effectiveCategoryId, viewDate])
+
+  const selectableExpenses = filtered.filter((expense) =>
+    expenses.some((realExpense) => realExpense.id === expense.id),
+  )
+  const selectedExpenses = bulkDeleteSnapshot ?? selectableExpenses.filter((expense) =>
+    selectedExpenseIds.includes(expense.id),
+  )
+  const allFilteredSelected =
+    selectableExpenses.length > 0 && selectedExpenses.length === selectableExpenses.length
 
   // Group by date
   const grouped = useMemo(() => {
@@ -415,6 +431,43 @@ export default function History({
         </div>
       </div>
 
+      {onBulkDeleteExpenses && selectableExpenses.length > 0 && (
+        <div className="mb-3 flex min-h-12 flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              <input
+                type="checkbox"
+                checked={allFilteredSelected}
+                onChange={() =>
+                  setSelectedExpenseIds((ids) =>
+                    allFilteredSelected
+                      ? ids.filter((id) => !selectableExpenses.some((expense) => expense.id === id))
+                      : [...new Set([...ids, ...selectableExpenses.map((expense) => expense.id)])],
+                  )
+                }
+                className="h-4 w-4 rounded border-zinc-300 accent-emerald-600"
+              />
+              Select all
+            </label>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500">
+              {selectedExpenses.length > 0
+                ? `${selectedExpenses.length} selected`
+                : `${selectableExpenses.length} items`}
+            </span>
+          </div>
+          {selectedExpenses.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsBulkDeleteDialogOpen(true)}
+              className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-500/10 dark:text-red-400"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Move to Trash
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Date Groups List */}
       <div className="space-y-6">
         {grouped.length === 0 ? (
@@ -446,9 +499,28 @@ export default function History({
                   return (
                     <div
                       key={expense.id}
-                      className="group relative flex items-center justify-between gap-2 px-3 py-3.5 transition hover:bg-zinc-50/50 sm:px-4 dark:hover:bg-zinc-800/30"
+                      className={`group relative flex items-center justify-between gap-2 px-3 py-3.5 sm:px-4 ${
+                        selectedExpenseIds.includes(expense.id)
+                          ? "bg-emerald-50/50 dark:bg-emerald-500/10"
+                          : ""
+                      }`}
                     >
                       <div className="flex min-w-0 flex-1 items-center gap-3">
+                        {onBulkDeleteExpenses && expenses.some((item) => item.id === expense.id) && (
+                          <input
+                            type="checkbox"
+                            checked={selectedExpenseIds.includes(expense.id)}
+                            onChange={() =>
+                              setSelectedExpenseIds((ids) =>
+                                ids.includes(expense.id)
+                                  ? ids.filter((id) => id !== expense.id)
+                                  : [...ids, expense.id],
+                              )
+                            }
+                            aria-label={`Select ${expense.item}`}
+                            className="h-4 w-4 shrink-0 rounded border-zinc-300 accent-emerald-600"
+                          />
+                        )}
                         <div
                           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
                           style={{ backgroundColor: color + "18" }}
@@ -512,6 +584,42 @@ export default function History({
             void onDeleteExpense?.(expensePendingDeletion.id)
           }
           setExpensePendingDeletion(null)
+        }}
+      />
+      {bulkDeleteError && (
+        <p role="alert" className="mt-3 text-sm font-medium text-red-600 dark:text-red-400">
+          {bulkDeleteError}
+        </p>
+      )}
+      <ConfirmDialog
+        open={isBulkDeleteDialogOpen}
+        title="Move selected transactions to Trash?"
+        message={`This will move ${selectedExpenses.length} selected transactions`}
+        confirmLabel={isBulkDeleting ? "Moving..." : "Move to Trash"}
+        variant="soft"
+        onCancel={() => {
+          if (!isBulkDeleting) {
+            setIsBulkDeleteDialogOpen(false)
+            setBulkDeleteSnapshot(null)
+          }
+        }}
+        onConfirm={() => {
+          if (!onBulkDeleteExpenses || selectedExpenses.length === 0 || isBulkDeleting) return
+          setBulkDeleteError(null)
+          setBulkDeleteSnapshot(selectedExpenses)
+          setIsBulkDeleting(true)
+          void onBulkDeleteExpenses(selectedExpenses.map((expense) => expense.id))
+            .then(() => {
+              setSelectedExpenseIds((ids) =>
+                ids.filter((id) => !selectedExpenses.some((expense) => expense.id === id)),
+              )
+              setIsBulkDeleteDialogOpen(false)
+            })
+            .catch(() => setBulkDeleteError("Could not move the selected transactions to Trash. Please try again."))
+            .finally(() => {
+              setBulkDeleteSnapshot(null)
+              setIsBulkDeleting(false)
+            })
         }}
       />
     </div>
