@@ -277,7 +277,7 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
             </div>
 
             {/* Exchange Rate Status banner */}
-            <div className="flex items-center justify-between rounded-xl bg-zinc-50 dark:bg-zinc-800/50 p-3 text-xs border border-zinc-100 dark:border-zinc-800">
+            <div className="flex flex-col items-start gap-2 rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-800/50 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 <RefreshCw className={`h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500 ${isLoadingRates ? "animate-spin" : ""}`} />
                 <span className="text-zinc-600 dark:text-zinc-400">
@@ -296,7 +296,7 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
                   )}
                 </span>
               </div>
-              <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
+              <span className="text-[11px] text-zinc-400 dark:text-zinc-500 sm:text-right">
                 Auto-updated daily via Open Exchange API
               </span>
             </div>
