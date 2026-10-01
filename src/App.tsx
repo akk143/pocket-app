@@ -60,6 +60,7 @@ function App() {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("drinks")
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
   const [headerSearch, setHeaderSearch] = useState("")
   const [toast, setToast] = useState<{
     message: string
@@ -76,10 +77,35 @@ function App() {
     setTimeout(() => setToast(null), 3000)
   }
 
+  useEffect(() => {
+    if (!userMenuOpen) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!userMenuRef.current?.contains(event.target as Node)) {
+        setUserMenuOpen(false)
+      }
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setUserMenuOpen(false)
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown)
+    document.addEventListener("keydown", handleKeyDown)
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown)
+      document.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [userMenuOpen])
+
   // Auth listener
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser)
+      if (!firebaseUser) {
+        setExpenses([])
+        setTrashCount(0)
+        setRecurringList([])
+      }
       setAuthLoading(false)
     })
     return unsub
@@ -87,10 +113,7 @@ function App() {
 
   // Firestore expense listener (only when signed in)
   useEffect(() => {
-    if (!user) {
-      setExpenses([])
-      return
-    }
+    if (!user) return
 
     const unsub = subscribeToExpenses(
       user.uid,
@@ -102,10 +125,7 @@ function App() {
   }, [user])
 
   useEffect(() => {
-    if (!user) {
-      setTrashCount(0)
-      return
-    }
+    if (!user) return
 
     return subscribeToDeletedExpenses(
       user.uid,
@@ -119,7 +139,8 @@ function App() {
   async function handleSaveExpense(expense: Expense) {
     if (!user) return
     try {
-      const { id: _id, ...data } = expense
+      const data = { ...expense }
+      Reflect.deleteProperty(data, "id")
       await addExpense(user.uid, data)
       showToast(expense.type === "income" ? "Income saved successfully" : "Expense recorded successfully")
     } catch {
@@ -156,6 +177,44 @@ function App() {
     } catch {
       showToast("Delete failed. Check your connection.", "info")
     }
+  }
+
+  async function handleBulkDeleteExpenses(expenseIds: string[]) {
+    if (!user) return
+
+    const results = await Promise.allSettled(
+      expenseIds.map((expenseId) => deleteExpense(user.uid, expenseId)),
+    )
+    const deletedIds = expenseIds.filter((_, index) => results[index].status === "fulfilled")
+    const failedCount = results.length - deletedIds.length
+
+    if (deletedIds.length === 0) {
+      showToast("Failed to move transactions to Trash. Check your connection.", "info")
+      return
+    }
+
+    const deletedLabel = `${deletedIds.length} transaction${deletedIds.length === 1 ? "" : "s"} moved to Trash`
+    showToast(
+      failedCount > 0 ? `${deletedLabel}; ${failedCount} failed` : deletedLabel,
+      failedCount > 0 ? "info" : "success",
+      {
+        label: "Undo",
+        onClick: () => {
+          void Promise.allSettled(
+            deletedIds.map((expenseId) => restoreExpense(user.uid, expenseId)),
+          ).then((restoreResults) => {
+            const restoredCount = restoreResults.filter((result) => result.status === "fulfilled").length
+            const restoreFailedCount = restoreResults.length - restoredCount
+            showToast(
+              restoreFailedCount > 0
+                ? `${restoredCount} restored; ${restoreFailedCount} could not be restored`
+                : `${restoredCount} transaction${restoredCount === 1 ? "" : "s"} restored`,
+              restoreFailedCount > 0 ? "info" : "success",
+            )
+          })
+        },
+      },
+    )
   }
 
   async function handleRestoreExpense(expenseId: string) {
@@ -304,9 +363,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#f7f7f5] text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-      <div className="mx-auto flex min-h-screen max-w-[1600px]">
+      <div className="mx-auto flex min-h-screen min-h-dvh max-w-[1600px]">
 
-        <aside className="hidden w-64 shrink-0 flex-col justify-between border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 p-5 lg:flex lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
+        <aside className="hidden w-64 shrink-0 flex-col justify-between border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 p-5 lg:flex lg:sticky lg:top-0 lg:h-dvh lg:overflow-y-auto">
           <div>
             {/* Logo */}
             <div className="mb-8 flex items-center gap-2.5 px-2">
@@ -432,7 +491,7 @@ function App() {
         </aside>
 
         {/* ── Main Content Area ── */}
-        <main className="flex min-w-0 flex-1 flex-col pb-24 lg:pb-0">
+        <main className="flex min-w-0 flex-1 flex-col pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0">
           {/* Header */}
           <header className="sticky top-0 z-20 flex items-center justify-between border-b border-zinc-200 bg-white/95 dark:border-zinc-800 dark:bg-zinc-950/95 px-5 py-3.5 backdrop-blur-md sm:px-8">
             {/* Mobile Logo */}
@@ -456,7 +515,7 @@ function App() {
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
               {/* Currency Quick Switcher */}
-              <div className="relative">
+              <div className="relative" ref={userMenuRef}>
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
@@ -577,6 +636,7 @@ function App() {
                     trashCount={trashCount}
                     onEditExpense={openEditExpense}
                     onDeleteExpense={handleDeleteExpense}
+                    onBulkDeleteExpenses={handleBulkDeleteExpenses}
                   />
                 }
               />
@@ -633,13 +693,13 @@ function App() {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md lg:hidden">
-        <div className="grid grid-cols-5 items-center">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/95 lg:hidden">
+        <div className="grid min-h-14 grid-cols-5 items-center">
           <NavLink
             to="/"
             end
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition ${
+              `flex min-h-14 flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition ${
                 isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
               }`
             }
@@ -651,7 +711,7 @@ function App() {
           <NavLink
             to="/history"
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition ${
+              `flex min-h-14 flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition ${
                 isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
               }`
             }
@@ -668,7 +728,7 @@ function App() {
           <NavLink
             to="/recurring"
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition ${
+              `flex min-h-14 flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition ${
                 isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
               }`
             }
@@ -680,7 +740,7 @@ function App() {
           <NavLink
             to="/analytics"
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition ${
+              `flex min-h-14 flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition ${
                 isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
               }`
             }
@@ -692,7 +752,7 @@ function App() {
           <NavLink
             to="/settings"
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition ${
+              `flex min-h-14 flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition ${
                 isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
               }`
             }
@@ -709,7 +769,7 @@ function App() {
         type="button"
         aria-label="Add expense"
         onClick={() => openAddExpense()}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-600/30 transition hover:bg-emerald-700 active:scale-95 lg:hidden"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-600/30 transition hover:bg-emerald-700 active:scale-95 lg:hidden"
       >
         <Plus className="h-6 w-6" />
       </button>
@@ -731,7 +791,7 @@ function App() {
       />
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-20 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center justify-between gap-4 rounded-2xl border border-zinc-200/80 bg-zinc-900 px-4 py-3 text-xs font-semibold text-white shadow-xl lg:bottom-6 lg:left-auto lg:right-6 lg:w-auto lg:translate-x-0">
+        <div className="fixed bottom-[calc(9rem+env(safe-area-inset-bottom))] left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center justify-between gap-4 rounded-2xl border border-zinc-200/80 bg-zinc-900 px-4 py-3 text-xs font-semibold text-white shadow-xl lg:bottom-6 lg:left-auto lg:right-6 lg:w-auto lg:translate-x-0">
           <div className="flex items-center gap-2">
           <span className="flex h-2 w-2 rounded-full bg-emerald-400" />
           {toast.message}
