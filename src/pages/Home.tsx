@@ -63,6 +63,18 @@ function transactionMonthKey(value: string): string {
   return value.slice(0, 7)
 }
 
+function getDynamicAmountClass(str: string, base: "4xl" | "3xl" | "2xl" | "xl"): string {
+  const len = str.length
+  const scale: Record<"4xl" | "3xl" | "2xl" | "xl", [string, string, string]> = {
+    "4xl": ["text-4xl", "text-2xl", "text-xl"],
+    "3xl": ["text-3xl", "text-xl",  "text-lg"],
+    "2xl": ["text-2xl", "text-lg",  "text-base"],
+    "xl":  ["text-xl",  "text-base","text-sm"],
+  }
+  const [full, mid, small] = scale[base]
+  return len > 18 ? small : len > 12 ? mid : full
+}
+
 export default function Home({
   expenses,
   userName = "John",
@@ -344,7 +356,7 @@ export default function Home({
 
             <div className="mt-4">
               <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-widest">Today's Spending</p>
-              <p className="mt-1.5 text-4xl font-extrabold tracking-tight text-white">
+              <p className={`mt-1.5 font-extrabold tracking-tight text-white tabular-nums whitespace-nowrap ${getDynamicAmountClass(formatCurrency(todayTotal), "4xl")}`}>
                 {formatCurrency(todayTotal)}
               </p>
               {todayVsYesterdayDiff !== null ? (
@@ -371,7 +383,7 @@ export default function Home({
                 </div>
                 <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-400">This Month</span>
               </div>
-              <p className="mt-2 text-xl font-bold tracking-tight text-zinc-900 dark:text-white">{formatCurrency(thisMonthTotal)}</p>
+              <p className={`mt-2 font-bold tracking-tight text-zinc-900 dark:text-white tabular-nums whitespace-nowrap ${getDynamicAmountClass(formatCurrency(thisMonthTotal), "xl")}`}>{formatCurrency(thisMonthTotal)}</p>
               {monthVsLastMonthDiff !== null ? (
                 <div className={`mt-1 flex items-center gap-0.5 text-[11px] font-medium ${monthVsLastMonthDiff <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600"}`}>
                   {monthVsLastMonthDiff <= 0 ? <ArrowDownRight className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
@@ -393,7 +405,7 @@ export default function Home({
                 </div>
                 <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Net Flow</span>
               </div>
-              <p className={`mt-2 text-xl font-bold tracking-tight ${
+              <p className={`mt-2 font-bold tracking-tight tabular-nums whitespace-nowrap ${getDynamicAmountClass((thisMonthNet >= 0 ? "+" : "") + formatCurrency(thisMonthNet), "xl")} ${
                 thisMonthNet >= 0 ? "text-zinc-900 dark:text-white" : "text-red-600 dark:text-red-400"
               }`}>
                 {thisMonthNet >= 0 ? "+" : ""}{formatCurrency(thisMonthNet)}
@@ -438,7 +450,7 @@ export default function Home({
                 </div>
                 <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Today's Spending</span>
               </div>
-              <p className="mt-5 text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
+              <p className={`mt-5 font-extrabold tracking-tight text-zinc-900 dark:text-white tabular-nums whitespace-nowrap ${getDynamicAmountClass(formatCurrency(todayTotal), "3xl")}`}>
                 {formatCurrency(todayTotal)}
               </p>
               {todayVsYesterdayDiff !== null ? (
@@ -459,7 +471,7 @@ export default function Home({
                 </div>
                 <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">This Month's Spending</span>
               </div>
-              <p className="mt-5 text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
+              <p className={`mt-5 font-extrabold tracking-tight text-zinc-900 dark:text-white tabular-nums whitespace-nowrap ${getDynamicAmountClass(formatCurrency(thisMonthTotal), "3xl")}`}>
                 {formatCurrency(thisMonthTotal)}
               </p>
               <div className="mt-2 flex items-center justify-between text-xs font-medium">
@@ -483,7 +495,7 @@ export default function Home({
                 </div>
                 <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">This Month's Income</span>
               </div>
-              <p className="mt-5 text-3xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">
+              <p className={`mt-5 font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400 tabular-nums whitespace-nowrap ${getDynamicAmountClass(formatCurrency(thisMonthIncome), "3xl")}`}>
                 {formatCurrency(thisMonthIncome)}
               </p>
               <div className="mt-2 text-xs font-medium text-zinc-400">
@@ -503,7 +515,7 @@ export default function Home({
                 </div>
                 <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Net Cash Flow</span>
               </div>
-              <p className={`mt-4 text-2xl font-bold tracking-tight ${
+              <p className={`mt-4 font-bold tracking-tight tabular-nums whitespace-nowrap ${getDynamicAmountClass((thisMonthNet >= 0 ? "+" : "") + formatCurrency(thisMonthNet), "2xl")} ${
                 thisMonthNet >= 0 ? "text-zinc-900 dark:text-white" : "text-red-600 dark:text-red-400"
               }`}>
                 {thisMonthNet >= 0 ? "+" : ""}{formatCurrency(thisMonthNet)}
