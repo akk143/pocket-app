@@ -35,7 +35,7 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f7f7f5] dark:bg-zinc-950 px-4">
+    <div className="flex min-h-screen min-h-dvh items-center justify-center bg-[#f7f7f5] dark:bg-zinc-950 px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
@@ -93,7 +93,8 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPw((v) => !v)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+                  aria-label={showPw ? "Hide password" : "Show password"}
+                  className="absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:text-zinc-500 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
                 >
                   {showPw ? (
                     <EyeOff className="h-4 w-4" />
