@@ -41,6 +41,9 @@ export default function Recurring({
   const [filterType, setFilterType] = useState<"all" | "expense" | "income">("all")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [triggeringId, setTriggeringId] = useState<string | null>(null)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [recurringPendingDeletion, setRecurringPendingDeletion] = useState<RecurringTransaction | null>(null)
 
   // Form states for new recurring rule
@@ -54,58 +57,9 @@ export default function Recurring({
   const [dayOfWeek, setDayOfWeek] = useState<number>(1)
   const [firstDueDate, setFirstDueDate] = useState(() => getLocalDateString())
   const [isSaving, setIsSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
-  // Fallback demo data if user has no recurring schedules yet
-  const displayList = useMemo(() => {
-    if (recurringList.length > 0) return recurringList
-    return [
-      {
-        id: "rec-demo-1",
-        type: "expense",
-        amount: 4500000,
-        categoryId: "rent",
-        categoryName: "Housing",
-        item: "Apartment Rent",
-        note: "Due on the 1st of every month",
-        frequency: "monthly",
-        dayOfMonth: 1,
-        nextDueDate: "2026-10-01",
-        lastRunDate: "2026-09-01",
-        active: true,
-        createdAt: 1000,
-      },
-      {
-        id: "rec-demo-2",
-        type: "income",
-        amount: 25000000,
-        categoryId: "salary",
-        categoryName: "Salary",
-        item: "Monthly Salary",
-        note: "Transferred on the 25th",
-        frequency: "monthly",
-        dayOfMonth: 25,
-        nextDueDate: "2026-09-25",
-        lastRunDate: "2026-08-25",
-        active: true,
-        createdAt: 999,
-      },
-      {
-        id: "rec-demo-3",
-        type: "expense",
-        amount: 280000,
-        categoryId: "bills",
-        categoryName: "Bills",
-        item: "High-Speed Internet",
-        note: "Auto-debit bill",
-        frequency: "monthly",
-        dayOfMonth: 15,
-        nextDueDate: "2026-10-15",
-        lastRunDate: "2026-09-15",
-        active: true,
-        createdAt: 998,
-      },
-    ] as RecurringTransaction[]
-  }, [recurringList])
+  const displayList = recurringList
 
   // Computed commitments
   const totalMonthlyExpenses = useMemo(() => {
@@ -137,6 +91,7 @@ export default function Recurring({
   }, [displayList, filterType])
 
   const handleOpenAddModal = (defaultType: TransactionType = "expense") => {
+    setFormError(null)
     setType(defaultType)
     setAmount("")
     const cats = defaultType === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
@@ -159,12 +114,16 @@ export default function Recurring({
   const handleCreateRule = async (e: React.FormEvent) => {
     e.preventDefault()
     const numericAmount = Number(amount.replace(/\D/g, ""))
-    if (!numericAmount || !item.trim()) return
+    if (!numericAmount || !item.trim()) {
+      setFormError("Enter a valid amount and schedule name.")
+      return
+    }
 
     const cats = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
     const selectedCat = cats.find((c) => c.id === categoryId)
 
     setIsSaving(true)
+    setFormError(null)
     try {
       await onAddRecurring({
         type,
@@ -174,13 +133,15 @@ export default function Recurring({
         item: item.trim(),
         note: note.trim(),
         frequency,
-        dayOfMonth: frequency === "monthly" ? dayOfMonth : undefined,
-        dayOfWeek: frequency === "weekly" ? dayOfWeek : undefined,
+        ...(frequency === "monthly" ? { dayOfMonth } : {}),
+        ...(frequency === "weekly" ? { dayOfWeek } : {}),
         nextDueDate: firstDueDate,
         active: true,
         createdAt: Date.now(),
       })
       setIsModalOpen(false)
+    } catch {
+      setFormError("Could not save this schedule. Check your connection and try again.")
     } finally {
       setIsSaving(false)
     }
@@ -192,6 +153,34 @@ export default function Recurring({
       await onTriggerNow(r)
     } finally {
       setTriggeringId(null)
+    }
+  }
+
+  const handleToggle = async (r: RecurringTransaction) => {
+    setUpdatingId(r.id)
+    setActionError(null)
+    try {
+      await onToggleActive(r.id, !r.active)
+    } catch {
+      setActionError(`Could not ${r.active ? "pause" : "resume"} "${r.item}". Please try again.`)
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!recurringPendingDeletion || deletingId) return
+
+    const itemToDelete = recurringPendingDeletion
+    setDeletingId(itemToDelete.id)
+    setActionError(null)
+    try {
+      await onDeleteRecurring(itemToDelete.id)
+      setRecurringPendingDeletion(null)
+    } catch {
+      setActionError(`Could not delete "${itemToDelete.item}". Please try again.`)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -290,6 +279,11 @@ export default function Recurring({
       </div>
 
       {/* Filter Tabs */}
+      {actionError && (
+        <p role="alert" className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-900/50 dark:bg-red-500/10 dark:text-red-400">
+          {actionError}
+        </p>
+      )}
       <div className="mb-4 flex items-center justify-between">
         <div className="inline-flex rounded-xl border border-zinc-200 bg-white p-1 text-xs shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
           <button
@@ -349,6 +343,7 @@ export default function Recurring({
               const Icon = cat?.component || Repeat
               const color = cat?.color || (isIncome ? "#10b981" : "#9ca3af")
               const isTriggering = triggeringId === r.id
+              const isUpdating = updatingId === r.id
 
               return (
                 <div
@@ -426,7 +421,8 @@ export default function Recurring({
                       {/* Active toggle */}
                       <button
                         type="button"
-                        onClick={() => onToggleActive(r.id, !r.active)}
+                        onClick={() => void handleToggle(r)}
+                        disabled={isUpdating}
                         className={`flex-1 sm:flex-none rounded-xl px-3 py-1.5 text-[11px] font-semibold transition sm:px-3 sm:py-2 ${
                           r.active
                             ? "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 shadow-2xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
@@ -434,7 +430,7 @@ export default function Recurring({
                         }`}
                         title={r.active ? "Pause schedule" : "Resume schedule"}
                       >
-                        {r.active ? "Pause" : "Resume"}
+                        {isUpdating ? "Saving..." : r.active ? "Pause" : "Resume"}
                       </button>
 
                       {/* Post Now button */}
@@ -455,6 +451,7 @@ export default function Recurring({
                         onClick={() => {
                           setRecurringPendingDeletion(r)
                         }}
+                        aria-label={`Delete ${r.item} schedule`}
                         className="rounded-xl border border-zinc-200 bg-white p-1.5 text-zinc-400 transition hover:bg-red-50 hover:text-red-600 hover:border-red-200 shadow-2xs sm:p-2 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-red-950/30 dark:hover:text-red-400 dark:hover:border-red-900/50"
                         title="Delete schedule"
                       >
@@ -473,20 +470,18 @@ export default function Recurring({
         open={recurringPendingDeletion !== null}
         title="Delete recurring schedule?"
         message={recurringPendingDeletion ? `Are you sure you want to delete "${recurringPendingDeletion.item}"? This action cannot be undone.` : ""}
-        onCancel={() => setRecurringPendingDeletion(null)}
-        onConfirm={() => {
-          if (recurringPendingDeletion) {
-            void onDeleteRecurring(recurringPendingDeletion.id)
-          }
-          setRecurringPendingDeletion(null)
+        confirmLabel={deletingId ? "Deleting..." : "Delete"}
+        onCancel={() => {
+          if (!deletingId) setRecurringPendingDeletion(null)
         }}
+        onConfirm={() => void handleConfirmDelete()}
       />
 
       {/* Add Recurring Schedule Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs dark:bg-black/70">
-          <div className="w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:bg-zinc-900 dark:border-zinc-800">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-3 backdrop-blur-xs dark:bg-black/70 sm:p-4">
+          <div className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:border-zinc-800 dark:bg-zinc-900 sm:max-h-[calc(100dvh-2rem)]">
+            <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800 sm:px-6">
               <div className="flex items-center gap-2">
                 <Repeat className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 <h2 className="text-base font-bold text-zinc-900 dark:text-white">
@@ -502,7 +497,8 @@ export default function Recurring({
               </button>
             </div>
 
-            <form onSubmit={handleCreateRule} className="mt-4 space-y-4">
+            <form onSubmit={handleCreateRule} className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
               {/* Type Switcher */}
               <div className="flex rounded-xl border border-zinc-200 bg-zinc-100 p-1 dark:border-zinc-700 dark:bg-zinc-800">
                 <button
@@ -667,7 +663,14 @@ export default function Recurring({
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+              {formError && (
+                <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-900/50 dark:bg-red-500/10 dark:text-red-400">
+                  {formError}
+                </p>
+              )}
+
+              </div>
+              <div className="flex shrink-0 items-center justify-end gap-2 border-t border-zinc-100 px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] dark:border-zinc-800 sm:px-6 sm:pb-4">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}

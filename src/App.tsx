@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Routes, Route, NavLink, Navigate, useNavigate } from "react-router-dom"
 import { onAuthStateChanged, signOut, type User } from "firebase/auth"
 import {
@@ -170,10 +170,7 @@ function App() {
 
   // Firestore recurring listener and auto-processor
   useEffect(() => {
-    if (!user) {
-      setRecurringList([])
-      return
-    }
+    if (!user) return
 
     const unsub = subscribeToRecurring(
       user.uid,
@@ -200,8 +197,9 @@ function App() {
     try {
       await addRecurring(user.uid, item)
       showToast("Recurring schedule created")
-    } catch {
+    } catch (error) {
       showToast("Failed to create recurring schedule.", "info")
+      throw error
     }
   }
 
@@ -210,8 +208,9 @@ function App() {
     try {
       await updateRecurring(user.uid, id, { active })
       showToast(active ? "Recurring schedule resumed" : "Recurring schedule paused")
-    } catch {
+    } catch (error) {
       showToast("Update failed. Check your connection.", "info")
+      throw error
     }
   }
 
@@ -220,8 +219,9 @@ function App() {
     try {
       await deleteRecurring(user.uid, id)
       showToast("Recurring schedule deleted")
-    } catch {
+    } catch (error) {
       showToast("Delete failed. Check your connection.", "info")
+      throw error
     }
   }
 
@@ -230,8 +230,13 @@ function App() {
     try {
       await triggerRecurringImmediately(user.uid, item)
       showToast(`Recorded: ${item.item}`)
-    } catch {
-      showToast("Failed to record. Check your connection.", "info")
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : ""
+      if (msg.includes("Already posted")) {
+        showToast("Already posted today — no duplicate created.", "info")
+      } else {
+        showToast("Failed to record. Check your connection.", "info")
+      }
     }
   }
 

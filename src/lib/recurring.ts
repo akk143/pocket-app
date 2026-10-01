@@ -197,6 +197,12 @@ export async function triggerRecurringImmediately(
   item: RecurringTransaction,
 ): Promise<Expense> {
   const todayStr = getLocalDateString()
+
+  // Guard: already posted today — do not double-post
+  if (item.lastRunDate === todayStr) {
+    throw new Error("Already posted today for this recurring item.")
+  }
+
   const now = new Date()
   const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(
     now.getMinutes(),
@@ -216,7 +222,7 @@ export async function triggerRecurringImmediately(
 
   const newId = await addExpense(userId, expenseToCreate)
 
-  // Advance next due date if posting today matches or is past nextDueDate
+  // Advance next due date — best-effort; a failure here does not undo the expense
   const newNextDueDate = computeNextDueDate(
     item.frequency,
     item.dayOfMonth,
@@ -224,10 +230,14 @@ export async function triggerRecurringImmediately(
     todayStr,
   )
 
-  await updateRecurring(userId, item.id, {
-    lastRunDate: todayStr,
-    nextDueDate: newNextDueDate,
-  })
+  try {
+    await updateRecurring(userId, item.id, {
+      lastRunDate: todayStr,
+      nextDueDate: newNextDueDate,
+    })
+  } catch {
+    // Metadata update failed — expense already recorded, silently ignore
+  }
 
   return { id: newId, ...expenseToCreate }
 }
