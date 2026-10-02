@@ -11,9 +11,6 @@ import {
   TrendingDown,
   TrendingUp,
   DollarSign,
-  
-  
-  
 } from "lucide-react"
 import type { RecurringTransaction, TransactionType, RecurringFrequency } from "../types/expense"
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
@@ -138,6 +135,7 @@ export default function Recurring({
         nextDueDate: firstDueDate,
         active: true,
         createdAt: Date.now(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
       })
       setIsModalOpen(false)
     } catch {
@@ -189,11 +187,11 @@ export default function Recurring({
       {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex min-w-0 items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
               <Repeat className="h-5 w-5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl dark:text-white">
                 Recurring Transactions
               </h1>
@@ -207,7 +205,7 @@ export default function Recurring({
         <button
           type="button"
           onClick={() => handleOpenAddModal()}
-          className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-emerald-700 active:scale-95"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-emerald-700 active:scale-95 sm:min-h-0 sm:w-auto"
         >
           <Plus className="h-4 w-4" />
           Add Recurring Schedule
@@ -363,7 +361,7 @@ export default function Recurring({
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-bold text-sm text-zinc-900 truncate dark:text-white">
+                        <span className="line-clamp-2 min-w-0 break-words font-bold text-sm text-zinc-900 dark:text-white">
                           {r.item}
                         </span>
                         <span
@@ -389,7 +387,7 @@ export default function Recurring({
                         )}
                       </div>
 
-                      <p className="text-[11px] sm:text-xs text-zinc-500 line-clamp-1 dark:text-zinc-400">
+                      <p className="min-w-0 break-words text-[11px] sm:text-xs text-zinc-500 line-clamp-2 dark:text-zinc-400">
                         {r.note || "Scheduled transaction"} <span className="mx-1.5 hidden sm:inline">·</span><br className="sm:hidden" />
                         <span className="font-semibold text-zinc-700 mt-0.5 sm:mt-0 inline-block dark:text-zinc-300">
                           Next due: {r.nextDueDate}
@@ -404,7 +402,7 @@ export default function Recurring({
                        <span className="text-[11px] font-medium text-zinc-500 sm:hidden dark:text-zinc-400">Amount:</span>
                        <div>
                          <p
-                           className={`text-sm font-bold sm:text-[15px] ${
+                           className={`break-words text-right text-sm font-bold sm:text-[15px] ${
                              isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-900 dark:text-zinc-100"
                            }`}
                          >
@@ -423,7 +421,7 @@ export default function Recurring({
                         type="button"
                         onClick={() => void handleToggle(r)}
                         disabled={isUpdating}
-                        className={`flex-1 sm:flex-none rounded-xl px-3 py-1.5 text-[11px] font-semibold transition sm:px-3 sm:py-2 ${
+                        className={`flex min-h-11 flex-1 items-center justify-center sm:min-h-0 sm:flex-none rounded-xl px-3 py-1.5 text-[11px] font-semibold transition sm:px-3 sm:py-2 ${
                           r.active
                             ? "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 shadow-2xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                             : "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50 dark:hover:bg-emerald-500/20"
@@ -438,11 +436,11 @@ export default function Recurring({
                         type="button"
                         onClick={() => handleTrigger(r)}
                         disabled={isTriggering}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-700 transition hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 disabled:opacity-50 shadow-2xs sm:px-3 sm:py-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400 dark:hover:border-emerald-900/50"
+                        className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-700 transition hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 disabled:opacity-50 shadow-2xs sm:min-h-0 sm:flex-none sm:px-3 sm:py-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400 dark:hover:border-emerald-900/50"
                         title="Record this transaction immediately for today"
                       >
                         <Zap className="h-3.5 w-3.5 text-amber-500" />
-                        <span>{isTriggering ? "..." : "Post Now"}</span>
+                        <span>{isTriggering ? "Posting..." : "Post Now"}</span>
                       </button>
 
                       {/* Delete button */}
@@ -452,7 +450,7 @@ export default function Recurring({
                           setRecurringPendingDeletion(r)
                         }}
                         aria-label={`Delete ${r.item} schedule`}
-                        className="rounded-xl border border-zinc-200 bg-white p-1.5 text-zinc-400 transition hover:bg-red-50 hover:text-red-600 hover:border-red-200 shadow-2xs sm:p-2 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-red-950/30 dark:hover:text-red-400 dark:hover:border-red-900/50"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 transition hover:bg-red-50 hover:text-red-600 hover:border-red-200 shadow-2xs dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-red-950/30 dark:hover:text-red-400 dark:hover:border-red-900/50 sm:h-9 sm:w-9"
                         title="Delete schedule"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -479,8 +477,8 @@ export default function Recurring({
 
       {/* Add Recurring Schedule Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-3 backdrop-blur-xs dark:bg-black/70 sm:p-4">
-          <div className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:border-zinc-800 dark:bg-zinc-900 sm:max-h-[calc(100dvh-2rem)]">
+        <div className="fixed inset-x-0 top-[var(--keyboard-viewport-offset)] z-50 flex h-[var(--keyboard-viewport-height)] items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-3 backdrop-blur-xs dark:bg-black/70 sm:p-4">
+          <div className="flex max-h-[calc(var(--keyboard-viewport-height)-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:border-zinc-800 dark:bg-zinc-900 sm:max-h-[calc(var(--keyboard-viewport-height)-2rem)]">
             <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800 sm:px-6">
               <div className="flex items-center gap-2">
                 <Repeat className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
@@ -491,7 +489,8 @@ export default function Recurring({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                aria-label="Close recurring schedule form"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 md:h-9 md:w-9"
               >
                 <X className="h-5 w-5" />
               </button>

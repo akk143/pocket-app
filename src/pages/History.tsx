@@ -294,11 +294,11 @@ export default function History({
     <div className="mx-auto max-w-4xl px-5 py-6 sm:px-8">
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
             History
           </h1>
-          <p className="mt-0.5 text-xs text-zinc-400">
+          <p className="mt-0.5 break-words text-xs text-zinc-400">
             {filtered.length} {filtered.length === 1 ? "transaction" : "transactions"} ·{" "}
             {typeFilter === "expense"
               ? `Total spending: ${formatCurrency(totalExpense)}`
@@ -318,15 +318,19 @@ export default function History({
           </Link>
           <div className="flex min-w-0 flex-1 items-center justify-between gap-1 rounded-xl border border-zinc-200 bg-white px-2 py-1 text-sm font-semibold text-zinc-700 shadow-2xs sm:min-w-[180px] sm:flex-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
             <button
+              type="button"
               onClick={prevMonth}
-              className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+              aria-label="Previous month"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 sm:h-8 sm:w-8"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="min-w-0 flex-1 text-center sm:min-w-[130px]">{monthLabel}</span>
+            <span className="min-w-0 flex-1 text-center leading-tight sm:min-w-[130px]">{monthLabel}</span>
             <button
+              type="button"
               onClick={nextMonth}
-              className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+              aria-label="Next month"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 sm:h-8 sm:w-8"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -348,7 +352,7 @@ export default function History({
           <button
             type="button"
             onClick={() => handleQueryChange("")}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            className="absolute right-1 top-1/2 flex h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-lg px-2 text-xs font-semibold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
           >
             Clear
           </button>
@@ -362,7 +366,7 @@ export default function History({
             <button
               type="button"
               onClick={() => handleTypeFilterChange("all")}
-              className={`rounded-lg px-3 py-1 font-semibold transition ${
+              className={`min-h-10 rounded-lg px-3 py-1 font-semibold transition ${
                 typeFilter === "all"
                   ? "bg-zinc-900 text-white shadow-xs dark:bg-zinc-100 dark:text-zinc-900"
                   : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
@@ -373,7 +377,7 @@ export default function History({
             <button
               type="button"
               onClick={() => handleTypeFilterChange("expense")}
-              className={`flex items-center gap-1 rounded-lg px-3 py-1 font-semibold transition ${
+              className={`flex min-h-10 items-center gap-1 rounded-lg px-3 py-1 font-semibold transition ${
                 typeFilter === "expense"
                   ? "bg-red-50 text-red-600 font-bold shadow-xs border border-red-200/50 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50"
                   : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
@@ -385,7 +389,7 @@ export default function History({
             <button
               type="button"
               onClick={() => handleTypeFilterChange("income")}
-              className={`flex items-center gap-1 rounded-lg px-3 py-1 font-semibold transition ${
+              className={`flex min-h-10 items-center gap-1 rounded-lg px-3 py-1 font-semibold transition ${
                 typeFilter === "income"
                   ? "bg-emerald-50 text-emerald-700 font-bold shadow-xs border border-emerald-200/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50"
                   : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
@@ -402,7 +406,7 @@ export default function History({
           <button
             type="button"
             onClick={() => setSelectedCategoryId("all")}
-            className={`shrink-0 rounded-full px-3 py-1 font-medium transition ${
+            className={`min-h-10 shrink-0 rounded-full px-3 py-1 font-medium transition ${
               selectedCategoryId === "all"
                 ? "bg-emerald-600 text-white font-semibold shadow-xs"
                 : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
@@ -417,13 +421,13 @@ export default function History({
                 key={c.id}
                 type="button"
                 onClick={() => setSelectedCategoryId(isSelected ? "all" : c.id)}
-                className={`shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1 font-medium transition ${
+                className={`flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 py-1 font-medium transition ${
                   isSelected
                     ? "bg-emerald-600 text-white font-semibold shadow-xs"
                     : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 }`}
               >
-                <span>{c.icon}</span>
+                <c.component className="h-3.5 w-3.5 shrink-0" />
                 <span>{c.name}</span>
               </button>
             )
@@ -434,7 +438,7 @@ export default function History({
       {onBulkDeleteExpenses && selectableExpenses.length > 0 && (
         <div className="mb-3 flex min-h-12 flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+            <label className="flex min-h-11 items-center gap-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
               <input
                 type="checkbox"
                 checked={allFilteredSelected}
@@ -445,7 +449,7 @@ export default function History({
                       : [...new Set([...ids, ...selectableExpenses.map((expense) => expense.id)])],
                   )
                 }
-                className="h-4 w-4 rounded border-zinc-300 accent-emerald-600"
+                className="h-5 w-5 rounded border-zinc-300 accent-emerald-600"
               />
               Select all
             </label>
@@ -507,6 +511,7 @@ export default function History({
                     >
                       <div className="flex min-w-0 flex-1 items-center gap-3">
                         {onBulkDeleteExpenses && expenses.some((item) => item.id === expense.id) && (
+                          <label className="flex h-11 w-11 shrink-0 items-center justify-center">
                           <input
                             type="checkbox"
                             checked={selectedExpenseIds.includes(expense.id)}
@@ -518,8 +523,9 @@ export default function History({
                               )
                             }
                             aria-label={`Select ${expense.item}`}
-                            className="h-4 w-4 shrink-0 rounded border-zinc-300 accent-emerald-600"
+                            className="h-5 w-5 shrink-0 rounded border-zinc-300 accent-emerald-600"
                           />
+                          </label>
                         )}
                         <div
                           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
@@ -527,27 +533,27 @@ export default function History({
                         >
                           {Icon && <Icon className="h-5 w-5" style={{ color }} />}
                         </div>
-                        <div className="min-w-0">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex min-w-0 items-start gap-2">
+                            <p className="line-clamp-2 min-w-0 flex-1 break-words text-sm font-medium text-zinc-900 dark:text-zinc-100">
                               {expense.item}
                             </p>
                             {isIncome && (
-                              <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50">
+                              <span className="shrink-0 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50">
                                 Income
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                          <p className="line-clamp-2 break-words text-xs text-zinc-500 dark:text-zinc-400">
                             {expense.categoryName} · {formatTimeStr(expense.time)}
                             {expense.quantity && expense.quantity > 1 ? ` · Qty ${expense.quantity}` : ""}
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+                      <div className="flex shrink-0 items-center gap-1 sm:gap-3">
                         <span
-                          className={`whitespace-nowrap text-sm font-semibold ${
+                          className={`max-w-24 break-words text-right text-xs font-semibold leading-tight sm:max-w-none sm:whitespace-nowrap sm:text-sm ${
                             isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-900 dark:text-zinc-100"
                           }`}
                         >
@@ -596,6 +602,7 @@ export default function History({
         title="Move selected transactions to Trash?"
         message={`This will move ${selectedExpenses.length} selected transactions`}
         confirmLabel={isBulkDeleting ? "Moving..." : "Move to Trash"}
+        confirmDisabled={isBulkDeleting}
         variant="soft"
         onCancel={() => {
           if (!isBulkDeleting) {

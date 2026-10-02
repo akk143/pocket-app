@@ -2,6 +2,7 @@ import { useTheme } from "../hooks/useTheme"
 import { useState, useMemo } from "react"
 import {
   ArrowDownRight,
+  ArrowRight,
   ArrowUpRight,
   CalendarDays,
   
@@ -355,14 +356,14 @@ export default function Home({
               <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-widest">
                 {new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" }).format(now)}
               </p>
-              <h1 className="mt-0.5 text-base font-bold text-white">
+              <h1 className="mt-0.5 break-words text-base font-bold text-white">
                 Good morning, {userName} 👋
               </h1>
             </div>
 
             <div className="mt-4">
               <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-widest">Today's Spending</p>
-              <p className="mt-1.5 text-4xl font-extrabold tracking-tight text-white tabular-nums whitespace-nowrap">
+              <p className="mt-1.5 break-words text-[clamp(1.75rem,10vw,2.25rem)] font-extrabold tracking-tight text-white tabular-nums">
                 {formatCompact(todayTotal)}
               </p>
               {todayVsYesterdayDiff !== null ? (
@@ -382,14 +383,14 @@ export default function Home({
 
           {/* Two compact tiles: This Month + This Year */}
           <div className="mt-2.5 grid grid-cols-2 gap-2.5">
-            <div className="rounded-2xl border border-zinc-200/90 bg-white px-5 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="min-w-0 rounded-2xl border border-zinc-200/90 bg-white px-3.5 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex items-center gap-1.5">
                 <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400 dark:bg-purple-900/20 dark:text-purple-400">
                   <Calendar className="h-3.5 w-3.5" />
                 </div>
                 <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-400">This Month</span>
               </div>
-              <p className="mt-2 text-xl font-bold tracking-tight text-zinc-900 dark:text-white tabular-nums whitespace-nowrap">{formatCompact(thisMonthTotal)}</p>
+              <p className="mt-2 break-words text-[clamp(0.875rem,5vw,1.25rem)] font-bold tracking-tight text-zinc-900 dark:text-white tabular-nums">{formatCompact(thisMonthTotal)}</p>
               {monthVsLastMonthDiff !== null ? (
                 <div className={`mt-1 flex items-center gap-0.5 text-[11px] font-medium ${monthVsLastMonthDiff <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600"}`}>
                   {monthVsLastMonthDiff <= 0 ? <ArrowDownRight className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
@@ -400,7 +401,7 @@ export default function Home({
               )}
             </div>
 
-            <div className="rounded-2xl border border-zinc-200/90 bg-white px-5 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="min-w-0 rounded-2xl border border-zinc-200/90 bg-white px-3.5 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex items-center gap-1.5">
                 <div className={`flex h-6 w-6 items-center justify-center rounded-lg ${
                   thisMonthNet >= 0
@@ -411,7 +412,7 @@ export default function Home({
                 </div>
                 <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Net Flow</span>
               </div>
-              <p className={`mt-2 text-xl font-bold tracking-tight tabular-nums whitespace-nowrap ${
+              <p className={`mt-2 break-words text-[clamp(0.875rem,5vw,1.25rem)] font-bold tracking-tight tabular-nums ${
                 thisMonthNet >= 0 ? "text-zinc-900 dark:text-white" : "text-red-600 dark:text-red-400"
               }`}>
                 {thisMonthNet >= 0 ? "+" : ""}{formatCompact(thisMonthNet)}
@@ -523,12 +524,12 @@ export default function Home({
         <section className="mt-3 grid gap-3 sm:mt-4 sm:gap-4 sm:grid-cols-2">
           {/* Budget Widget */}
           <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 p-3.5 shadow-xs sm:p-4 dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <Target className="h-4 w-4 text-purple-600" />
-                <span className="font-semibold text-zinc-900 dark:text-white dark:text-white">Monthly Budget Goal</span>
+            <div className="flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-2">
+                <Target className="h-4 w-4 shrink-0 text-purple-600" />
+                <span className="min-w-0 break-words font-semibold text-zinc-900 dark:text-white dark:text-white">Monthly Budget Goal</span>
               </div>
-              <span className="font-bold text-zinc-900 dark:text-white dark:text-white">
+              <span className="break-words font-bold text-zinc-900 dark:text-white dark:text-white sm:text-right">
                 {formatCurrency(thisMonthTotal)} / {formatCurrency(budgetGoal)}
               </span>
             </div>
@@ -555,12 +556,12 @@ export default function Home({
           </div>
 
           {/* Financial Insight Card */}
-          <div className="flex items-center justify-between rounded-2xl border border-emerald-100 bg-[#f0fdf4] dark:border-emerald-900/50 dark:bg-emerald-500/5 p-3.5 sm:p-4 dark:border-emerald-900/50 dark:bg-emerald-500/5">
-            <div className="flex items-start gap-3">
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-100 bg-[#f0fdf4] dark:border-emerald-900/50 dark:bg-emerald-500/5 p-3.5 sm:p-4 dark:border-emerald-900/50 dark:bg-emerald-500/5">
+            <div className="flex min-w-0 items-start gap-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600 dark:text-emerald-400 dark:bg-zinc-800 dark:text-emerald-400 shadow-2xs dark:bg-zinc-800 dark:text-emerald-400">
                 <Lightbulb className="h-4 w-4" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-semibold text-zinc-900 dark:text-white dark:text-white">Spending Insight</p>
                 <p className="mt-0.5 text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed dark:text-zinc-400">
                   {categoryData[0]
@@ -571,9 +572,9 @@ export default function Home({
             </div>
             <Link
               to="/analytics"
-              className="shrink-0 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:text-emerald-400"
+              className="flex min-h-11 shrink-0 items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:text-emerald-400"
             >
-              Analyze &gt;
+              Analyze <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
         </section>
@@ -708,7 +709,7 @@ export default function Home({
                             className="h-2 w-2 shrink-0 rounded-full"
                             style={{ backgroundColor: category.color }}
                           />
-                          <span className="truncate font-medium text-zinc-800 dark:text-zinc-200" title={category.name}>
+                          <span className="line-clamp-2 min-w-0 break-words font-medium text-zinc-800 dark:text-zinc-200" title={category.name}>
                             {category.name}
                           </span>
                         </div>
@@ -736,10 +737,10 @@ export default function Home({
         {/* Recent Expenses Table */}
         <section className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)]">
           <div className="rounded-2xl border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-xs">
-            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 px-4 py-3.5 sm:px-5 sm:py-4">
-              <div className="flex items-center gap-2.5">
-                <Clock3 className="h-4 w-4 text-zinc-400" />
-                <div>
+            <div className="flex items-center justify-between gap-2 border-b border-zinc-100 dark:border-zinc-800 px-4 py-3.5 sm:px-5 sm:py-4">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <Clock3 className="h-4 w-4 shrink-0 text-zinc-400" />
+                <div className="min-w-0">
                   <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
                     Recent Expenses & Income
                   </h2>
@@ -749,9 +750,9 @@ export default function Home({
 
               <Link
                 to="/history"
-                className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:text-emerald-400"
+                className="flex min-h-11 shrink-0 items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:text-emerald-400"
               >
-                View all &gt;
+                View all <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 
@@ -809,7 +810,7 @@ export default function Home({
                         {Icon && <Icon className="h-4 w-4" style={{ color }} />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="block truncate text-xs font-semibold text-zinc-900 dark:text-white sm:text-sm" title={expense.item}>
+                        <span className="line-clamp-2 break-words text-xs font-semibold text-zinc-900 dark:text-white sm:text-sm" title={expense.item}>
                           {expense.item}
                         </span>
                         <span

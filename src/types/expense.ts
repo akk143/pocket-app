@@ -34,4 +34,5 @@ export interface RecurringTransaction {
   nextDueDate: string  
   active: boolean
   createdAt: number
+  timeZone?: string
 }
