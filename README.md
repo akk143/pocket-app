@@ -31,10 +31,8 @@ Built with **React, TypeScript, Firebase, Tailwind CSS, and Recharts**, PocketTr
 
 * Create recurring income or expense transactions
 * Supports daily, weekly, and monthly schedules
-* Automatically processes transactions when the application checks for due recurring items
+* Automatically processes due transactions daily on the server
 * Tracks the next due date
-
-> Recurring transactions are currently processed on the client when the signed-in user opens the relevant application flow. They are not powered by a server-side cron job.
 
 ### 📅 History
 
@@ -91,6 +89,7 @@ Currency rates are fetched from an exchange-rate API and cached locally for 24 h
 * Firebase Email/Password Authentication
 * User-specific financial data
 * Protected application routes
+* Five-day HttpOnly server session cookies
 
 ### 📱 Progressive Web App
 
@@ -128,6 +127,7 @@ PocketTrack can be installed as a PWA for a more app-like experience.
 
 * Firebase Authentication
 * Cloud Firestore
+* Firebase Admin SDK through Vercel serverless API routes
 
 ### PWA
 
@@ -147,6 +147,17 @@ PocketTrack can be installed as a PWA for a more app-like experience.
 
 ```text
 pocket_app/
+├── api/
+│   ├── auth/
+│   ├── cron/
+│   ├── recurring/
+│   └── transactions/
+├── server/
+│   ├── auth.ts
+│   ├── firebaseAdmin.ts
+│   ├── http.ts
+│   ├── recurring.ts
+│   └── validation.ts
 ├── public/
 │   ├── favicon.svg
 │   ├── icons.svg
@@ -185,7 +196,7 @@ pocket_app/
 
 Make sure you have:
 
-* Node.js 18+
+* Node.js 20+
 * npm
 * A Firebase project
 
@@ -210,40 +221,33 @@ Create a Firebase project and enable:
 * Email/Password sign-in
 * Cloud Firestore
 
-Copy the environment template:
-
-```bash
-cp .env.example .env.local
-```
-
-Add your Firebase configuration:
+Do not add Firebase configuration to Vite or any `VITE_*` variable. Configure these **server-only** variables in Vercel Project Settings → Environment Variables:
 
 ```env
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
+FIREBASE_WEB_API_KEY=
+CRON_SECRET=
 ```
 
-Do not commit `.env.local` or other environment files containing credentials.
+Create a Firebase service account with the permissions needed to administer Authentication and Firestore, then set its project ID, client email, and private key in the server variables above. Store the Firebase Web API key in `FIREBASE_WEB_API_KEY`; it is used only by the server for Firebase Authentication REST requests. Generate a long random value for `CRON_SECRET`.
 
 ### 4. Start the development server
 
 ```bash
-npm run dev
+npx vercel dev
 ```
 
-Open the local development URL shown by Vite.
+The Vercel development server runs both the frontend and `/api/*` functions. Copy `.env.example` to `.env.local` and fill in server values for local development only; never commit `.env.local`.
 
 ---
 
 ## 🔥 Firebase Configuration
 
-PocketTrack uses Firebase for authentication and cloud data storage.
+The browser talks only to same-origin `/api/*` routes. Vercel serverless functions use Firebase Admin for Firestore operations and Firebase Authentication REST calls for email/password sign-in. Authentication is maintained in an HttpOnly, Secure-in-production session cookie; Firebase tokens and credentials are never stored in browser storage.
 
-The application stores user data under user-specific Firestore paths. The included Firestore rules restrict access so authenticated users can only access their own user data.
+The API derives the user UID from the verified session cookie and stores data under user-specific Firestore paths. The included Firestore rules remain restrictive as defense in depth. Since Firebase Admin bypasses Firestore rules, the API also validates payloads and scopes every document path to the session UID.
 
 The current rule structure follows:
 
@@ -254,6 +258,8 @@ The current rule structure follows:
 with access limited to the authenticated user's UID.
 
 Before deploying your own Firebase project, review and test the provided `firestore.rules` against your application's data model.
+
+The Vercel cron at `/api/cron/recurring` runs daily. It uses `CRON_SECRET` and Firestore transactions with deterministic expense IDs to ensure a recurring rule can post no more than once for a given local calendar day.
 
 ---
 

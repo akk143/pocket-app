@@ -35,7 +35,21 @@ export default defineConfig({
           },
         ],
       },
+      workbox: {
+        globPatterns: [
+          '**/*.{js,css,html,ico,png,svg,webp,woff,woff2,ttf,eot,json,webmanifest,lottie}',
+        ],
+      },
 
     })
-  ]
+  ],
+
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:3000",
+        changeOrigin: false,
+      },
+    },
+  },
 })
