@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { ChangeEvent } from "react"
 import {
   CalendarDays,
@@ -18,10 +18,13 @@ import { SUPPORTED_CURRENCIES, convertAmount, convertToBaseVND } from "../lib/cu
 
 interface AddExpenseSheetProps {
   open: boolean
+  isSaving: boolean
   onClose: () => void
-  onSave: (expense: Expense) => void
-  onUpdate?: (id: string, updated: Partial<Omit<Expense, "id">>) => void
-  onSaveRecurring?: (recurring: Omit<RecurringTransaction, "id">) => void
+  onSave: (
+    expense: Omit<Expense, "id">,
+    recurring?: Omit<RecurringTransaction, "id">,
+  ) => Promise<void>
+  onUpdate?: (id: string, updated: Partial<Omit<Expense, "id">>) => Promise<void>
   initialExpense?: Expense | null
   defaultCategoryId?: string
 }
@@ -46,12 +49,29 @@ const recentItemsByCategory: Record<string, string[]> = {
   other_income: ["Refund", "Reimbursement", "Cashback"],
 }
 
+function toTimeInputValue(time: string) {
+  const match = time.trim().match(/^(\d{1,2}):([0-5]\d)(?:\s*(AM|PM))?$/i)
+  if (!match) return ""
+
+  let hours = Number(match[1])
+  const meridiem = match[3]?.toUpperCase()
+  if (meridiem) {
+    if (hours < 1 || hours > 12) return ""
+    if (meridiem === "PM" && hours !== 12) hours += 12
+    if (meridiem === "AM" && hours === 12) hours = 0
+  } else if (hours > 23) {
+    return ""
+  }
+
+  return `${String(hours).padStart(2, "0")}:${match[2]}`
+}
+
 export default function AddExpenseSheet({
   open,
+  isSaving,
   onClose,
   onSave,
   onUpdate,
-  onSaveRecurring,
   initialExpense,
   defaultCategoryId = "drinks",
 }: AddExpenseSheetProps) {
@@ -79,6 +99,8 @@ export default function AddExpenseSheet({
 
   const [isRecurring, setIsRecurring] = useState(false)
   const [frequency, setFrequency] = useState<RecurringFrequency>("monthly")
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const submitLock = useRef(false)
 
   const [time, setTime] = useState(() => {
     const now = new Date()
@@ -107,7 +129,7 @@ export default function AddExpenseSheet({
         setItem(initialExpense.item)
         setNote(initialExpense.note || "")
         setDate(initialExpense.date)
-        setTime(initialExpense.time)
+        setTime(toTimeInputValue(initialExpense.time))
       } else {
         const isIncomeCat = INCOME_CATEGORIES.some((c) => c.id === defaultCategoryId)
         setType(isIncomeCat ? "income" : "expense")
@@ -181,7 +203,8 @@ export default function AddExpenseSheet({
     setItem("")
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (isSaving || submitLock.current) return
     // Income entries are single amounts; only expenses can use quantity.
     if (!amount || !isFinite(numericAmount) || numericAmount <= 0 || !Number.isInteger(numericQuantity) || numericQuantity <= 0) {
       return
@@ -198,39 +221,11 @@ export default function AddExpenseSheet({
     const baseUnitPrice = convertToBaseVND(numericAmount, currency, rates)
     const totalAmount = baseUnitPrice * numericQuantity
 
-    if (isEditing && initialExpense && onUpdate) {
-      onUpdate(initialExpense.id, {
-        type,
-        amount: totalAmount,
-        quantity: numericQuantity,
-        unitPrice: baseUnitPrice,
-        categoryId,
-        categoryName: selectedCategory?.name ?? "Other",
-        item: trimmedItem,
-        note: trimmedNote,
-        date,
-        time,
-      })
-    } else {
-      onSave({
-        id: crypto.randomUUID(),
-        type,
-        amount: totalAmount,
-        quantity: numericQuantity,
-        unitPrice: baseUnitPrice,
-        categoryId,
-        categoryName: selectedCategory?.name ?? "Other",
-        item: trimmedItem,
-        note: trimmedNote,
-        date,
-        time,
-        createdAt: Date.now(),
-      })
-
-      if (isRecurring && onSaveRecurring) {
-        const dayOfMonth = Number(date.split("-")[2]) || 1
-        const dayOfWeek = new Date(date).getDay()
-        onSaveRecurring({
+    submitLock.current = true
+    setSaveError(null)
+    try {
+      if (isEditing && initialExpense && onUpdate) {
+        await onUpdate(initialExpense.id, {
           type,
           amount: totalAmount,
           quantity: numericQuantity,
@@ -239,35 +234,76 @@ export default function AddExpenseSheet({
           categoryName: selectedCategory?.name ?? "Other",
           item: trimmedItem,
           note: trimmedNote,
-          frequency,
-          dayOfMonth,
-          dayOfWeek,
-          lastRunDate: date,
-          nextDueDate: date,
-          active: true,
-          createdAt: Date.now(),
+          date,
+          time,
         })
-      }
-    }
+      } else {
+        const expense = {
+          type,
+          amount: totalAmount,
+          quantity: numericQuantity,
+          unitPrice: baseUnitPrice,
+          categoryId,
+          categoryName: selectedCategory?.name ?? "Other",
+          item: trimmedItem,
+          note: trimmedNote,
+          date,
+          time,
+          createdAt: Date.now(),
+        }
 
-    setAmount("")
-    setQuantity("1")
-    setItem("")
-    setNote("")
-    onClose()
+        if (isRecurring) {
+          const dayOfMonth = Number(date.split("-")[2]) || 1
+          const dayOfWeek = new Date(date).getDay()
+          const recurring: Omit<RecurringTransaction, "id"> = {
+            type,
+            amount: totalAmount,
+            quantity: numericQuantity,
+            unitPrice: baseUnitPrice,
+            categoryId,
+            categoryName: selectedCategory?.name ?? "Other",
+            item: trimmedItem,
+            note: trimmedNote,
+            frequency,
+            dayOfMonth,
+            dayOfWeek,
+            lastRunDate: date,
+            nextDueDate: date,
+            active: true,
+            createdAt: Date.now(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          }
+          await onSave(expense, recurring)
+        } else {
+          await onSave(expense)
+        }
+      }
+
+      setAmount("")
+      setQuantity("1")
+      setItem("")
+      setNote("")
+      onClose()
+    } catch {
+      setSaveError("Could not save this transaction. Please try again.")
+    } finally {
+      submitLock.current = false
+    }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex h-[100dvh] items-end justify-center overflow-hidden overscroll-none md:items-center">
+    <div className="fixed inset-x-0 top-[var(--keyboard-viewport-offset)] z-50 flex h-[var(--keyboard-viewport-height)] items-end justify-center overflow-hidden overscroll-none md:items-center">
       {/* Overlay */}
       <div
         aria-label="Close modal"
-        onClick={onClose}
-        className="fixed inset-0 bg-zinc-950/50 dark:bg-zinc-950/70 backdrop-blur-[2px] transition-opacity"
+        onClick={() => {
+          if (!isSaving) onClose()
+        }}
+        className="absolute inset-0 bg-zinc-950/50 backdrop-blur-[2px] transition-opacity dark:bg-zinc-950/70"
       />
 
       {/* Sheet / Modal */}
-      <div className="relative z-10 mb-2 flex h-[80dvh] w-[calc(100%-1rem)] max-h-[80dvh] min-h-0 flex-col overflow-hidden overscroll-contain rounded-3xl bg-white dark:bg-zinc-900 shadow-2xl transition-all sm:mb-0 sm:max-h-[92vh] sm:w-[calc(100%-2rem)] sm:max-w-lg md:h-auto md:max-h-[90vh] md:w-[calc(100%-3rem)] md:max-w-xl">
+      <div className="relative z-10 mb-2 flex h-[min(80dvh,calc(var(--keyboard-viewport-height)-1rem))] w-[calc(100%-1rem)] max-h-[calc(var(--keyboard-viewport-height)-1rem)] min-h-0 flex-col overflow-hidden overscroll-contain rounded-3xl bg-white shadow-2xl transition-all dark:bg-zinc-900 sm:mb-0 sm:w-[calc(100%-2rem)] sm:max-w-lg md:h-auto md:max-h-[calc(var(--keyboard-viewport-height)-2rem)] md:w-[calc(100%-3rem)] md:max-w-xl">
 
         <div className="flex justify-center pt-2.5 md:hidden">
           <div className="h-1 w-10 rounded-full bg-zinc-200 dark:bg-zinc-700" />
@@ -288,7 +324,8 @@ export default function AddExpenseSheet({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-zinc-400 dark:text-zinc-500 transition hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300 md:h-9 md:w-9"
+            disabled={isSaving}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-zinc-400 dark:text-zinc-500 transition hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300 md:h-9 md:w-9"
           >
             <X className="h-5 w-5" />
           </button>
@@ -408,7 +445,7 @@ export default function AddExpenseSheet({
               >
                 {activeCategories.map((category) => (
                   <option key={category.id} value={category.id} className="dark:bg-zinc-800 dark:text-zinc-200">
-                    {category.icon} {category.name}
+                    {category.name}
                   </option>
                 ))}
               </select>
@@ -556,14 +593,28 @@ export default function AddExpenseSheet({
 
         {/* Submit Button — always visible at bottom, never scrolls away */}
         <div className="shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 md:px-5 md:pb-5 md:pt-4">
+          {saveError && (
+            <p role="alert" className="mb-2 text-center text-xs font-medium text-red-600 dark:text-red-400">
+              {saveError}
+            </p>
+          )}
           <button
             type="button"
-            onClick={handleSave}
-            disabled={!amount || numericAmount <= 0 || !item.trim()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-zinc-200 dark:disabled:bg-zinc-800 disabled:text-zinc-400 dark:disabled:text-zinc-600 md:py-3.5 md:text-sm"
+            onClick={() => void handleSave()}
+            disabled={isSaving || !amount || numericAmount <= 0 || !item.trim()}
+            aria-busy={isSaving}
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-zinc-200 dark:disabled:bg-zinc-800 disabled:text-zinc-400 dark:disabled:text-zinc-600 md:py-3.5 md:text-sm"
           >
-            <Check className="h-4 w-4" />
-            {isEditing ? "Update Transaction" : type === "income" ? "Save Income" : "Save Expense"}
+            {isSaving ? (
+              <>
+                {isEditing ? "Updating..." : "Saving..."}
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" />
+                {isEditing ? "Update Transaction" : type === "income" ? "Save Income" : "Save Expense"}
+              </>
+            )}
           </button>
         </div>
       </div>

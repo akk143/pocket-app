@@ -7,7 +7,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
-import { ChevronLeft, ChevronRight, } from "lucide-react"
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react"
 import { Link } from "react-router-dom"
 import type { Expense } from "../types/expense"
 import { EXPENSE_CATEGORIES } from "../constants/categories"
@@ -80,12 +80,9 @@ export default function Analytics({ expenses }: AnalyticsProps) {
     () => expenses.filter((e) => e.type !== "income"),
     [expenses]
   )
-  const isUsingFallback = expensesOnly.length === 0
 
   // Filter expenses matching current period and viewDate
   const periodExpenses = useMemo(() => {
-    if (isUsingFallback) return []
-
     if (period === "year") {
       const targetYear = viewDate.getFullYear()
       return expensesOnly.filter((e) => {
@@ -122,58 +119,19 @@ export default function Analytics({ expenses }: AnalyticsProps) {
       const [y, m] = e.date.split("-").map(Number)
       return y === targetYear && m === targetMonth
     })
-  }, [expensesOnly, isUsingFallback, period, viewDate])
+  }, [expensesOnly, period, viewDate])
 
   const totalSpending = useMemo(() => {
-    if (isUsingFallback) {
-      if (period === "week") return 1130000
-      if (period === "year") return 42300000
-      return 4850000
-    }
     return periodExpenses.reduce((s, e) => s + e.amount, 0)
-  }, [isUsingFallback, period, periodExpenses])
+  }, [periodExpenses])
 
   const avgPerDay = useMemo(() => {
-    if (isUsingFallback) {
-      if (period === "week") return Math.round(1130000 / 7)
-      if (period === "year") return Math.round(42300000 / 365)
-      return 161667
-    }
     const divisor = period === "week" ? 7 : period === "year" ? 365 : 30
     return Math.round(totalSpending / divisor)
-  }, [isUsingFallback, period, totalSpending])
+  }, [period, totalSpending])
 
   // Bar chart data dynamically shaped by week, month, or year
   const barData = useMemo(() => {
-    if (isUsingFallback) {
-      if (period === "week") {
-        const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-        const mockWeek = [155000, 295000, 140000, 220000, 180000, 90000, 50000]
-        return days.map((name, i) => ({
-          label: name,
-          total: mockWeek[i] || 0,
-        }))
-      }
-      if (period === "year") {
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-        const mockYear = [3200000, 4100000, 3800000, 4500000, 2900000, 3700000, 4200000, 3900000, 4850000, 0, 0, 0]
-        return months.map((name, i) => ({
-          label: name,
-          total: mockYear[i] || 0,
-        }))
-      }
-      const heights = [
-        0, 110000, 140000, 130000, 230000, 180000, 160000, 290000, 140000, 150000,
-        170000, 130000, 210000, 240000, 360000, 230000, 190000, 170000, 150000,
-        140000, 210000, 190000, 160000, 230000, 200000, 180000, 150000, 120000,
-        110000, 140000,
-      ]
-      return Array.from({ length: 30 }, (_, i) => ({
-        label: String(i + 1),
-        total: heights[i] || 120000,
-      }))
-    }
-
     if (period === "week") {
       const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
       const map: Record<number, number> = {}
@@ -217,20 +175,10 @@ export default function Analytics({ expenses }: AnalyticsProps) {
       label: String(i + 1),
       total: map[i + 1] || 0,
     }))
-  }, [isUsingFallback, period, periodExpenses, viewDate])
+  }, [period, periodExpenses, viewDate])
 
   // Category Lists
   const categoryBreakdown = useMemo(() => {
-    if (isUsingFallback) {
-      return [
-        { id: "food", name: "Food", amount: 1800000, percent: 37, color: "#f97316" },
-        { id: "drinks", name: "Drinks", amount: 650000, percent: 13, color: "#10b981" },
-        { id: "transportation", name: "Transportation", amount: 550000, percent: 11, color: "#3b82f6" },
-        { id: "shopping", name: "Shopping", amount: 450000, percent: 9, color: "#ec4899" },
-        { id: "rent", name: "Housing", amount: 400000, percent: 8, color: "#8b5cf6" },
-      ]
-    }
-
     const map: Record<string, number> = {}
     periodExpenses.forEach((e) => {
       map[e.categoryId] = (map[e.categoryId] || 0) + e.amount
@@ -250,12 +198,11 @@ export default function Analytics({ expenses }: AnalyticsProps) {
       })
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 5)
-  }, [isUsingFallback, periodExpenses])
+  }, [periodExpenses])
 
   const categoryTotalAmount = useMemo(() => {
-    if (isUsingFallback) return 155000
     return categoryBreakdown.reduce((sum, c) => sum + c.amount, 0)
-  }, [isUsingFallback, categoryBreakdown])
+  }, [categoryBreakdown])
 
   const chartTooltipStyle = isDark
     ? { borderRadius: "12px", border: "1px solid #3f3f46", background: "#18181b", color: "#fafafa", fontSize: "12px" }
@@ -280,7 +227,7 @@ export default function Analytics({ expenses }: AnalyticsProps) {
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`flex-1 rounded-xl py-2 text-xs font-semibold capitalize transition ${
+              className={`flex min-h-11 flex-1 items-center justify-center rounded-xl py-2 text-xs font-semibold capitalize transition sm:min-h-0 ${
                 period === p
                   ? "bg-emerald-600 text-white shadow-xs"
                   : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
@@ -295,15 +242,19 @@ export default function Analytics({ expenses }: AnalyticsProps) {
       {/* Period Navigator */}
       <div className="mb-6 flex items-center justify-center gap-4 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
         <button
+          type="button"
           onClick={prevPeriod}
-          className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300"
+          aria-label="Previous analytics period"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300 sm:h-8 sm:w-8"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <span className="min-w-[150px] text-center">{periodLabel}</span>
+        <span className="min-w-0 flex-1 text-center sm:min-w-[150px]">{periodLabel}</span>
         <button
+          type="button"
           onClick={nextPeriod}
-          className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300"
+          aria-label="Next analytics period"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300 sm:h-8 sm:w-8"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -313,14 +264,14 @@ export default function Analytics({ expenses }: AnalyticsProps) {
       <div className="mb-4 grid grid-cols-2 gap-3 sm:mb-6 sm:gap-4">
         <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3.5 shadow-xs sm:p-5">
           <p className="text-xs font-medium text-zinc-400">Total Spending</p>
-          <p className="mt-1 text-lg font-bold tracking-tight text-zinc-900 dark:text-white sm:mt-2 sm:text-2xl">
+          <p className="mt-1 break-words text-[clamp(1rem,5vw,1.5rem)] font-bold tracking-tight text-zinc-900 dark:text-white sm:mt-2 sm:text-2xl">
             {formatCurrency(totalSpending)}
           </p>
         </div>
 
         <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3.5 shadow-xs sm:p-5">
           <p className="text-xs font-medium text-zinc-400">Average / day</p>
-          <p className="mt-1 text-lg font-bold tracking-tight text-zinc-900 dark:text-white sm:mt-2 sm:text-2xl">
+          <p className="mt-1 break-words text-[clamp(1rem,5vw,1.5rem)] font-bold tracking-tight text-zinc-900 dark:text-white sm:mt-2 sm:text-2xl">
             {formatCurrency(avgPerDay)}
           </p>
         </div>
@@ -332,58 +283,69 @@ export default function Analytics({ expenses }: AnalyticsProps) {
           {period === "year" ? "Monthly Spending" : "Daily Spending"}
         </h2>
 
-        <div className="mt-3 h-44 w-full sm:mt-4 sm:h-52">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={barData}
-              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-            >
-              <XAxis
-                dataKey="label"
-                tickLine={false}
-                axisLine={false}
-                tick={{ fill: axisTickColor, fontSize: 10 }}
-                interval={period === "month" ? 4 : 0}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tick={{ fill: axisTickColor, fontSize: 10 }}
-                tickFormatter={(v) => (v === 0 ? "0" : v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : `${v / 1000}k`)}
-              />
-              <Tooltip
-                formatter={(value: any) => [formatCurrency(value), "Spending"]}
-                contentStyle={chartTooltipStyle}
-                cursor={chartCursorStyle}
-              />
-              <Bar
-                dataKey="total"
-                fill="#10b981"
-                radius={[3, 3, 0, 0]}
-                maxBarSize={period === "year" ? 16 : period === "week" ? 24 : 8}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {periodExpenses.length === 0 ? (
+          <div className="mt-3 flex h-44 items-center justify-center text-center text-sm text-zinc-400 sm:mt-4 sm:h-52 dark:text-zinc-500">
+            No spending recorded for this {period}.
+          </div>
+        ) : (
+          <div className="mt-3 h-44 w-full sm:mt-4 sm:h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={barData}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <XAxis
+                  dataKey="label"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: axisTickColor, fontSize: 10 }}
+                  interval={period === "month" ? 4 : 0}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: axisTickColor, fontSize: 10 }}
+                  tickFormatter={(v) => (v === 0 ? "0" : v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : `${v / 1000}k`)}
+                />
+                <Tooltip
+                  formatter={(value: unknown) => [formatCurrency(Number(value) || 0), "Spending"]}
+                  contentStyle={chartTooltipStyle}
+                  cursor={chartCursorStyle}
+                />
+                <Bar
+                  dataKey="total"
+                  fill="#10b981"
+                  radius={[3, 3, 0, 0]}
+                  maxBarSize={period === "year" ? 16 : period === "week" ? 24 : 8}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
       {/* Spending by Category List */}
       <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs sm:p-5">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
             Spending by Category
           </h2>
-          <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+          <span className="break-words text-right text-xs font-semibold text-zinc-900 dark:text-zinc-100">
             {formatCurrency(categoryTotalAmount)}
           </span>
         </div>
 
-        <div className="mt-4 space-y-3 sm:mt-5 sm:space-y-4">
-          {categoryBreakdown.map((cat) => {
+        {categoryBreakdown.length === 0 ? (
+          <p className="mt-4 py-6 text-center text-sm text-zinc-400 dark:text-zinc-500">
+            No category spending recorded for this {period}.
+          </p>
+        ) : (
+          <div className="mt-4 space-y-3 sm:mt-5 sm:space-y-4">
+            {categoryBreakdown.map((cat) => {
             const def = EXPENSE_CATEGORIES.find((c) => c.id === cat.id)
             const Icon = def?.component
             return (
-              <div key={cat.id} className="flex items-center justify-between">
+              <div key={cat.id} className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                   <div
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl sm:h-9 sm:w-9"
@@ -391,11 +353,11 @@ export default function Analytics({ expenses }: AnalyticsProps) {
                   >
                     {Icon && <Icon className="h-4 w-4" style={{ color: cat.color }} />}
                   </div>
-                  <span className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-200">{cat.name}</span>
+                  <span className="line-clamp-2 min-w-0 break-words text-sm font-medium text-zinc-800 dark:text-zinc-200">{cat.name}</span>
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-                  <span className="whitespace-nowrap text-xs font-semibold text-zinc-900 dark:text-zinc-100 sm:text-sm">
+                  <span className="max-w-24 break-words text-right text-[11px] font-semibold leading-tight text-zinc-900 dark:text-zinc-100 sm:max-w-none sm:whitespace-nowrap sm:text-sm">
                     {formatCurrency(cat.amount)}
                   </span>
                   <span className="w-8 text-right text-xs font-medium text-zinc-400">
@@ -404,15 +366,16 @@ export default function Analytics({ expenses }: AnalyticsProps) {
                 </div>
               </div>
             )
-          })}
-        </div>
+            })}
+          </div>
+        )}
 
         <div className="mt-5 border-t border-zinc-100 dark:border-zinc-800 pt-3 text-right">
           <Link
             to="/categories"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300"
+            className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300"
           >
-            View all &gt;
+            View all <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>

@@ -132,7 +132,8 @@ export default function Categories({ expenses, onSelectCategory, onAddCategory }
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:border-zinc-800 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 transition hover:bg-zinc-50 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 lg:h-9 lg:w-9 lg:rounded-xl"
+            aria-label="Go back"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:border-zinc-800 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 transition hover:bg-zinc-50 dark:bg-zinc-800/50 dark:hover:bg-zinc-800 lg:h-9 lg:w-9 lg:rounded-xl"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
@@ -203,11 +204,11 @@ export default function Categories({ expenses, onSelectCategory, onAddCategory }
                 )}
               </div>
 
-              <span className="w-full truncate text-[13px] font-semibold text-zinc-900 dark:text-white lg:text-sm">
+              <span className="line-clamp-2 w-full break-words text-[13px] font-semibold text-zinc-900 dark:text-white lg:text-sm">
                 {cat.name}
               </span>
 
-              <p className="mt-0.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 lg:mt-1 lg:text-xs">
+              <p className="mt-0.5 break-words text-[11px] font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 lg:mt-1 lg:text-xs">
                 {stat.total > 0 ? formatCurrency(stat.total) : formatCurrency(0)}
               </p>
             </button>
@@ -222,7 +223,7 @@ export default function Categories({ expenses, onSelectCategory, onAddCategory }
             disabled={currentPage === 1}
             onClick={() => setCategoryPage((page) => Math.max(1, page - 1))}
             aria-label="Previous category page"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:border-zinc-800 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 shadow-xs transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:border-emerald-900/50 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400 disabled:!cursor-[not-allowed] disabled:hover:border-zinc-200 dark:border-zinc-800 disabled:hover:bg-white disabled:hover:text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 disabled:opacity-40"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:border-zinc-800 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 shadow-xs transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:border-emerald-900/50 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400 disabled:!cursor-[not-allowed] disabled:hover:border-zinc-200 dark:border-zinc-800 disabled:hover:bg-white disabled:hover:text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 disabled:opacity-40 lg:h-8 lg:w-8"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -234,7 +235,7 @@ export default function Categories({ expenses, onSelectCategory, onAddCategory }
                 aria-label={`Go to category page ${page}`}
                 aria-current={page === currentPage ? "page" : undefined}
                 onClick={() => setCategoryPage(page)}
-                className={`flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold transition ${
+                className={`flex h-10 min-w-10 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold transition ${
                   page === currentPage
                     ? "bg-emerald-600 text-white shadow-xs"
                     : "text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:bg-zinc-800"
@@ -249,7 +250,7 @@ export default function Categories({ expenses, onSelectCategory, onAddCategory }
             disabled={currentPage === pageCount}
             onClick={() => setCategoryPage((page) => Math.min(pageCount, page + 1))}
             aria-label="Next category page"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:border-zinc-800 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 shadow-xs transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:border-emerald-900/50 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400 disabled:!cursor-[not-allowed] disabled:hover:border-zinc-200 dark:border-zinc-800 disabled:hover:bg-white disabled:hover:text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 disabled:opacity-40"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:border-zinc-800 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 shadow-xs transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:border-emerald-900/50 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400 disabled:!cursor-[not-allowed] disabled:hover:border-zinc-200 dark:border-zinc-800 disabled:hover:bg-white disabled:hover:text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 disabled:opacity-40 lg:h-8 lg:w-8"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -303,13 +304,13 @@ export default function Categories({ expenses, onSelectCategory, onAddCategory }
                   <div className="flex min-w-0 items-center gap-2.5">
                     <span className="h-7 w-1 shrink-0 rounded-full bg-emerald-400" />
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-zinc-900 dark:text-white">{tx.item}</p>
+                      <p className="line-clamp-2 break-words font-medium text-zinc-900 dark:text-white">{tx.item}</p>
                       <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
                         {formatTransactionDateTime(tx.date, tx.time)}
                       </p>
                     </div>
                   </div>
-                  <span className="shrink-0 text-sm font-semibold text-zinc-900 dark:text-white">
+                  <span className="max-w-[45%] break-words text-right text-xs font-semibold leading-tight text-zinc-900 dark:text-white sm:max-w-none sm:whitespace-nowrap sm:text-sm">
                     {formatCurrency(tx.amount)}
                   </span>
                 </div>

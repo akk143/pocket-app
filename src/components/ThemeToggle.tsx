@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Sun, Moon, Monitor } from "lucide-react";
+import { Check, Sun, Moon, Monitor } from "lucide-react";
 import { useTheme, type ThemePreference } from "../hooks/useTheme";
 
 interface ThemeToggleProps {
@@ -59,7 +59,7 @@ export function ThemeToggle({ compact = false }: ThemeToggleProps) {
           type="button"
           aria-label="Change theme"
           onClick={() => setIsOpen(!isOpen)}
-          className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white sm:h-10 sm:w-10"
         >
           {currentIcon}
         </button>
@@ -88,7 +88,7 @@ export function ThemeToggle({ compact = false }: ThemeToggleProps) {
               key={option.value}
               type="button"
               onClick={() => handleSelect(option.value)}
-              className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition ${
+              className={`flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition ${
                 themePreference === option.value
                   ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white font-medium"
                   : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-white"
@@ -99,7 +99,7 @@ export function ThemeToggle({ compact = false }: ThemeToggleProps) {
                 {option.label}
               </div>
               {themePreference === option.value && (
-                <span className="text-emerald-600 dark:text-emerald-500">✓</span>
+                <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-500" />
               )}
             </button>
           ))}

@@ -21,7 +21,6 @@ export interface CategoryDef {
   id: string
   type: "expense" | "income"
   name: string
-  icon: string
   component: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
   color: string
   badgeBg: string
@@ -34,7 +33,6 @@ export const EXPENSE_CATEGORIES: readonly CategoryDef[] = [
     type: "expense",
     id: "food",
     name: "Food",
-    icon: "🍜",
     component: Utensils,
     color: "#f97316", // orange
     badgeBg: "bg-orange-50",
@@ -45,7 +43,6 @@ export const EXPENSE_CATEGORIES: readonly CategoryDef[] = [
     type: "expense",
     id: "drinks",
     name: "Drinks",
-    icon: "☕",
     component: Coffee,
     color: "#10b981", // emerald
     badgeBg: "bg-emerald-50",
@@ -56,7 +53,6 @@ export const EXPENSE_CATEGORIES: readonly CategoryDef[] = [
     type: "expense",
     id: "transportation",
     name: "Transportation",
-    icon: "🚕",
     component: Car,
     color: "#3b82f6", // blue
     badgeBg: "bg-blue-50",
@@ -67,7 +63,6 @@ export const EXPENSE_CATEGORIES: readonly CategoryDef[] = [
     type: "expense",
     id: "shopping",
     name: "Shopping",
-    icon: "🛍️",
     component: ShoppingBag,
     color: "#ec4899",
     badgeBg: "bg-pink-50",
@@ -78,7 +73,6 @@ export const EXPENSE_CATEGORIES: readonly CategoryDef[] = [
     type: "expense",
     id: "rent",
     name: "Housing",
-    icon: "🏠",
     component: Home,
     color: "#8b5cf6",
     badgeBg: "bg-purple-50",
@@ -89,7 +83,6 @@ export const EXPENSE_CATEGORIES: readonly CategoryDef[] = [
     type: "expense",
     id: "bills",
     name: "Bills & Services",
-    icon: "💡",
     component: Receipt,
     color: "#f59e0b",
     badgeBg: "bg-amber-50",
@@ -100,7 +93,6 @@ export const EXPENSE_CATEGORIES: readonly CategoryDef[] = [
     type: "expense",
     id: "entertainment",
     name: "Entertainment",
-    icon: "🎮",
     component: Gamepad2,
     color: "#6366f1",
     badgeBg: "bg-indigo-50",
@@ -111,7 +103,6 @@ export const EXPENSE_CATEGORIES: readonly CategoryDef[] = [
     type: "expense",
     id: "education",
     name: "Education",
-    icon: "📚",
     component: GraduationCap,
     color: "#06b6d4",
     badgeBg: "bg-cyan-50",
@@ -122,7 +113,6 @@ export const EXPENSE_CATEGORIES: readonly CategoryDef[] = [
     type: "expense",
     id: "health",
     name: "Health",
-    icon: "💊",
     component: HeartPulse,
     color: "#ef4444",
     badgeBg: "bg-red-50",
@@ -133,7 +123,6 @@ export const EXPENSE_CATEGORIES: readonly CategoryDef[] = [
     type: "expense",
     id: "technology",
     name: "Technology",
-    icon: "💻",
     component: Laptop,
     color: "#64748b",
     badgeBg: "bg-slate-100",
@@ -144,7 +133,6 @@ export const EXPENSE_CATEGORIES: readonly CategoryDef[] = [
     type: "expense",
     id: "other",
     name: "Other",
-    icon: "📦",
     component: Package,
     color: "#9ca3af",
     badgeBg: "bg-zinc-100",
@@ -158,7 +146,6 @@ export const INCOME_CATEGORIES: readonly CategoryDef[] = [
     type: "income",
     id: "salary",
     name: "Salary",
-    icon: "💼",
     component: Briefcase,
     color: "#10b981",
     badgeBg: "bg-emerald-50",
@@ -169,7 +156,6 @@ export const INCOME_CATEGORIES: readonly CategoryDef[] = [
     type: "income",
     id: "freelance",
     name: "Freelance",
-    icon: "💻",
     component: Laptop,
     color: "#3b82f6",
     badgeBg: "bg-blue-50",
@@ -180,7 +166,6 @@ export const INCOME_CATEGORIES: readonly CategoryDef[] = [
     type: "income",
     id: "investments",
     name: "Investments",
-    icon: "📈",
     component: TrendingUp,
     color: "#8b5cf6",
     badgeBg: "bg-purple-50",
@@ -191,7 +176,6 @@ export const INCOME_CATEGORIES: readonly CategoryDef[] = [
     type: "income",
     id: "gift",
     name: "Gift",
-    icon: "🎁",
     component: Gift,
     color: "#ec4899",
     badgeBg: "bg-pink-50",
@@ -202,7 +186,6 @@ export const INCOME_CATEGORIES: readonly CategoryDef[] = [
     type: "income",
     id: "sales",
     name: "Sales",
-    icon: "🏷️",
     component: Tag,
     color: "#f59e0b",
     badgeBg: "bg-amber-50",
@@ -213,7 +196,6 @@ export const INCOME_CATEGORIES: readonly CategoryDef[] = [
     type: "income",
     id: "other_income",
     name: "Other Income",
-    icon: "💵",
     component: Banknote,
     color: "#14b8a6",
     badgeBg: "bg-teal-50",

@@ -35,8 +35,8 @@ export default function FinancialSummaryCard({
       {/* Amount */}
       <div className="mt-2 mb-1" title={amountFull}>
         <p
-          className={`whitespace-nowrap tabular-nums tracking-tight ${amountColorClass}`}
-          style={{ fontSize: "clamp(18px, 1.8vw, 26px)", lineHeight: 1.15, fontWeight: 600 }}
+          className={`break-words tabular-nums tracking-tight ${amountColorClass}`}
+          style={{ fontSize: "clamp(16px, 1.8vw, 26px)", lineHeight: 1.15, fontWeight: 600 }}
         >
           {prefix && (
             <span className="mr-0.5 inline-block text-[0.58em] font-medium opacity-60">
