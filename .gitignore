@@ -8,11 +8,15 @@ build/
 
 # ── Environment variables (NEVER commit secrets) ──────────────────────────────
 .env
-.env.local
-.env.*.local
-.env.production
-.env.*.production
-.env.development
+.env.*
+!.env.example
+
+# ── Local credentials and deployment state ────────────────────────────────────
+.vercel/
+/service-account*.json
+/firebase-adminsdk*.json
+/*-firebase-adminsdk-*.json
+/vercel.json.backup
 
 # ── Logs ──────────────────────────────────────────────────────────────────────
 logs/
@@ -57,9 +61,6 @@ coverage/
 # ── Misc ──────────────────────────────────────────────────────────────────────
 *.local
 .cache/
-
-# ── Antigravity AI agent files ────────────────────────────────────────────────
-AGENTS.md
 
 # Local AI coding instructions
 AGENTS.md
