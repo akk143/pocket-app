@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { updateProfile, type User } from "firebase/auth"
 import {
+  ArrowRight,
   User as UserIcon,
   Download,
   LogOut,
@@ -13,19 +13,23 @@ import {
   Sun,
   Moon,
   Monitor,
+  TriangleAlert,
 } from "lucide-react"
 import type { Expense } from "../types/expense"
 import { useCurrency } from "../contexts/CurrencyContext"
 import { SUPPORTED_CURRENCIES, convertAndFormatCurrency, STATIC_VND_RATES } from "../lib/currency"
 import { useTheme } from "../hooks/useTheme"
+import type { AppUser } from "../types/user"
+import { apiRequest } from "../lib/api"
 
 interface SettingsProps {
-  user: User
+  user: AppUser
   expenses: Expense[]
   onSignOut: () => void
+  onUserUpdated: (user: AppUser) => void
 }
 
-export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
+export default function Settings({ user, expenses, onSignOut, onUserUpdated }: SettingsProps) {
   const { currency, setCurrency, rates, isLoadingRates } = useCurrency()
   const { themePreference, setThemePreference } = useTheme()
   const formatCurrency = (amount: number) => convertAndFormatCurrency(amount, currency, rates)
@@ -34,6 +38,7 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
   const [name, setName] = useState(user.displayName || "")
   const [savingName, setSavingName] = useState(false)
   const [nameSaved, setNameSaved] = useState(false)
+  const [nameError, setNameError] = useState("")
 
   const [budget, setBudget] = useState(() => {
     return localStorage.getItem("pocket_budget") || "5000000"
@@ -57,13 +62,19 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
   const handleSaveName = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
+    setNameError("")
     setSavingName(true)
     try {
-      await updateProfile(user, { displayName: name.trim() })
+      const result = await apiRequest<{ user: AppUser }>("/api/auth/profile", {
+        method: "PATCH",
+        body: JSON.stringify({ displayName: name.trim() }),
+      })
+      onUserUpdated(result.user)
       setNameSaved(true)
       setTimeout(() => setNameSaved(false), 2500)
     } catch (err) {
       console.error(err)
+      setNameError("Could not update your profile. Please try again.")
     } finally {
       setSavingName(false)
     }
@@ -127,7 +138,7 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
       <div className="space-y-4 lg:space-y-6">
         {/* Profile Card */}
         <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs lg:p-6">
-          <div className="flex items-center gap-2.5 border-b border-zinc-100 dark:border-zinc-800 pb-3 lg:pb-4">
+          <div className="flex min-w-0 items-center gap-2.5 border-b border-zinc-100 dark:border-zinc-800 pb-3 lg:pb-4">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 lg:h-9 lg:w-9 lg:rounded-xl">
               <UserIcon className="h-4 w-4 lg:h-5 lg:w-5" />
             </div>
@@ -163,6 +174,12 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
               />
             </div>
 
+            {nameError && (
+              <p role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">
+                {nameError}
+              </p>
+            )}
+
             <div className="flex items-center gap-3 pt-0.5">
               <button
                 type="submit"
@@ -178,7 +195,7 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
 
         {/* Monthly Budget Goal */}
         <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs lg:p-6">
-          <div className="flex items-center gap-2.5 border-b border-zinc-100 dark:border-zinc-800 pb-3 lg:pb-4">
+          <div className="flex min-w-0 items-center gap-2.5 border-b border-zinc-100 dark:border-zinc-800 pb-3 lg:pb-4">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 lg:h-9 lg:w-9 lg:rounded-xl">
               <Target className="h-4 w-4 lg:h-5 lg:w-5" />
             </div>
@@ -193,7 +210,7 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
             <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-800/50 p-3 lg:p-4">
               <div className="flex flex-col gap-1 text-xs lg:flex-row lg:items-center lg:justify-between">
                 <span className="font-medium text-zinc-500 dark:text-zinc-400">This Month's Spending</span>
-                <span className="font-bold text-zinc-900 dark:text-white">
+                <span className="break-words font-bold text-zinc-900 dark:text-white lg:text-right">
                   {formatCurrency(thisMonthSpent)} / {formatCurrency(budgetNum)}
                 </span>
               </div>
@@ -209,10 +226,15 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
                   style={{ width: `${budgetPercent}%` }}
                 />
               </div>
-              <p className="mt-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-                {budgetPercent >= 100
-                  ? "⚠️ You have exceeded your monthly budget goal!"
-                  : `${budgetPercent}% of monthly budget spent.`}
+              <p className="mt-2 flex items-start gap-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                {budgetPercent >= 100 ? (
+                  <>
+                    <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                    <span className="min-w-0 break-words">You have exceeded your monthly budget goal!</span>
+                  </>
+                ) : (
+                  `${budgetPercent}% of monthly budget spent.`
+                )}
               </p>
             </div>
 
@@ -242,13 +264,13 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
 
         {/* Currency & Exchange Rates */}
         <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs lg:p-6">
-          <div className="flex items-center gap-2.5 border-b border-zinc-100 dark:border-zinc-800 pb-3 lg:pb-4">
+          <div className="flex min-w-0 items-start gap-2.5 border-b border-zinc-100 dark:border-zinc-800 pb-3 lg:items-center lg:pb-4">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 lg:h-9 lg:w-9 lg:rounded-xl">
               <Globe className="h-4 w-4 lg:h-5 lg:w-5" />
             </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Currency & Exchange Rates</h2>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center justify-between gap-1">
+                <h2 className="min-w-0 break-words text-sm font-semibold text-zinc-900 dark:text-white">Currency & Exchange Rates</h2>
                 <span className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Live Rates
@@ -280,7 +302,7 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
             <div className="flex flex-col items-start gap-2 rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-800/50 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 <RefreshCw className={`h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500 ${isLoadingRates ? "animate-spin" : ""}`} />
-                <span className="text-zinc-600 dark:text-zinc-400">
+                <span className="min-w-0 break-words text-zinc-600 dark:text-zinc-400">
                   {currency !== "VND" ? (
                     STATIC_VND_RATES[currency] ? (
                       <>1 {currency} ≈ {new Intl.NumberFormat("vi-VN").format(Math.round(STATIC_VND_RATES[currency]))} ₫</>
@@ -344,11 +366,11 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
         {/* Recurring Transactions Shortcut */}
         <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs lg:p-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-2.5">
+            <div className="flex min-w-0 items-center gap-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 lg:h-9 lg:w-9 lg:rounded-xl">
                 <Repeat className="h-4 w-4 lg:h-5 lg:w-5" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Recurring Transactions</h2>
                 <p className="text-xs text-zinc-400 dark:text-zinc-500">
                   Automate monthly rent, salary, bills, and regular subscriptions
@@ -361,7 +383,7 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-emerald-700 lg:w-auto lg:py-2"
             >
               <Repeat className="h-3.5 w-3.5" />
-              Manage Schedules &gt;
+              Manage Schedules <ArrowRight className="h-3.5 w-3.5 shrink-0" />
             </Link>
           </div>
         </div>
@@ -369,11 +391,11 @@ export default function Settings({ user, expenses, onSignOut }: SettingsProps) {
         {/* Data Export */}
         <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs lg:p-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-2.5">
+            <div className="flex min-w-0 items-center gap-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 lg:h-9 lg:w-9 lg:rounded-xl">
                 <Download className="h-4 w-4 lg:h-5 lg:w-5" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Export Transactions</h2>
                 <p className="text-xs text-zinc-400 dark:text-zinc-500">
                   Download all your expenses and income as a CSV file

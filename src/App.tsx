@@ -1,21 +1,23 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Routes, Route, NavLink, Navigate, useNavigate } from "react-router-dom"
-import { onAuthStateChanged, signOut, type User } from "firebase/auth"
 import {
   BarChart3,
   Bell,
   ChevronDown,
   Home,
   LayoutGrid,
+  LoaderCircle,
   LogOut,
   Plus,
   ReceiptText,
   Repeat,
   Settings as SettingsIcon,
   Wallet,
+  X,
 } from "lucide-react"
 
 import AddExpenseSheet from "./components/AddExpenseSheet"
+import StartupSplash from "./components/StartupSplash"
 import { ThemeToggle } from "./components/ThemeToggle"
 import HomePage from "./pages/Home"
 import HistoryPage from "./pages/History"
@@ -27,37 +29,62 @@ import TrashPage from "./pages/Trash"
 import LoginPage from "./pages/Login"
 import RegisterPage from "./pages/Register"
 
-import { auth } from "./lib/firebase"
+import { apiRequest } from "./lib/api"
 import {
-  subscribeToExpenses,
-  subscribeToDeletedExpenses,
   restoreExpense,
   addExpense,
   updateExpense,
   deleteExpense,
+  deleteExpenses,
+  fetchExpenses,
+  fetchDeletedExpenses,
+  restoreExpenses,
 } from "./lib/expenses"
 import {
-  subscribeToRecurring,
   addRecurring,
   updateRecurring,
   deleteRecurring,
-  checkAndProcessDueRecurring,
+  fetchRecurring,
   triggerRecurringImmediately,
 } from "./lib/recurring"
 import type { Expense, RecurringTransaction } from "./types/expense"
+import type { AppUser } from "./types/user"
 import { useCurrency } from "./contexts/CurrencyContext"
 import { SUPPORTED_CURRENCIES } from "./lib/currency"
 
 function App() {
+  const [appReady, setAppReady] = useState(false)
+  const [animationComplete, setAnimationComplete] = useState(false)
+  const handleAppReady = useCallback(() => setAppReady(true), [])
+  const handleAnimationComplete = useCallback(() => setAnimationComplete(true), [])
+
+  return (
+    <>
+      <AppContent onAppReady={handleAppReady} />
+      <StartupSplash
+        visible={!appReady || !animationComplete}
+        onAnimationComplete={handleAnimationComplete}
+      />
+    </>
+  )
+}
+
+function AppContent({ onAppReady }: { onAppReady: () => void }) {
   const navigate = useNavigate()
   const { currency, setCurrency } = useCurrency()
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<AppUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [sessionError, setSessionError] = useState(false)
+  const [accountDataError, setAccountDataError] = useState(false)
   const [expenses, setExpenses] = useState<Expense[]>([])
-  const [trashCount, setTrashCount] = useState(0)
+  const [deletedExpenses, setDeletedExpenses] = useState<Expense[]>([])
   const [recurringList, setRecurringList] = useState<RecurringTransaction[]>([])
   const [addExpenseOpen, setAddExpenseOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
+  const [transactionSaveState, setTransactionSaveState] = useState<
+    "saving" | "saving-recurring" | "updating" | null
+  >(null)
+  const transactionSaveLock = useRef(false)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("drinks")
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
@@ -76,6 +103,16 @@ function App() {
     setToast({ message, type, action })
     setTimeout(() => setToast(null), 3000)
   }
+
+  useEffect(() => {
+    if (!transactionSaveState) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [transactionSaveState])
 
   useEffect(() => {
     if (!userMenuOpen) return
@@ -97,77 +134,137 @@ function App() {
     }
   }, [userMenuOpen])
 
-  // Auth listener
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser)
-      if (!firebaseUser) {
-        setExpenses([])
-        setTrashCount(0)
-        setRecurringList([])
-      }
-      setAuthLoading(false)
-    })
-    return unsub
-  }, [])
+    const handleSessionExpired = () => {
+      setUser(null)
+      setExpenses([])
+      setDeletedExpenses([])
+      setRecurringList([])
+      navigate("/login", { replace: true })
+    }
+    window.addEventListener("pockettrack:session-expired", handleSessionExpired)
+    return () => window.removeEventListener("pockettrack:session-expired", handleSessionExpired)
+  }, [navigate])
 
-  // Firestore expense listener (only when signed in)
+  useEffect(() => {
+    let active = true
+    apiRequest<{ user: AppUser | null }>("/api/auth/session")
+      .then(({ user: sessionUser }) => {
+        if (active) setUser(sessionUser)
+      })
+      .catch((error: unknown) => {
+        console.error("Session check failed:", error)
+        if (active) {
+          setUser(null)
+          setSessionError(true)
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setAuthLoading(false)
+          onAppReady()
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [onAppReady])
+
   useEffect(() => {
     if (!user) return
-
-    const unsub = subscribeToExpenses(
-      user.uid,
-      (data) => setExpenses(data),
-      (err) => console.error("Firestore error:", err),
-    )
-
-    return unsub
+    let active = true
+    Promise.all([fetchExpenses(), fetchDeletedExpenses(), fetchRecurring()])
+      .then(([activeExpenses, deletedExpenses, recurringItems]) => {
+        if (!active) return
+        setExpenses(activeExpenses)
+        setDeletedExpenses(deletedExpenses)
+        setRecurringList(recurringItems)
+        setAccountDataError(false)
+      })
+      .catch((error: unknown) => {
+        console.error("Account data could not be loaded:", error)
+        if (active) setAccountDataError(true)
+      })
+    return () => {
+      active = false
+    }
   }, [user])
 
-  useEffect(() => {
-    if (!user) return
-
-    return subscribeToDeletedExpenses(
-      user.uid,
-      (deletedExpenses) => setTrashCount(deletedExpenses.length),
-      (err) => console.error("Trash count error:", err),
-    )
-  }, [user])
-
-
-  // Save new expense
-  async function handleSaveExpense(expense: Expense) {
-    if (!user) return
+  async function handleSaveExpense(
+    expense: Omit<Expense, "id">,
+    recurring?: Omit<RecurringTransaction, "id">,
+  ) {
+    if (!user || transactionSaveLock.current) return
+    transactionSaveLock.current = true
+    setTransactionSaveState("saving")
+    let transactionSaved = false
     try {
-      const data = { ...expense }
-      Reflect.deleteProperty(data, "id")
-      await addExpense(user.uid, data)
+      const id = await addExpense(expense)
+      transactionSaved = true
+      setExpenses((current) => [{ ...expense, id }, ...current])
+      if (recurring) {
+        setTransactionSaveState("saving-recurring")
+        try {
+          await handleAddRecurring(recurring)
+        } catch {
+          setAddExpenseOpen(false)
+          setEditingExpense(null)
+          showToast("Transaction saved, but recurring schedule could not be created.", "info")
+          return
+        }
+      }
+      setAddExpenseOpen(false)
+      setEditingExpense(null)
       showToast(expense.type === "income" ? "Income saved successfully" : "Expense recorded successfully")
-    } catch {
+    } catch (error) {
+      if (transactionSaved) {
+        showToast("Transaction saved, but recurring schedule could not be created.", "info")
+        return
+      }
       showToast("Failed to save. Check your connection.", "info")
+      throw error
+    } finally {
+      transactionSaveLock.current = false
+      setTransactionSaveState(null)
     }
   }
 
-  // Update existing expense in Firestore 
   async function handleUpdateExpense(
     expenseId: string,
     updated: Partial<Omit<Expense, "id">>
   ) {
-    if (!user) return
+    if (!user || transactionSaveLock.current) return
+    transactionSaveLock.current = true
+    setTransactionSaveState("updating")
     try {
-      await updateExpense(user.uid, expenseId, updated)
+      await updateExpense(expenseId, updated)
+      setExpenses((current) =>
+        current.map((expense) => expense.id === expenseId ? { ...expense, ...updated } : expense),
+      )
+      setAddExpenseOpen(false)
       setEditingExpense(null)
       showToast("Transaction updated successfully")
-    } catch {
+    } catch (error) {
       showToast("Update failed. Check your connection.", "info")
+      throw error
+    } finally {
+      transactionSaveLock.current = false
+      setTransactionSaveState(null)
     }
   }
 
-  // Delete expense from Firestore
   async function handleDeleteExpense(expenseId: string) {
     if (!user) return
     try {
-      await deleteExpense(user.uid, expenseId)
+      await deleteExpense(expenseId)
+      const deletedExpense = expenses.find((expense) => expense.id === expenseId)
+      setExpenses((current) => current.filter((expense) => expense.id !== expenseId))
+      if (deletedExpense) {
+        setDeletedExpenses((current) => [
+          { ...deletedExpense, deletedAt: Date.now() },
+          ...current.filter((expense) => expense.id !== expenseId),
+        ])
+      }
       showToast("Transaction moved to Trash", "success", {
         label: "Undo",
         onClick: () => {
@@ -182,79 +279,61 @@ function App() {
   async function handleBulkDeleteExpenses(expenseIds: string[]) {
     if (!user) return
 
-    const results = await Promise.allSettled(
-      expenseIds.map((expenseId) => deleteExpense(user.uid, expenseId)),
-    )
-    const deletedIds = expenseIds.filter((_, index) => results[index].status === "fulfilled")
-    const failedCount = results.length - deletedIds.length
-
-    if (deletedIds.length === 0) {
+    let deletedIds: string[]
+    try {
+      deletedIds = await deleteExpenses(expenseIds)
+    } catch {
       showToast("Failed to move transactions to Trash. Check your connection.", "info")
       return
     }
+    const movedExpenses = expenses.filter((expense) => deletedIds.includes(expense.id))
+    setExpenses((current) => current.filter((expense) => !deletedIds.includes(expense.id)))
+    setDeletedExpenses((current) => [
+      ...movedExpenses.map((expense) => ({ ...expense, deletedAt: Date.now() })),
+      ...current.filter((expense) => !deletedIds.includes(expense.id)),
+    ])
 
     const deletedLabel = `${deletedIds.length} transaction${deletedIds.length === 1 ? "" : "s"} moved to Trash`
-    showToast(
-      failedCount > 0 ? `${deletedLabel}; ${failedCount} failed` : deletedLabel,
-      failedCount > 0 ? "info" : "success",
-      {
+    showToast(deletedLabel, "success", {
         label: "Undo",
         onClick: () => {
-          void Promise.allSettled(
-            deletedIds.map((expenseId) => restoreExpense(user.uid, expenseId)),
-          ).then((restoreResults) => {
-            const restoredCount = restoreResults.filter((result) => result.status === "fulfilled").length
-            const restoreFailedCount = restoreResults.length - restoredCount
-            showToast(
-              restoreFailedCount > 0
-                ? `${restoredCount} restored; ${restoreFailedCount} could not be restored`
-                : `${restoredCount} transaction${restoredCount === 1 ? "" : "s"} restored`,
-              restoreFailedCount > 0 ? "info" : "success",
-            )
+          void restoreExpenses(deletedIds).then(async (restoredIds) => {
+            const restoredCount = restoredIds.length
+            const [activeExpenses, deletedExpenses] = await Promise.all([
+              fetchExpenses(),
+              fetchDeletedExpenses(),
+            ])
+            setExpenses(activeExpenses)
+            setDeletedExpenses(deletedExpenses)
+            showToast(`${restoredCount} transaction${restoredCount === 1 ? "" : "s"} restored`)
+          }).catch(() => {
+            showToast("Could not restore transactions. Please try again.", "info")
           })
         },
-      },
-    )
+      })
   }
 
   async function handleRestoreExpense(expenseId: string) {
     if (!user) return
     try {
-      await restoreExpense(user.uid, expenseId)
+      await restoreExpense(expenseId)
+      const [activeExpenses, deletedExpenses] = await Promise.all([
+        fetchExpenses(),
+        fetchDeletedExpenses(),
+      ])
+      setExpenses(activeExpenses)
+      setDeletedExpenses(deletedExpenses)
       showToast("Transaction restored")
     } catch {
       showToast("Could not restore transaction. Please try again.", "info")
     }
   }
 
-  // Firestore recurring listener and auto-processor
-  useEffect(() => {
-    if (!user) return
-
-    const unsub = subscribeToRecurring(
-      user.uid,
-      (items) => {
-        setRecurringList(items)
-        // Auto-process due recurring items
-        checkAndProcessDueRecurring(user.uid, items).then((posted) => {
-          if (posted.length > 0) {
-            showToast(`Auto-recorded ${posted.length} recurring item${posted.length > 1 ? "s" : ""}`)
-          }
-        }).catch(() => {
-          // Silent — don't alert user for background recurring errors
-        })
-      },
-      (err) => console.error("Firestore recurring error:", err),
-    )
-
-    return unsub
-  }, [user])
-
-  // Recurring schedule handlers
   async function handleAddRecurring(item: Omit<RecurringTransaction, "id">) {
     if (!user) return
     try {
-      await addRecurring(user.uid, item)
+      const id = await addRecurring(item)
+      setRecurringList((current) => [{ ...item, id }, ...current])
       showToast("Recurring schedule created")
     } catch (error) {
       showToast("Failed to create recurring schedule.", "info")
@@ -265,7 +344,10 @@ function App() {
   async function handleToggleRecurringActive(id: string, active: boolean) {
     if (!user) return
     try {
-      await updateRecurring(user.uid, id, { active })
+      await updateRecurring(id, { active })
+      setRecurringList((current) =>
+        current.map((item) => item.id === id ? { ...item, active } : item),
+      )
       showToast(active ? "Recurring schedule resumed" : "Recurring schedule paused")
     } catch (error) {
       showToast("Update failed. Check your connection.", "info")
@@ -276,7 +358,8 @@ function App() {
   async function handleDeleteRecurring(id: string) {
     if (!user) return
     try {
-      await deleteRecurring(user.uid, id)
+      await deleteRecurring(id)
+      setRecurringList((current) => current.filter((item) => item.id !== id))
       showToast("Recurring schedule deleted")
     } catch (error) {
       showToast("Delete failed. Check your connection.", "info")
@@ -287,7 +370,17 @@ function App() {
   async function handleTriggerRecurringNow(item: RecurringTransaction) {
     if (!user) return
     try {
-      await triggerRecurringImmediately(user.uid, item)
+      await triggerRecurringImmediately(item)
+      try {
+        const [updatedRecurring, updatedExpenses] = await Promise.all([
+          fetchRecurring(),
+          fetchExpenses(),
+        ])
+        setRecurringList(updatedRecurring)
+        setExpenses(updatedExpenses)
+      } catch (error) {
+        console.error("Posted recurring transaction but could not refresh the dashboard:", error)
+      }
       showToast(`Recorded: ${item.item}`)
     } catch (err) {
       const msg = err instanceof Error ? err.message : ""
@@ -299,9 +392,8 @@ function App() {
     }
   }
 
-  // Seeding demo expenses to Firestore
-
   const openAddExpense = (categoryId?: string) => {
+    if (transactionSaveLock.current) return
     setEditingExpense(null)
     if (categoryId) {
       setSelectedCategoryId(categoryId)
@@ -310,6 +402,7 @@ function App() {
   }
 
   const openEditExpense = (expense: Expense) => {
+    if (transactionSaveLock.current) return
     setEditingExpense(expense)
     setAddExpenseOpen(true)
   }
@@ -321,20 +414,41 @@ function App() {
     }
   }
 
-  //  Sign out
   async function handleSignOut() {
-    await signOut(auth)
+    try {
+      await apiRequest("/api/auth/logout", {
+        method: "POST",
+        body: JSON.stringify({}),
+      })
+      setUser(null)
+      setExpenses([])
+      setDeletedExpenses([])
+      setRecurringList([])
+      navigate("/login")
+    } catch {
+      showToast("Could not sign out. Please try again.", "info")
+    }
   }
 
   // Auth loading
   if (authLoading) {
+    return null
+  }
+
+  if (sessionError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f7f7f5] dark:bg-zinc-950">
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-500/10">
-            <Wallet className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <p className="text-sm font-medium text-zinc-400">Loading PocketTrack…</p>
+      <div className="flex min-h-dvh items-center justify-center bg-[#f7f7f5] px-5 dark:bg-zinc-950">
+        <div className="max-w-sm text-center">
+          <p className="text-sm font-semibold text-zinc-900 dark:text-white">
+            PocketTrack could not connect to its server.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+          >
+            Try again
+          </button>
         </div>
       </div>
     )
@@ -362,10 +476,14 @@ function App() {
     .slice(0, 2) || "JD"
 
   return (
-    <div className="min-h-screen bg-[#f7f7f5] text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
+    <>
+    <div
+      inert={transactionSaveState !== null}
+      className="min-h-screen bg-[#f7f7f5] text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50"
+    >
       <div className="mx-auto flex min-h-screen min-h-dvh max-w-[1600px]">
 
-        <aside className="hidden w-64 shrink-0 flex-col justify-between border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 p-5 lg:flex lg:sticky lg:top-0 lg:h-dvh lg:overflow-y-auto">
+        <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col justify-between border-r border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 lg:flex lg:left-[max(0px,calc((100vw-1600px)/2))] lg:overflow-y-auto lg:overscroll-contain">
           <div>
             {/* Logo */}
             <div className="mb-8 flex items-center gap-2.5 px-2">
@@ -490,6 +608,8 @@ function App() {
           </div>
         </aside>
 
+        <div aria-hidden="true" className="hidden w-64 shrink-0 lg:block" />
+
         {/* ── Main Content Area ── */}
         <main className="flex min-w-0 flex-1 flex-col pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0">
           {/* Header */}
@@ -504,18 +624,31 @@ function App() {
 
             {/* Desktop Search Bar */}
             <form onSubmit={handleHeaderSearch} className="hidden max-w-md flex-1 lg:block">
-              <input
-                type="text"
-                value={headerSearch}
-                onChange={(e) => setHeaderSearch(e.target.value)}
-                placeholder="Search expenses, items, or categories..."
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50/80 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 px-4 py-2 text-sm outline-none transition placeholder:text-zinc-400 dark:focus:border-emerald-500 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-900"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={headerSearch}
+                  onChange={(e) => setHeaderSearch(e.target.value)}
+                  placeholder="Search expenses, items, or categories..."
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50/80 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 px-4 py-2 pr-10 text-sm outline-none transition placeholder:text-zinc-400 dark:focus:border-emerald-500 focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-900"
+                />
+                {headerSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setHeaderSearch("")}
+                    aria-label="Clear search"
+                    title="Clear search"
+                    className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </form>
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
               {/* Currency Quick Switcher */}
-              <div className="relative" ref={userMenuRef}>
+              <div className="relative">
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
@@ -546,7 +679,7 @@ function App() {
               </div>
 
               {/* User Profile — always visible */}
-              <div className="relative">
+              <div className="relative" ref={userMenuRef}>
                 <button
                   type="button"
                   onClick={() => setUserMenuOpen((prev) => !prev)}
@@ -576,17 +709,6 @@ function App() {
                     </div>
 
                     <NavLink
-                      to="/categories"
-                      onClick={() => setUserMenuOpen(false)}
-                      className="flex w-full items-center gap-2 px-4 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 lg:hidden"
-                    >
-                      <LayoutGrid className="h-3.5 w-3.5 text-zinc-400" />
-                      Categories
-                    </NavLink>
-                    
-                    
-
-                    <NavLink
                       to="/settings"
                       onClick={() => setUserMenuOpen(false)}
                       className="flex w-full items-center gap-2 px-4 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
@@ -612,6 +734,12 @@ function App() {
             </div>
           </header>
 
+          {accountDataError && (
+            <div role="alert" className="mx-4 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-500/10 dark:text-amber-300 sm:mx-8">
+              Could not load your financial data. Check your connection and refresh the page.
+            </div>
+          )}
+
           {/* Page Routing */}
           <div className="flex-1">
             <Routes>
@@ -633,7 +761,7 @@ function App() {
                 element={
                   <HistoryPage
                     expenses={expenses}
-                    trashCount={trashCount}
+                    trashCount={deletedExpenses.length}
                     onEditExpense={openEditExpense}
                     onDeleteExpense={handleDeleteExpense}
                     onBulkDeleteExpenses={handleBulkDeleteExpenses}
@@ -673,6 +801,7 @@ function App() {
                     user={user}
                     expenses={expenses}
                     onSignOut={handleSignOut}
+                    onUserUpdated={setUser}
                   />
                 }
               />
@@ -680,9 +809,17 @@ function App() {
                 path="/trash"
                 element={
                   <TrashPage
-                    userId={user.uid}
+                    deletedExpenses={deletedExpenses}
                     onRestore={handleRestoreExpense}
-                    onTrashEmptied={() => showToast("Trash emptied")}
+                    onTrashChanged={async () => {
+                      const [activeExpenses, deletedExpenses] = await Promise.all([
+                        fetchExpenses(),
+                        fetchDeletedExpenses(),
+                      ])
+                      setExpenses(activeExpenses)
+                      setDeletedExpenses(deletedExpenses)
+                      showToast("Trash updated")
+                    }}
                   />
                 }
               />
@@ -750,15 +887,15 @@ function App() {
           </NavLink>
 
           <NavLink
-            to="/settings"
+            to="/categories"
             className={({ isActive }) =>
               `flex min-h-14 flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition ${
                 isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
               }`
             }
           >
-            <SettingsIcon className="h-5 w-5" />
-            Settings
+            <LayoutGrid className="h-5 w-5" />
+            Categories
           </NavLink>
 
         </div>
@@ -779,15 +916,16 @@ function App() {
       {/* Add / Edit Transaction */}
       <AddExpenseSheet
         open={addExpenseOpen}
+        isSaving={transactionSaveState !== null}
         defaultCategoryId={selectedCategoryId}
         initialExpense={editingExpense}
         onClose={() => {
+          if (transactionSaveLock.current) return
           setAddExpenseOpen(false)
           setEditingExpense(null)
         }}
         onSave={handleSaveExpense}
         onUpdate={handleUpdateExpense}
-        onSaveRecurring={handleAddRecurring}
       />
       {/* Toast Notification */}
       {toast && (
@@ -811,6 +949,36 @@ function App() {
         </div>
       )}
     </div>
+    {transactionSaveState && (
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-white/65 pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(1.25rem,env(safe-area-inset-right))] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] backdrop-blur-xl dark:bg-zinc-950/70"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        <div className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-zinc-200/80 bg-white/95 px-6 py-8 text-center dark:border-zinc-700 dark:bg-zinc-900/95 sm:px-8">
+          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-500/10">
+            <Wallet className="h-6 w-6 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+          </div>
+          <span className="mb-5 text-lg font-bold tracking-tight text-zinc-900 dark:text-white">
+            PocketTrack
+          </span>
+          <LoaderCircle
+            className="mb-5 h-8 w-8 animate-spin text-emerald-600 dark:text-emerald-400"
+            aria-hidden="true"
+          />
+          <p className="text-sm font-semibold text-zinc-900 dark:text-white">
+            {transactionSaveState === "updating" ? "Updating transaction..." : "Saving transaction..."}
+          </p>
+          <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+            {transactionSaveState === "saving-recurring"
+              ? "Setting up recurring schedule..."
+              : "Please wait a moment."}
+          </p>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
 

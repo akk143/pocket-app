@@ -1,8 +1,7 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { signInWithEmailAndPassword } from "firebase/auth"
 import { Wallet, Eye, EyeOff } from "lucide-react"
-import { auth } from "../lib/firebase"
+import { apiRequest } from "../lib/api"
 
 export default function Login() {
   const [email, setEmail]       = useState("")
@@ -17,17 +16,21 @@ export default function Login() {
     setLoading(true)
 
     try {
-      await signInWithEmailAndPassword(auth, email, password)
+      await apiRequest("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      })
+      window.location.assign("/")
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Sign-in failed."
-      if (msg.includes("invalid-credential") || msg.includes("wrong-password") || msg.includes("user-not-found")) {
+      if (msg.includes("Incorrect email or password")) {
         setError("Incorrect email or password.")
-      } else if (msg.includes("invalid-email")) {
+      } else if (msg.includes("valid email")) {
         setError("Please enter a valid email address.")
-      } else if (msg.includes("too-many-requests")) {
+      } else if (msg.includes("Too many attempts")) {
         setError("Too many attempts. Please try again later.")
       } else {
-        setError("Sign-in failed. Please try again.")
+        setError(msg)
       }
     } finally {
       setLoading(false)
@@ -35,7 +38,7 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen min-h-dvh items-center justify-center bg-[#f7f7f5] dark:bg-zinc-950 px-4">
+    <div className="flex min-h-[var(--keyboard-viewport-height)] items-start justify-center overflow-y-auto bg-[#f7f7f5] px-4 py-4 dark:bg-zinc-950 sm:items-center sm:py-8">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">

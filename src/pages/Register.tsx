@@ -1,8 +1,7 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
 import { Wallet, Eye, EyeOff } from "lucide-react"
-import { auth } from "../lib/firebase"
+import { apiRequest } from "../lib/api"
 
 export default function Register() {
   const [name, setName]               = useState("")
@@ -30,18 +29,21 @@ export default function Register() {
     setLoading(true)
 
     try {
-      const credential = await createUserWithEmailAndPassword(auth, email, password)
-      await updateProfile(credential.user, { displayName: name.trim() })
+      await apiRequest("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ email, password, displayName: name.trim() }),
+      })
+      window.location.assign("/")
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Registration failed."
-      if (msg.includes("email-already-in-use")) {
+      if (msg.includes("already exists")) {
         setError("An account with this email already exists.")
-      } else if (msg.includes("invalid-email")) {
+      } else if (msg.includes("valid email")) {
         setError("Please enter a valid email address.")
-      } else if (msg.includes("weak-password")) {
+      } else if (msg.includes("at least 6 characters")) {
         setError("Password must be at least 6 characters.")
       } else {
-        setError("Registration failed. Please try again.")
+        setError(msg)
       }
     } finally {
       setLoading(false)
@@ -49,7 +51,7 @@ export default function Register() {
   }
 
   return (
-    <div className="flex min-h-screen min-h-dvh items-center justify-center bg-[#f7f7f5] dark:bg-zinc-950 px-4">
+    <div className="flex min-h-[var(--keyboard-viewport-height)] items-start justify-center overflow-y-auto bg-[#f7f7f5] px-4 py-4 dark:bg-zinc-950 sm:items-center sm:py-8">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
