@@ -15,7 +15,7 @@ import {
 import type { RecurringTransaction, TransactionType, RecurringFrequency } from "../types/expense"
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
 import { useCurrency } from "../contexts/CurrencyContext"
-import { convertAndFormatCurrency } from "../lib/currency"
+import { convertAndFormatCurrency, convertToBaseVND, SUPPORTED_CURRENCIES } from "../lib/currency"
 import ConfirmDialog from "../components/ConfirmDialog"
 import { getLocalDateString } from "../lib/recurring"
 
@@ -35,6 +35,7 @@ export default function Recurring({
   onTriggerNow,
 }: RecurringProps) {
   const { currency, rates } = useCurrency()
+  const activeCurrencyConfig = SUPPORTED_CURRENCIES.find((c) => c.code === currency) || SUPPORTED_CURRENCIES[0]
   const [filterType, setFilterType] = useState<"all" | "expense" | "income">("all")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [triggeringId, setTriggeringId] = useState<string | null>(null)
@@ -110,12 +111,13 @@ export default function Recurring({
 
   const handleCreateRule = async (e: React.FormEvent) => {
     e.preventDefault()
-    const numericAmount = Number(amount.replace(/\D/g, ""))
-    if (!numericAmount || !item.trim()) {
+    const numericAmount = Number(amount.replace(/,/g, ""))
+    if (!numericAmount || numericAmount <= 0 || !item.trim()) {
       setFormError("Enter a valid amount and schedule name.")
       return
     }
 
+    const baseAmount = convertToBaseVND(numericAmount, currency, rates)
     const cats = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
     const selectedCat = cats.find((c) => c.id === categoryId)
 
@@ -124,7 +126,7 @@ export default function Recurring({
     try {
       await onAddRecurring({
         type,
-        amount: numericAmount,
+        amount: baseAmount,
         categoryId,
         categoryName: selectedCat?.name || "Other",
         item: item.trim(),
@@ -477,7 +479,7 @@ export default function Recurring({
 
       {/* Add Recurring Schedule Modal */}
       {isModalOpen && (
-        <div className="fixed inset-x-0 top-[var(--keyboard-viewport-offset)] z-50 flex h-[var(--keyboard-viewport-height)] items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-3 backdrop-blur-xs dark:bg-black/70 sm:p-4">
+        <div className="fixed inset-x-0 top-[var(--keyboard-viewport-offset)] z-50 flex h-[var(--keyboard-viewport-height)] items-center justify-center overflow-y-auto overscroll-contain bg-black/50 pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-xs dark:bg-black/70 sm:pb-[max(1rem,env(safe-area-inset-bottom))] sm:pl-[max(1rem,env(safe-area-inset-left))] sm:pr-[max(1rem,env(safe-area-inset-right))] sm:pt-[max(1rem,env(safe-area-inset-top))]">
           <div className="flex max-h-[calc(var(--keyboard-viewport-height)-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:border-zinc-800 dark:bg-zinc-900 sm:max-h-[calc(var(--keyboard-viewport-height)-2rem)]">
             <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800 sm:px-6">
               <div className="flex items-center gap-2">
@@ -532,19 +534,32 @@ export default function Recurring({
                 <div className="relative">
                   <input
                     type="text"
+                    inputMode={currency === "VND" ? "numeric" : "decimal"}
                     value={amount}
                     onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, "")
-                      setAmount(val ? new Intl.NumberFormat("vi-VN").format(Number(val)) : "")
+                      const val = e.target.value
+                      if (currency === "VND") {
+                        const clean = val.replace(/\D/g, "")
+                        setAmount(clean ? new Intl.NumberFormat("vi-VN").format(Number(clean)) : "")
+                      } else {
+                        if (val === "" || /^\d*\.?\d*$/.test(val)) {
+                          setAmount(val)
+                        }
+                      }
                     }}
-                    placeholder="5,000,000"
+                    placeholder={currency === "VND" ? "5,000,000" : "100"}
                     required
                     className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white pr-8 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:bg-zinc-700"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-zinc-400">
-                    ₫
+                    {activeCurrencyConfig.symbol}
                   </span>
                 </div>
+                {currency !== "VND" && Number(amount) > 0 && (
+                  <p className="mt-1 text-[11px] text-zinc-400">
+                    ≈ {new Intl.NumberFormat("vi-VN").format(convertToBaseVND(Number(amount), currency, rates))} ₫ (base)
+                  </p>
+                )}
               </div>
 
               {/* Category */}

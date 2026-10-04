@@ -12,7 +12,7 @@ import { Link } from "react-router-dom"
 import type { Expense } from "../types/expense"
 import { EXPENSE_CATEGORIES } from "../constants/categories"
 import { useCurrency } from "../contexts/CurrencyContext"
-import { convertAndFormatCurrency } from "../lib/currency"
+import { compactFormatCurrency, convertAndFormatCurrency } from "../lib/currency"
 import { useTheme } from "../hooks/useTheme"
 
 interface AnalyticsProps {
@@ -264,15 +264,17 @@ export default function Analytics({ expenses }: AnalyticsProps) {
       <div className="mb-4 grid grid-cols-2 gap-3 sm:mb-6 sm:gap-4">
         <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3.5 shadow-xs sm:p-5">
           <p className="text-xs font-medium text-zinc-400">Total Spending</p>
-          <p className="mt-1 break-words text-[clamp(1rem,5vw,1.5rem)] font-bold tracking-tight text-zinc-900 dark:text-white sm:mt-2 sm:text-2xl">
-            {formatCurrency(totalSpending)}
+          <p className="mt-1 whitespace-nowrap text-[clamp(1rem,5vw,1.5rem)] font-bold tracking-tight text-zinc-900 dark:text-white sm:mt-2 sm:text-2xl" title={formatCurrency(totalSpending)}>
+            <span className="sm:hidden">{compactFormatCurrency(totalSpending, currency, rates)}</span>
+            <span className="hidden sm:inline">{formatCurrency(totalSpending)}</span>
           </p>
         </div>
 
         <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3.5 shadow-xs sm:p-5">
           <p className="text-xs font-medium text-zinc-400">Average / day</p>
-          <p className="mt-1 break-words text-[clamp(1rem,5vw,1.5rem)] font-bold tracking-tight text-zinc-900 dark:text-white sm:mt-2 sm:text-2xl">
-            {formatCurrency(avgPerDay)}
+          <p className="mt-1 whitespace-nowrap text-[clamp(1rem,5vw,1.5rem)] font-bold tracking-tight text-zinc-900 dark:text-white sm:mt-2 sm:text-2xl" title={formatCurrency(avgPerDay)}>
+            <span className="sm:hidden">{compactFormatCurrency(avgPerDay, currency, rates)}</span>
+            <span className="hidden sm:inline">{formatCurrency(avgPerDay)}</span>
           </p>
         </div>
       </div>

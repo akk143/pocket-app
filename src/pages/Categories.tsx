@@ -10,6 +10,7 @@ interface CategoriesProps {
   expenses: Expense[]
   onSelectCategory: (categoryId: string) => void
   onAddCategory?: () => void
+  onViewExpense?: (expense: Expense) => void
 }
 
 const formatTransactionDateTime = (date: string, time: string) => {
@@ -63,7 +64,7 @@ const formatTransactionDateTime = (date: string, time: string) => {
   }).format(value)
 }
 
-export default function Categories({ expenses, onSelectCategory, onAddCategory }: CategoriesProps) {
+export default function Categories({ expenses, onSelectCategory, onAddCategory, onViewExpense }: CategoriesProps) {
   const { currency, rates } = useCurrency()
   const formatCurrency = (amount: number) => convertAndFormatCurrency(amount, currency, rates)
 
@@ -74,10 +75,8 @@ export default function Categories({ expenses, onSelectCategory, onAddCategory }
   const [transactionPage, setTransactionPage] = useState(1)
 
 
-  const now = new Date()
-
   const categoryStats = useMemo(() => {
-
+    const now = new Date()
     const stats: Record<string, { total: number; count: number }> = {}
 
     expenses
@@ -299,9 +298,17 @@ export default function Categories({ expenses, onSelectCategory, onAddCategory }
               visibleTransactions.map((tx) => (
                 <div
                   key={tx.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2.5 text-xs"
+                  className="relative flex items-center justify-between gap-3 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2.5 text-xs transition hover:border-zinc-200 hover:bg-white dark:hover:border-zinc-700 dark:hover:bg-zinc-800"
                 >
-                  <div className="flex min-w-0 items-center gap-2.5">
+                  {onViewExpense && (
+                    <button
+                      type="button"
+                      onClick={() => onViewExpense(tx)}
+                      aria-label={`View transaction details for ${tx.item}`}
+                      className="absolute inset-0 z-0 cursor-pointer rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500"
+                    />
+                  )}
+                  <div className="pointer-events-none relative z-10 flex min-w-0 items-center gap-2.5">
                     <span className="h-7 w-1 shrink-0 rounded-full bg-emerald-400" />
                     <div className="min-w-0">
                       <p className="line-clamp-2 break-words font-medium text-zinc-900 dark:text-white">{tx.item}</p>
@@ -310,7 +317,7 @@ export default function Categories({ expenses, onSelectCategory, onAddCategory }
                       </p>
                     </div>
                   </div>
-                  <span className="max-w-[45%] break-words text-right text-xs font-semibold leading-tight text-zinc-900 dark:text-white sm:max-w-none sm:whitespace-nowrap sm:text-sm">
+                  <span className="pointer-events-none relative z-10 max-w-[45%] break-words text-right text-xs font-semibold leading-tight text-zinc-900 dark:text-white sm:max-w-none sm:whitespace-nowrap sm:text-sm">
                     {formatCurrency(tx.amount)}
                   </span>
                 </div>

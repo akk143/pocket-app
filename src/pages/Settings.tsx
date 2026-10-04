@@ -17,7 +17,13 @@ import {
 } from "lucide-react"
 import type { Expense } from "../types/expense"
 import { useCurrency } from "../contexts/CurrencyContext"
-import { SUPPORTED_CURRENCIES, convertAndFormatCurrency, STATIC_VND_RATES } from "../lib/currency"
+import {
+  SUPPORTED_CURRENCIES,
+  convertAndFormatCurrency,
+  convertAmount,
+  convertToBaseVND,
+  STATIC_VND_RATES,
+} from "../lib/currency"
 import { useTheme } from "../hooks/useTheme"
 import type { AppUser } from "../types/user"
 import { apiRequest } from "../lib/api"
@@ -40,8 +46,14 @@ export default function Settings({ user, expenses, onSignOut, onUserUpdated }: S
   const [nameSaved, setNameSaved] = useState(false)
   const [nameError, setNameError] = useState("")
 
+  const [baseBudget, setBaseBudget] = useState(() => {
+    return Number(localStorage.getItem("pocket_budget")) || 5000000
+  })
+
   const [budget, setBudget] = useState(() => {
-    return localStorage.getItem("pocket_budget") || "5000000"
+    const raw = Number(localStorage.getItem("pocket_budget")) || 5000000
+    if (currency === "VND") return String(raw)
+    return String(Math.round(convertAmount(raw, currency, rates) * 100) / 100)
   })
   const [budgetSaved, setBudgetSaved] = useState(false)
 
@@ -55,8 +67,7 @@ export default function Settings({ user, expenses, onSignOut, onUserUpdated }: S
     })
     .reduce((sum, e) => sum + e.amount, 0)
 
-  const budgetNum = Number(budget) || 1
-  const budgetPercent = Math.min(100, Math.round((thisMonthSpent / budgetNum) * 100))
+  const budgetPercent = Math.min(100, Math.round((thisMonthSpent / (baseBudget || 1)) * 100))
 
   // Update display name
   const handleSaveName = async (e: React.FormEvent) => {
@@ -83,7 +94,11 @@ export default function Settings({ user, expenses, onSignOut, onUserUpdated }: S
   // Save budget
   const handleSaveBudget = (e: React.FormEvent) => {
     e.preventDefault()
-    localStorage.setItem("pocket_budget", budget)
+    const numericInput = Number(budget) || 0
+    if (numericInput <= 0) return
+    const newBase = convertToBaseVND(numericInput, currency, rates)
+    localStorage.setItem("pocket_budget", String(newBase))
+    setBaseBudget(newBase)
     setBudgetSaved(true)
     setTimeout(() => setBudgetSaved(false), 2500)
   }
@@ -211,7 +226,7 @@ export default function Settings({ user, expenses, onSignOut, onUserUpdated }: S
               <div className="flex flex-col gap-1 text-xs lg:flex-row lg:items-center lg:justify-between">
                 <span className="font-medium text-zinc-500 dark:text-zinc-400">This Month's Spending</span>
                 <span className="break-words font-bold text-zinc-900 dark:text-white lg:text-right">
-                  {formatCurrency(thisMonthSpent)} / {formatCurrency(budgetNum)}
+                  {formatCurrency(thisMonthSpent)} / {formatCurrency(baseBudget)}
                 </span>
               </div>
               <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
@@ -242,9 +257,10 @@ export default function Settings({ user, expenses, onSignOut, onUserUpdated }: S
               <div className="relative flex-1">
                 <input
                   type="number"
+                  step="any"
                   value={budget}
                   onChange={(e) => setBudget(e.target.value)}
-                  placeholder="5000000"
+                  placeholder={currency === "VND" ? "5000000" : "200"}
                   className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-4 py-2.5 pr-8 text-sm dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none transition focus:border-emerald-500 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-zinc-400 dark:text-zinc-500">
@@ -259,6 +275,11 @@ export default function Settings({ user, expenses, onSignOut, onUserUpdated }: S
                 {budgetSaved ? "Saved!" : "Set Budget"}
               </button>
             </form>
+            {currency !== "VND" && Number(budget) > 0 && (
+              <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                ≈ {new Intl.NumberFormat("vi-VN").format(convertToBaseVND(Number(budget), currency, rates))} ₫ base budget
+              </p>
+            )}
           </div>
         </div>
 
@@ -287,7 +308,16 @@ export default function Settings({ user, expenses, onSignOut, onUserUpdated }: S
               </label>
               <select
                 value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
+                onChange={(e) => {
+                  const newCode = e.target.value
+                  setCurrency(newCode)
+                  if (newCode === "VND") {
+                    setBudget(String(baseBudget))
+                  } else {
+                    const converted = Math.round(convertAmount(baseBudget, newCode, rates) * 100) / 100
+                    setBudget(String(converted))
+                  }
+                }}
                 className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-4 py-2.5 text-sm font-medium text-zinc-800 dark:text-zinc-100 outline-none transition focus:border-emerald-500 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-800 cursor-pointer"
               >
                 {SUPPORTED_CURRENCIES.map((c) => (
