@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react"
-import { MoreVertical, Pencil, Trash2 } from "lucide-react"
+import { Eye, MoreVertical, Trash2 } from "lucide-react"
 
 interface TransactionActionsMenuProps {
   itemName: string
   open: boolean
   onOpenChange: (open: boolean) => void
-  onEdit?: () => void
+  onViewDetails?: () => void
   onDelete?: () => void
 }
 
@@ -18,7 +18,7 @@ export default function TransactionActionsMenu({
   itemName,
   open,
   onOpenChange,
-  onEdit,
+  onViewDetails,
   onDelete,
 }: TransactionActionsMenuProps) {
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -35,7 +35,7 @@ export default function TransactionActionsMenu({
     if (!trigger) return
 
     const rect = trigger.getBoundingClientRect()
-    const itemCount = Number(Boolean(onEdit)) + Number(Boolean(onDelete))
+    const itemCount = Number(Boolean(onViewDetails)) + Number(Boolean(onDelete))
     const menuHeight = itemCount * MENU_ITEM_HEIGHT + MENU_PADDING
     const belowTop = rect.bottom + 4
     const desiredTop =
@@ -85,7 +85,7 @@ export default function TransactionActionsMenu({
     }
   }, [open, onOpenChange])
 
-  if (!onEdit && !onDelete) return null
+  if (!onViewDetails && !onDelete) return null
 
   return (
     <>
@@ -115,18 +115,18 @@ export default function TransactionActionsMenu({
             overflowY: "auto",
           }}
         >
-          {onEdit && (
+          {onViewDetails && (
             <button
               type="button"
               role="menuitem"
               onClick={() => {
                 onOpenChange(false)
-                onEdit()
+                onViewDetails()
               }}
               className="flex min-h-10 w-full items-center gap-2 px-3 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
-              <Pencil className="h-3.5 w-3.5 text-zinc-400" />
-              Edit
+              <Eye className="h-3.5 w-3.5 text-zinc-400" />
+              View details
             </button>
           )}
           {onDelete && (

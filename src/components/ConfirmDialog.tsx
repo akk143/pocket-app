@@ -69,7 +69,7 @@ export default function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-x-0 top-[var(--keyboard-viewport-offset)] z-[60] flex h-[var(--keyboard-viewport-height)] items-end justify-center bg-zinc-950/50 p-0 backdrop-blur-[3px] sm:items-center sm:p-4 dark:bg-zinc-950/70"
+      className="fixed inset-x-0 top-[var(--keyboard-viewport-offset)] z-[60] flex h-[var(--keyboard-viewport-height)] items-end justify-center bg-zinc-950/50 pb-0 pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] backdrop-blur-[3px] sm:items-center sm:p-4 dark:bg-zinc-950/70"
       role="presentation"
     >
       <div

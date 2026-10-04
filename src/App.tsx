@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 
 import AddExpenseSheet from "./components/AddExpenseSheet"
+import TransactionDetailsSheet from "./components/TransactionDetailsSheet"
 import StartupSplash from "./components/StartupSplash"
 import { ThemeToggle } from "./components/ThemeToggle"
 import HomePage from "./pages/Home"
@@ -81,6 +82,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
   const [recurringList, setRecurringList] = useState<RecurringTransaction[]>([])
   const [addExpenseOpen, setAddExpenseOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
+  const [viewingExpenseId, setViewingExpenseId] = useState<string | null>(null)
   const [transactionSaveState, setTransactionSaveState] = useState<
     "saving" | "saving-recurring" | "updating" | null
   >(null)
@@ -392,8 +394,18 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
     }
   }
 
+  const closeTransactionDetails = useCallback(() => {
+    setViewingExpenseId(null)
+  }, [])
+
+  const openExpenseDetails = useCallback((expense: Expense) => {
+    if (transactionSaveLock.current) return
+    setViewingExpenseId(expense.id)
+  }, [])
+
   const openAddExpense = (categoryId?: string) => {
     if (transactionSaveLock.current) return
+    setViewingExpenseId(null)
     setEditingExpense(null)
     if (categoryId) {
       setSelectedCategoryId(categoryId)
@@ -406,6 +418,8 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
     setEditingExpense(expense)
     setAddExpenseOpen(true)
   }
+
+  const viewingExpense = expenses.find((expense) => expense.id === viewingExpenseId) ?? null
 
   const handleHeaderSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -613,13 +627,13 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
         {/* ── Main Content Area ── */}
         <main className="flex min-w-0 flex-1 flex-col pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0">
           {/* Header */}
-          <header className="sticky top-0 z-20 flex items-center justify-between border-b border-zinc-200 bg-white/95 dark:border-zinc-800 dark:bg-zinc-950/95 px-5 py-3.5 backdrop-blur-md sm:px-8">
+          <header className="sticky top-0 z-20 flex items-center justify-between border-b border-zinc-200 bg-white/95 px-[max(0.75rem,env(safe-area-inset-left))] pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/95 min-[360px]:pl-[max(1.25rem,env(safe-area-inset-left))] min-[360px]:pr-[max(1.25rem,env(safe-area-inset-right))] sm:px-8">
             {/* Mobile Logo */}
-            <div className="flex items-center gap-2 font-bold tracking-tight text-zinc-900 dark:text-white lg:hidden">
+            <div className="flex shrink-0 items-center gap-2 font-bold tracking-tight text-zinc-900 dark:text-white lg:hidden">
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-500/10">
                 <Wallet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </div>
-              PocketTrack
+              <span className="max-[359px]:hidden">PocketTrack</span>
             </div>
 
             {/* Desktop Search Bar */}
@@ -750,7 +764,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
                     expenses={expenses}
                     userName={firstName}
                     onAddExpense={openAddExpense}
-                    onEditExpense={openEditExpense}
+                    onViewExpense={openExpenseDetails}
                     onDeleteExpense={handleDeleteExpense}
                     
                   />
@@ -762,7 +776,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
                   <HistoryPage
                     expenses={expenses}
                     trashCount={deletedExpenses.length}
-                    onEditExpense={openEditExpense}
+                    onViewExpense={openExpenseDetails}
                     onDeleteExpense={handleDeleteExpense}
                     onBulkDeleteExpenses={handleBulkDeleteExpenses}
                   />
@@ -779,6 +793,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
                     expenses={expenses}
                     onSelectCategory={(catId) => openAddExpense(catId)}
                     onAddCategory={() => showToast("Custom categories coming in v1.1", "info")}
+                    onViewExpense={openExpenseDetails}
                   />
                 }
               />
@@ -830,31 +845,35 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/95 lg:hidden">
-        <div className="grid min-h-14 grid-cols-5 items-center">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200/80 bg-white/95 pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] shadow-lg shadow-zinc-900/[0.04] backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/95 lg:hidden">
+        <div className="grid min-h-16 grid-cols-5 items-center">
           <NavLink
             to="/"
             end
             className={({ isActive }) =>
-              `flex min-h-14 flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition ${
-                isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
+              `flex min-h-16 flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] leading-none transition ${
+                isActive ? "font-semibold text-emerald-700 dark:text-emerald-400 [&>span]:bg-emerald-50 dark:[&>span]:bg-emerald-500/10" : "font-medium text-zinc-500 dark:text-zinc-500"
               }`
             }
           >
-            <Home className="h-5 w-5" />
-            Home
+            <span className="mb-0.5 flex h-8 min-w-12 items-center justify-center rounded-2xl text-current transition-colors">
+              <Home className="h-[21px] w-[21px]" strokeWidth={2.1} />
+            </span>
+            <span>Home</span>
           </NavLink>
 
           <NavLink
             to="/history"
             className={({ isActive }) =>
-              `flex min-h-14 flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition ${
-                isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
+              `flex min-h-16 flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] leading-none transition ${
+                isActive ? "font-semibold text-emerald-700 dark:text-emerald-400 [&>span]:bg-emerald-50 dark:[&>span]:bg-emerald-500/10" : "font-medium text-zinc-500 dark:text-zinc-500"
               }`
             }
           >
-            <ReceiptText className="h-5 w-5" />
-            History
+            <span className="mb-0.5 flex h-8 min-w-12 items-center justify-center rounded-2xl text-current transition-colors">
+              <ReceiptText className="h-[21px] w-[21px]" strokeWidth={2.1} />
+            </span>
+            <span>History</span>
           </NavLink>
 
           
@@ -865,37 +884,43 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
           <NavLink
             to="/recurring"
             className={({ isActive }) =>
-              `flex min-h-14 flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition ${
-                isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
+              `flex min-h-16 flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] leading-none transition ${
+                isActive ? "font-semibold text-emerald-700 dark:text-emerald-400 [&>span]:bg-emerald-50 dark:[&>span]:bg-emerald-500/10" : "font-medium text-zinc-500 dark:text-zinc-500"
               }`
             }
           >
-            <Repeat className="h-5 w-5" />
-            Recurring
+            <span className="mb-0.5 flex h-8 min-w-12 items-center justify-center rounded-2xl text-current transition-colors">
+              <Repeat className="h-[21px] w-[21px]" strokeWidth={2.1} />
+            </span>
+            <span>Recurring</span>
           </NavLink>
 
           <NavLink
             to="/analytics"
             className={({ isActive }) =>
-              `flex min-h-14 flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition ${
-                isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
+              `flex min-h-16 flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] leading-none transition ${
+                isActive ? "font-semibold text-emerald-700 dark:text-emerald-400 [&>span]:bg-emerald-50 dark:[&>span]:bg-emerald-500/10" : "font-medium text-zinc-500 dark:text-zinc-500"
               }`
             }
           >
-            <BarChart3 className="h-5 w-5" />
-            Analytics
+            <span className="mb-0.5 flex h-8 min-w-12 items-center justify-center rounded-2xl text-current transition-colors">
+              <BarChart3 className="h-[21px] w-[21px]" strokeWidth={2.1} />
+            </span>
+            <span>Analytics</span>
           </NavLink>
 
           <NavLink
             to="/categories"
             className={({ isActive }) =>
-              `flex min-h-14 flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition ${
-                isActive ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-zinc-400 dark:text-zinc-500"
+              `flex min-h-16 flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] leading-none transition ${
+                isActive ? "font-semibold text-emerald-700 dark:text-emerald-400 [&>span]:bg-emerald-50 dark:[&>span]:bg-emerald-500/10" : "font-medium text-zinc-500 dark:text-zinc-500"
               }`
             }
           >
-            <LayoutGrid className="h-5 w-5" />
-            Categories
+            <span className="mb-0.5 flex h-8 min-w-12 items-center justify-center rounded-2xl text-current transition-colors">
+              <LayoutGrid className="h-[21px] w-[21px]" strokeWidth={2.1} />
+            </span>
+            <span>Categories</span>
           </NavLink>
 
         </div>
@@ -906,7 +931,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
         type="button"
         aria-label="Add expense"
         onClick={() => openAddExpense()}
-        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-600/30 transition hover:bg-emerald-700 active:scale-95 lg:hidden"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-[max(1rem,calc(env(safe-area-inset-right)+0.75rem))] z-40 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-600/30 transition hover:bg-emerald-700 active:scale-95 lg:hidden"
       >
         <Plus className="h-6 w-6" />
       </button>
@@ -927,6 +952,14 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
         onSave={handleSaveExpense}
         onUpdate={handleUpdateExpense}
       />
+      {viewingExpense && !addExpenseOpen && (
+        <TransactionDetailsSheet
+          expense={viewingExpense}
+          onClose={closeTransactionDetails}
+          onEdit={openEditExpense}
+          onDelete={handleDeleteExpense}
+        />
+      )}
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-[calc(9rem+env(safe-area-inset-bottom))] left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center justify-between gap-4 rounded-2xl border border-zinc-200/80 bg-zinc-900 px-4 py-3 text-xs font-semibold text-white shadow-xl lg:bottom-6 lg:left-auto lg:right-6 lg:w-auto lg:translate-x-0">

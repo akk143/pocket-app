@@ -38,7 +38,7 @@ const formatTimeStr = (timeStr: string) => {
 interface HistoryProps {
   expenses: Expense[]
   trashCount?: number
-  onEditExpense?: (expense: Expense) => void
+  onViewExpense?: (expense: Expense) => void
   onDeleteExpense?: (id: string) => void | Promise<void>
   onBulkDeleteExpenses?: (ids: string[]) => Promise<void>
 }
@@ -46,7 +46,7 @@ interface HistoryProps {
 export default function History({
   expenses,
   trashCount = 0,
-  onEditExpense,
+  onViewExpense,
   onDeleteExpense,
   onBulkDeleteExpenses,
 }: HistoryProps) {
@@ -92,96 +92,7 @@ export default function History({
     year: "numeric",
   })
 
-  const displayExpenses = useMemo(() => {
-    if (expenses.length > 0) return expenses
-
-    return [
-      {
-        id: "hist-1",
-        type: "expense",
-        amount: 25000,
-        categoryId: "drinks",
-        categoryName: "Drinks",
-        item: "Vietnamese Coffee",
-        note: "",
-        date: "2026-09-07",
-        time: "8:30 AM",
-        createdAt: 1000,
-      },
-      {
-        id: "hist-2",
-        type: "expense",
-        amount: 100000,
-        categoryId: "food",
-        categoryName: "Food",
-        item: "Lunch",
-        note: "",
-        date: "2026-09-07",
-        time: "1:00 PM",
-        createdAt: 999,
-      },
-      {
-        id: "hist-3",
-        type: "expense",
-        amount: 30000,
-        categoryId: "transportation",
-        categoryName: "Transportation",
-        item: "Grab",
-        note: "",
-        date: "2026-09-07",
-        time: "12:15 PM",
-        createdAt: 998,
-      },
-      {
-        id: "hist-4",
-        type: "expense",
-        amount: 80000,
-        categoryId: "food",
-        categoryName: "Food",
-        item: "Dinner",
-        note: "",
-        date: "2026-09-06",
-        time: "7:30 PM",
-        createdAt: 900,
-      },
-      {
-        id: "hist-5",
-        type: "expense",
-        amount: 25000,
-        categoryId: "drinks",
-        categoryName: "Drinks",
-        item: "Coffee",
-        note: "",
-        date: "2026-09-06",
-        time: "5:00 PM",
-        createdAt: 899,
-      },
-      {
-        id: "hist-6",
-        type: "expense",
-        amount: 35000,
-        categoryId: "transportation",
-        categoryName: "Transportation",
-        item: "Grab",
-        note: "",
-        date: "2026-09-06",
-        time: "3:20 PM",
-        createdAt: 898,
-      },
-      {
-        id: "hist-7",
-        type: "expense",
-        amount: 120000,
-        categoryId: "shopping",
-        categoryName: "Shopping",
-        item: "Groceries",
-        note: "",
-        date: "2026-09-05",
-        time: "6:10 PM",
-        createdAt: 800,
-      },
-    ] as Expense[]
-  }, [expenses])
+  const displayExpenses = expenses
 
   const visibleCategories = useMemo(() => {
     if (typeFilter === "expense") return EXPENSE_CATEGORIES
@@ -220,9 +131,7 @@ export default function History({
     })
   }, [displayExpenses, query, typeFilter, effectiveCategoryId, viewDate])
 
-  const selectableExpenses = filtered.filter((expense) =>
-    expenses.some((realExpense) => realExpense.id === expense.id),
-  )
+  const selectableExpenses = filtered
   const selectedExpenses = bulkDeleteSnapshot ?? selectableExpenses.filter((expense) =>
     selectedExpenseIds.includes(expense.id),
   )
@@ -231,6 +140,11 @@ export default function History({
 
   // Group by date
   const grouped = useMemo(() => {
+    const today = new Date()
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+    const yesterdayDate = new Date(today.getTime() - 86400000)
+    const yesterdayStr = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth() + 1).padStart(2, "0")}-${String(yesterdayDate.getDate()).padStart(2, "0")}`
+
     const map: Record<
       string,
       { dateLabel: string; dateStr: string; total: number; items: Expense[] }
@@ -238,19 +152,18 @@ export default function History({
 
     filtered.forEach((e) => {
       let label = e.date
-      if (e.date === "2026-09-07") {
-        label = "September 7 (Today)"
-      } else if (e.date === "2026-09-06") {
-        label = "September 6"
-      } else if (e.date === "2026-09-05") {
-        label = "September 5"
-      } else {
-        const parts = e.date.split("-").map(Number)
-        if (parts.length === 3) {
-          label = new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-          })
+      const parts = e.date.split("-").map(Number)
+      if (parts.length === 3) {
+        const formattedDate = new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+        })
+        if (e.date === todayStr) {
+          label = `${formattedDate} (Today)`
+        } else if (e.date === yesterdayStr) {
+          label = `${formattedDate} (Yesterday)`
+        } else {
+          label = formattedDate
         }
       }
 
@@ -291,14 +204,14 @@ export default function History({
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-5 py-6 sm:px-8">
+    <div className="mx-auto max-w-4xl px-4 py-5 sm:px-8 sm:py-6">
 
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+          <h1 className="text-2xl font-bold leading-tight tracking-tight text-zinc-950 dark:text-white">
             History
           </h1>
-          <p className="mt-0.5 break-words text-xs text-zinc-400">
+          <p className="mt-1 break-words text-[13px] font-medium leading-relaxed text-zinc-500 dark:text-zinc-400">
             {filtered.length} {filtered.length === 1 ? "transaction" : "transactions"} ·{" "}
             {typeFilter === "expense"
               ? `Total spending: ${formatCurrency(totalExpense)}`
@@ -311,17 +224,17 @@ export default function History({
         <div className="flex w-full items-center justify-between gap-2 sm:w-auto">
           <Link
             to="/trash"
-            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-2xs transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="flex min-h-12 shrink-0 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3.5 text-[13px] font-semibold text-zinc-700 shadow-sm shadow-zinc-900/[0.03] transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
           >
-            <Trash2 className="h-3.5 w-3.5 text-zinc-400" />
+            <Trash2 className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
             Trash{trashCount > 0 ? ` · ${trashCount}` : ""}
           </Link>
-          <div className="flex min-w-0 flex-1 items-center justify-between gap-1 rounded-xl border border-zinc-200 bg-white px-2 py-1 text-sm font-semibold text-zinc-700 shadow-2xs sm:min-w-[180px] sm:flex-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+          <div className="flex min-w-0 flex-1 items-center justify-between gap-1 rounded-xl border border-zinc-200 bg-white px-2 py-1 text-[15px] font-semibold text-zinc-800 shadow-sm shadow-zinc-900/[0.03] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 sm:min-w-[180px] sm:flex-none">
             <button
               type="button"
               onClick={prevMonth}
               aria-label="Previous month"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 sm:h-8 sm:w-8"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 sm:h-8 sm:w-8"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -330,7 +243,7 @@ export default function History({
               type="button"
               onClick={nextMonth}
               aria-label="Next month"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 sm:h-8 sm:w-8"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 sm:h-8 sm:w-8"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -339,14 +252,23 @@ export default function History({
       </div>
 
       {/* Search Bar */}
-      <div className="relative mb-4">
-        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+      <div className="relative mb-4 w-full min-w-0">
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-zinc-500 dark:text-zinc-400" />
         <input
           type="text"
           value={query}
           onChange={(e) => handleQueryChange(e.target.value)}
-          placeholder="Search expenses, items, or categories..."
-          className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-10 pr-4 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+          placeholder="Search transactions..."
+          aria-label="Search transactions"
+          className={`w-full min-w-0 rounded-2xl border border-zinc-200 bg-white py-3.5 pl-11 ${query ? "pr-16" : "pr-4"} text-[15px] leading-5 text-zinc-900 shadow-sm shadow-zinc-900/[0.03] outline-none transition placeholder:text-zinc-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 md:hidden`}
+        />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => handleQueryChange(e.target.value)}
+          placeholder="Search expenses, items, categories..."
+          aria-label="Search transactions"
+          className={`hidden w-full min-w-0 rounded-2xl border border-zinc-200 bg-white py-3.5 pl-11 ${query ? "pr-16" : "pr-4"} text-[15px] leading-5 text-zinc-900 shadow-sm shadow-zinc-900/[0.03] outline-none transition placeholder:text-zinc-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 md:block`}
         />
         {query && (
           <button
@@ -360,15 +282,15 @@ export default function History({
       </div>
 
       {/* Type Filter & Category Filter */}
-      <div className="mb-6 space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-xl border border-zinc-200 bg-white p-1 text-xs shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="mb-5 min-w-0 space-y-3 sm:mb-6">
+        <div className="-mx-4 max-w-full min-w-0 overflow-x-auto overscroll-x-contain px-4 pb-1 no-scrollbar sm:mx-0 sm:w-fit sm:overflow-visible sm:px-0 sm:pb-0">
+          <div className="flex w-max min-w-full items-center gap-1 rounded-2xl border border-zinc-200/90 bg-white p-1 text-[13px] shadow-sm shadow-zinc-900/[0.03] dark:border-zinc-800 dark:bg-zinc-900 sm:min-w-0">
             <button
               type="button"
               onClick={() => handleTypeFilterChange("all")}
-              className={`min-h-10 rounded-lg px-3 py-1 font-semibold transition ${
+              className={`min-h-11 shrink-0 whitespace-nowrap rounded-xl px-3 py-1 font-semibold leading-5 transition sm:px-4 ${
                 typeFilter === "all"
-                  ? "bg-zinc-900 text-white shadow-xs dark:bg-zinc-100 dark:text-zinc-900"
+                  ? "bg-zinc-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900"
                   : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
               }`}
             >
@@ -377,39 +299,39 @@ export default function History({
             <button
               type="button"
               onClick={() => handleTypeFilterChange("expense")}
-              className={`flex min-h-10 items-center gap-1 rounded-lg px-3 py-1 font-semibold transition ${
+              className={`flex min-h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-1 font-semibold leading-5 transition sm:px-4 ${
                 typeFilter === "expense"
-                  ? "bg-red-50 text-red-600 font-bold shadow-xs border border-red-200/50 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50"
+                  ? "bg-rose-50 text-rose-700 shadow-sm dark:bg-rose-500/10 dark:text-rose-300"
                   : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
               }`}
             >
-              <TrendingDown className="h-3 w-3" />
+              <TrendingDown className="h-4 w-4 shrink-0" />
               Expenses
             </button>
             <button
               type="button"
               onClick={() => handleTypeFilterChange("income")}
-              className={`flex min-h-10 items-center gap-1 rounded-lg px-3 py-1 font-semibold transition ${
+              className={`flex min-h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-1 font-semibold leading-5 transition sm:px-4 ${
                 typeFilter === "income"
-                  ? "bg-emerald-50 text-emerald-700 font-bold shadow-xs border border-emerald-200/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50"
+                  ? "bg-emerald-50 text-emerald-700 shadow-sm dark:bg-emerald-500/10 dark:text-emerald-300"
                   : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
               }`}
             >
-              <TrendingUp className="h-3 w-3" />
+              <TrendingUp className="h-4 w-4 shrink-0" />
               Income
             </button>
           </div>
         </div>
 
         {/* Category Filter */}
-        <div className="-mx-5 flex items-center gap-1.5 overflow-x-auto px-5 pb-1 text-xs no-scrollbar sm:mx-0 sm:px-0">
+        <div className="-mx-4 flex max-w-full min-w-0 items-center gap-2 overflow-x-auto overscroll-x-contain px-4 pb-1 text-[13px] leading-5 no-scrollbar sm:mx-0 sm:px-0">
           <button
             type="button"
             onClick={() => setSelectedCategoryId("all")}
-            className={`min-h-10 shrink-0 rounded-full px-3 py-1 font-medium transition ${
+            className={`min-h-11 shrink-0 whitespace-nowrap rounded-full px-4 py-1 font-semibold leading-5 transition ${
               selectedCategoryId === "all"
-                ? "bg-emerald-600 text-white font-semibold shadow-xs"
-                : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                ? "bg-emerald-700 text-white shadow-sm shadow-emerald-700/20 dark:bg-emerald-500"
+                : "border border-zinc-200 bg-white text-zinc-700 shadow-sm shadow-zinc-900/[0.02] hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
             }`}
           >
             All Categories
@@ -421,13 +343,13 @@ export default function History({
                 key={c.id}
                 type="button"
                 onClick={() => setSelectedCategoryId(isSelected ? "all" : c.id)}
-                className={`flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 py-1 font-medium transition ${
+                className={`flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-1 font-medium leading-5 transition ${
                   isSelected
-                    ? "bg-emerald-600 text-white font-semibold shadow-xs"
-                    : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    ? "bg-emerald-700 font-semibold text-white shadow-sm shadow-emerald-700/20 dark:bg-emerald-500"
+                    : "border border-zinc-200 bg-white text-zinc-700 shadow-sm shadow-zinc-900/[0.02] hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 }`}
               >
-                <c.component className="h-3.5 w-3.5 shrink-0" />
+                <c.component className="h-4 w-4 shrink-0" />
                 <span>{c.name}</span>
               </button>
             )
@@ -481,17 +403,17 @@ export default function History({
         ) : (
           grouped.map((group) => (
             <div key={group.dateStr}>
-              <div className="mb-2 flex items-center justify-between px-1">
-                <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-1">
+                <span className="min-w-0 text-[13px] font-semibold text-zinc-600 dark:text-zinc-300">
                   {group.dateLabel}
                 </span>
-                <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                <span className="shrink-0 whitespace-nowrap text-right text-[13px] font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
                   {formatCurrency(group.total)}
                 </span>
               </div>
 
               {/* Expense List Card */}
-              <div className="divide-y divide-zinc-100 rounded-2xl border border-zinc-200/90 bg-white shadow-xs dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+              <div className="divide-y divide-zinc-100/90 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm shadow-zinc-900/[0.04] dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
                 {group.items.map((expense) => {
                   const isIncome = expense.type === "income"
                   const activeCats = isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
@@ -503,15 +425,23 @@ export default function History({
                   return (
                     <div
                       key={expense.id}
-                      className={`group relative flex items-center justify-between gap-2 px-3 py-3.5 sm:px-4 ${
+                      className={`group relative flex min-w-0 items-center justify-between gap-1.5 px-2.5 py-4 sm:gap-2 sm:px-4 ${
                         selectedExpenseIds.includes(expense.id)
                           ? "bg-emerald-50/50 dark:bg-emerald-500/10"
                           : ""
                       }`}
                     >
-                      <div className="flex min-w-0 flex-1 items-center gap-3">
-                        {onBulkDeleteExpenses && expenses.some((item) => item.id === expense.id) && (
-                          <label className="flex h-11 w-11 shrink-0 items-center justify-center">
+                      {onViewExpense && (
+                        <button
+                          type="button"
+                          onClick={() => onViewExpense(expense)}
+                          aria-label={`View transaction details for ${expense.item}`}
+                          className="absolute inset-0 z-0 cursor-pointer rounded-xl text-left transition-colors hover:bg-emerald-50/40 active:bg-emerald-50 dark:hover:bg-emerald-500/5 dark:active:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500"
+                        />
+                      )}
+                      <div className="pointer-events-none relative z-10 flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+                        {onBulkDeleteExpenses && (
+                          <label className="pointer-events-auto relative z-20 flex h-9 w-9 shrink-0 items-center justify-center sm:h-11 sm:w-11">
                           <input
                             type="checkbox"
                             checked={selectedExpenseIds.includes(expense.id)}
@@ -528,14 +458,14 @@ export default function History({
                           </label>
                         )}
                         <div
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                          className="pointer-events-none relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11 sm:rounded-2xl"
                           style={{ backgroundColor: color + "18" }}
                         >
-                          {Icon && <Icon className="h-5 w-5" style={{ color }} />}
+                          {Icon && <Icon className="h-4 w-4 shrink-0 sm:h-[21px] sm:w-[21px]" style={{ color, strokeWidth: 2.1 }} />}
                         </div>
-                        <div className="min-w-0 flex-1">
+                        <div className="pointer-events-none relative z-10 min-w-0 flex-1">
                           <div className="flex min-w-0 items-start gap-2">
-                            <p className="line-clamp-2 min-w-0 flex-1 break-words text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                            <p className="min-w-0 flex-1 truncate text-[15px] font-semibold leading-snug text-zinc-900 dark:text-zinc-100 sm:line-clamp-2 sm:whitespace-normal sm:break-words">
                               {expense.item}
                             </p>
                             {isIncome && (
@@ -544,29 +474,41 @@ export default function History({
                               </span>
                             )}
                           </div>
-                          <p className="line-clamp-2 break-words text-xs text-zinc-500 dark:text-zinc-400">
+                          <p className="mt-0.5 line-clamp-2 min-w-0 break-words text-[12px] leading-snug text-zinc-500 dark:text-zinc-400 sm:text-[13px]">
                             {expense.categoryName} · {formatTimeStr(expense.time)}
                             {expense.quantity && expense.quantity > 1 ? ` · Qty ${expense.quantity}` : ""}
                           </p>
+                          <span
+                            aria-label={isIncome ? `+ ${formatCurrency(expense.amount)}` : formatCurrency(expense.amount)}
+                            className={`mt-1 block whitespace-nowrap text-sm font-semibold leading-tight tracking-tight sm:hidden ${
+                              isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-900 dark:text-zinc-100"
+                            }`}
+                          >
+                            {isIncome ? `+ ${formatCurrency(expense.amount)}` : formatCurrency(expense.amount)}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+                      <div className="pointer-events-none relative z-10 flex shrink-0 items-center gap-1 sm:gap-3">
                         <span
-                          className={`max-w-24 break-words text-right text-xs font-semibold leading-tight sm:max-w-none sm:whitespace-nowrap sm:text-sm ${
+                          aria-label={isIncome ? `+ ${formatCurrency(expense.amount)}` : formatCurrency(expense.amount)}
+                          title={isIncome ? `+ ${formatCurrency(expense.amount)}` : formatCurrency(expense.amount)}
+                          className={`hidden max-w-none whitespace-nowrap text-right text-sm font-semibold leading-tight tracking-tight sm:block ${
                             isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-900 dark:text-zinc-100"
                           }`}
                         >
                           {isIncome ? `+ ${formatCurrency(expense.amount)}` : formatCurrency(expense.amount)}
                         </span>
 
-                        <TransactionActionsMenu
-                          itemName={expense.item}
-                          open={isMenuOpen}
-                          onOpenChange={(open) => setOpenMenuId(open ? expense.id : null)}
-                          onEdit={onEditExpense ? () => onEditExpense(expense) : undefined}
-                          onDelete={onDeleteExpense ? () => setExpensePendingDeletion(expense) : undefined}
-                        />
+                        <div className="pointer-events-auto relative z-20">
+                          <TransactionActionsMenu
+                            itemName={expense.item}
+                            open={isMenuOpen}
+                            onOpenChange={(open) => setOpenMenuId(open ? expense.id : null)}
+                            onViewDetails={onViewExpense ? () => onViewExpense(expense) : undefined}
+                            onDelete={onDeleteExpense ? () => setExpensePendingDeletion(expense) : undefined}
+                          />
+                        </div>
                       </div>
                     </div>
                   )

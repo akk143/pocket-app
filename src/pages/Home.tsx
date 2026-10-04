@@ -44,7 +44,7 @@ interface HomeProps {
   expenses: Expense[]
   userName?: string
   onAddExpense: (categoryId?: string) => void
-  onEditExpense?: (expense: Expense) => void
+  onViewExpense?: (expense: Expense) => void
   onDeleteExpense?: (expenseId: string) => void | Promise<void>
 }
 
@@ -63,10 +63,109 @@ function transactionMonthKey(value: string): string {
   return value.slice(0, 7)
 }
 
+function getWeeklySpendingTrend(expenses: Expense[], dateKey: string): number[] {
+  const weeklyTotals = Array<number>(7).fill(0)
+  const [year, month, day] = dateKey.split("-").map(Number)
+  const todayUtc = Date.UTC(year, month - 1, day)
+
+  expenses.forEach((expense) => {
+    if (expense.type === "income") return
+    const [expenseYear, expenseMonth, expenseDay] = expense.date.split("-").map(Number)
+    const expenseUtc = Date.UTC(expenseYear, expenseMonth - 1, expenseDay)
+    const daysAgo = Math.floor((todayUtc - expenseUtc) / 86400000)
+    if (daysAgo < 0 || daysAgo >= 49) return
+
+    const weekIndex = 6 - Math.floor(daysAgo / 7)
+    weeklyTotals[weekIndex] += expense.amount
+  })
+
+  return weeklyTotals
+}
+
 function formatCategoryPercent(percent: number): string {
   if (percent < 0.1) return "<0.1%"
   if (percent < 10) return `${Number(percent.toFixed(1))}%`
   return `${Math.round(percent)}%`
+}
+
+function MonthlySpendingComparison({
+  values,
+  difference,
+  yearTotal,
+  compact = false,
+}: {
+  values: number[]
+  difference: number | null
+  yearTotal?: string
+  compact?: boolean
+}) {
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const range = max - min || 1
+  const points = values.map((value, index) => ({
+    x: 2 + (index * 96) / Math.max(values.length - 1, 1),
+    y: 27 - ((value - min) / range) * 22,
+  }))
+  const path = points
+    .map(({ x, y }, index) => `${index === 0 ? "M" : "L"}${x} ${y}`)
+    .join(" ")
+  const lastPoint = points[points.length - 1]
+  const isHigher = difference !== null && difference > 0
+  const isLower = difference !== null && difference < 0
+  const TrendArrow = isHigher ? ArrowUpRight : ArrowDownRight
+  const tone = isHigher
+    ? "text-emerald-700 dark:text-emerald-400"
+    : isLower
+      ? "text-red-600 dark:text-red-400"
+      : "text-zinc-500 dark:text-zinc-400"
+  const stroke = isHigher ? "#047857" : isLower ? "#dc2626" : "#71717a"
+
+  return (
+    <div className="min-w-0">
+      <div className="flex min-w-0 items-center gap-1.5">
+        <svg
+          aria-label="Spending over the last seven weeks"
+          className={`h-6 shrink-0 ${compact ? "w-[3.75rem] sm:w-[5.5rem]" : "w-[5.5rem]"}`}
+          role="img"
+          viewBox="0 0 100 32"
+          preserveAspectRatio="none"
+        >
+          <path
+            d={path}
+            fill="none"
+            stroke={stroke}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2.5"
+          />
+          {lastPoint && (
+            <>
+              <circle cx={lastPoint.x} cy={lastPoint.y} r="5" fill={stroke} opacity="0.16" />
+              <circle cx={lastPoint.x} cy={lastPoint.y} r="2.5" fill={stroke} />
+            </>
+          )}
+        </svg>
+        {difference === null ? (
+          <span className="whitespace-nowrap text-[10px] font-medium text-zinc-400">
+            No comparison
+          </span>
+        ) : (
+          <span className={`inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-[10px] font-semibold tabular-nums ${tone}`}>
+            <TrendArrow className="h-3 w-3" strokeWidth={2.5} />
+            {Math.abs(difference)}%
+          </span>
+        )}
+      </div>
+      <div className={`mt-1 flex min-w-0 items-center text-[10px] leading-4 text-zinc-500 dark:text-zinc-400 ${yearTotal ? "justify-between gap-2" : ""}`}>
+        <span className="whitespace-nowrap">vs. Last Month</span>
+        {yearTotal && (
+          <span className="whitespace-nowrap">
+            Year total <span className="font-medium text-zinc-700 dark:text-zinc-300">{yearTotal}</span>
+          </span>
+        )}
+      </div>
+    </div>
+  )
 }
 
 
@@ -74,7 +173,7 @@ export default function Home({
   expenses,
   userName = "John",
   onAddExpense,
-  onEditExpense,
+  onViewExpense,
   onDeleteExpense,
 }: HomeProps) {
   const { resolvedTheme } = useTheme()
@@ -165,6 +264,8 @@ export default function Home({
   const monthVsLastMonthDiff = lastMonthTotal > 0
     ? Math.round(((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100)
     : null
+
+  const weeklySpendingTrend = getWeeklySpendingTrend(activeExpenses, today)
 
   // Budget calculations — read fresh every render so Settings changes reflect immediately
   const budgetGoal = Number(localStorage.getItem("pocket_budget")) || 5000000
@@ -343,8 +444,8 @@ export default function Home({
   ])
 
   return (
-    <div className="flex flex-col xl:flex-row">
-      <div className="flex-1 px-4 py-4 sm:px-8 sm:py-6">
+    <div className="flex min-w-0 flex-col xl:flex-row">
+      <div className="min-w-0 flex-1 px-4 py-4 sm:px-8 sm:py-6">
         {/* ── Mobile Hero: greeting + today's spending ── */}
         <div className="sm:hidden mb-4">
           <div className="relative overflow-hidden rounded-2xl bg-zinc-900 px-5 pt-5 pb-6 shadow-md">
@@ -390,15 +491,14 @@ export default function Home({
                 </div>
                 <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-400">This Month</span>
               </div>
-              <p className="mt-2 break-words text-[clamp(0.875rem,5vw,1.25rem)] font-bold tracking-tight text-zinc-900 dark:text-white tabular-nums">{formatCompact(thisMonthTotal)}</p>
-              {monthVsLastMonthDiff !== null ? (
-                <div className={`mt-1 flex items-center gap-0.5 text-[11px] font-medium ${monthVsLastMonthDiff <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600"}`}>
-                  {monthVsLastMonthDiff <= 0 ? <ArrowDownRight className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
-                  {Math.abs(monthVsLastMonthDiff)}% vs last
-                </div>
-              ) : (
-                <p className="mt-1 text-[11px] text-zinc-400">No prev. data</p>
-              )}
+              <p className="mt-2 whitespace-nowrap text-[clamp(0.875rem,5vw,1.25rem)] font-bold tracking-tight text-zinc-900 dark:text-white tabular-nums">{formatCompact(thisMonthTotal)}</p>
+              <div className="mt-1">
+                <MonthlySpendingComparison
+                  values={weeklySpendingTrend}
+                  difference={monthVsLastMonthDiff}
+                  compact
+                />
+              </div>
             </div>
 
             <div className="min-w-0 rounded-2xl border border-zinc-200/90 bg-white px-3.5 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -469,22 +569,11 @@ export default function Home({
               amountCompact={formatCompact(thisMonthTotal)}
               amountFull={formatCurrency(thisMonthTotal)}
               trendNode={
-                <div className="space-y-1">
-                  <div className="flex justify-between gap-2">
-                    <span>vs. last month</span>
-                    {monthVsLastMonthDiff !== null ? (
-                      <span className={`font-medium ${monthVsLastMonthDiff <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
-                        {Math.abs(monthVsLastMonthDiff)}% {monthVsLastMonthDiff <= 0 ? "lower" : "higher"}
-                      </span>
-                    ) : (
-                      <span>No data</span>
-                    )}
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <span>Year total</span>
-                    <span className="font-medium text-zinc-700 dark:text-zinc-300">{formatCompact(thisYearTotal)}</span>
-                  </div>
-                </div>
+                <MonthlySpendingComparison
+                  values={weeklySpendingTrend}
+                  difference={monthVsLastMonthDiff}
+                  yearTotal={formatCompact(thisYearTotal)}
+                />
               }
             />
 
@@ -794,15 +883,23 @@ export default function Home({
                 return (
                   <div
                     key={expense.id}
-                    className="grid grid-cols-[minmax(0,1fr)_auto_2.75rem] items-center gap-2 px-3 py-3 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/30 sm:gap-3 sm:px-5 sm:py-3.5 2xl:grid-cols-[5rem_minmax(0,1.8fr)_minmax(0,1fr)_minmax(0,0.9fr)_2.75rem]"
+                    className="relative grid grid-cols-[minmax(0,1fr)_auto_2.75rem] items-center gap-2 px-3 py-3 transition sm:gap-3 sm:px-5 sm:py-3.5 2xl:grid-cols-[5rem_minmax(0,1.8fr)_minmax(0,1fr)_minmax(0,0.9fr)_2.75rem]"
                   >
+                    {onViewExpense && (
+                      <button
+                        type="button"
+                        onClick={() => onViewExpense(expense)}
+                        aria-label={`View transaction details for ${expense.item}`}
+                        className="absolute inset-0 z-0 cursor-pointer rounded-xl text-left transition-colors hover:bg-emerald-50/40 active:bg-emerald-50 dark:hover:bg-emerald-500/5 dark:active:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500"
+                      />
+                    )}
                     {/* Date */}
-                    <div className="hidden min-w-0 truncate text-xs font-semibold text-zinc-600 dark:text-zinc-400 2xl:block">
+                    <div className="pointer-events-none relative z-10 hidden min-w-0 truncate text-xs font-semibold text-zinc-600 dark:text-zinc-400 2xl:block">
                       {formatRecentDate(expense.date)}
                     </div>
 
                     {/* Item with Icon and ellipsis truncation */}
-                    <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="pointer-events-none relative z-10 flex min-w-0 items-center gap-2.5">
                       <div
                         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
                         style={{ backgroundColor: color + "18" }}
@@ -810,7 +907,7 @@ export default function Home({
                         {Icon && <Icon className="h-4 w-4" style={{ color }} />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="line-clamp-2 break-words text-xs font-semibold text-zinc-900 dark:text-white sm:text-sm" title={expense.item}>
+                        <span className="truncate text-xs font-semibold text-zinc-900 dark:text-white sm:line-clamp-2 sm:whitespace-normal sm:break-words sm:text-sm">
                           {expense.item}
                         </span>
                         <span
@@ -823,7 +920,7 @@ export default function Home({
                     </div>
 
                     {/* Category */}
-                    <div className="hidden min-w-0 2xl:block">
+                    <div className="pointer-events-none relative z-10 hidden min-w-0 2xl:block">
                       <span
                         title={cat?.name || expense.categoryName}
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -838,21 +935,23 @@ export default function Home({
 
                     {/* Amount */}
                     <div
-                      className={`whitespace-nowrap text-right text-xs font-semibold tabular-nums sm:text-sm ${
+                      className={`pointer-events-none relative z-10 whitespace-nowrap text-right text-xs font-semibold tabular-nums sm:text-sm ${
                         isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-900 dark:text-white"
                       }`}
                       title={isIncome ? `+ ${formatCurrency(expense.amount)}` : formatCurrency(expense.amount)}
                     >
-                      {isIncome ? `+ ${formatCompact(expense.amount)}` : formatCompact(expense.amount)}
+                      {isIncome ? `+ ${formatCurrency(expense.amount)}` : formatCurrency(expense.amount)}
                     </div>
 
-                    <TransactionActionsMenu
-                      itemName={expense.item}
-                      open={isMenuOpen}
-                      onOpenChange={(open) => setOpenActionMenuId(open ? expense.id : null)}
-                      onEdit={onEditExpense ? () => onEditExpense(expense) : undefined}
-                      onDelete={onDeleteExpense ? () => setExpensePendingDeletion(expense) : undefined}
-                    />
+                    <div className="relative z-20">
+                      <TransactionActionsMenu
+                        itemName={expense.item}
+                        open={isMenuOpen}
+                        onOpenChange={(open) => setOpenActionMenuId(open ? expense.id : null)}
+                        onViewDetails={onViewExpense ? () => onViewExpense(expense) : undefined}
+                        onDelete={onDeleteExpense ? () => setExpensePendingDeletion(expense) : undefined}
+                      />
+                    </div>
                   </div>
                 )
               })}

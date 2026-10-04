@@ -68,24 +68,72 @@ function toTimeInputValue(time: string) {
 
 export default function AddExpenseSheet({
   open,
+  onClose,
+  ...formProps
+}: AddExpenseSheetProps) {
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [open])
+
+  if (!open) return null
+
+  return (
+    <ExpenseSheetForm
+      key={formProps.initialExpense?.id ?? `new-${formProps.defaultCategoryId ?? "drinks"}`}
+      {...formProps}
+      onClose={onClose}
+    />
+  )
+}
+
+function ExpenseSheetForm({
   isSaving,
   onClose,
   onSave,
   onUpdate,
   initialExpense,
   defaultCategoryId = "drinks",
-}: AddExpenseSheetProps) {
+}: Omit<AddExpenseSheetProps, "open">) {
   const { currency, rates } = useCurrency()
   const activeCurrencyConfig = SUPPORTED_CURRENCIES.find((c) => c.code === currency) || SUPPORTED_CURRENCIES[0]
 
   const isEditing = !!initialExpense
 
-  const [type, setType] = useState<TransactionType>("expense")
-  const [amount, setAmount] = useState("")
-  const [quantity, setQuantity] = useState("1")
-  const [categoryId, setCategoryId] = useState(defaultCategoryId)
-  const [item, setItem] = useState("")
-  const [note, setNote] = useState("")
+  const [type, setType] = useState<TransactionType>(
+    () =>
+      initialExpense?.type ??
+      (INCOME_CATEGORIES.some((category) => category.id === defaultCategoryId)
+        ? "income"
+        : "expense"),
+  )
+  const [amount, setAmount] = useState(() => {
+    if (!initialExpense) return ""
+    const initialAmount =
+      initialExpense.type === "income"
+        ? initialExpense.amount
+        : initialExpense.unitPrice ?? initialExpense.amount
+    const convertedAmount =
+      currency === "VND"
+        ? initialAmount
+        : Math.round(convertAmount(initialAmount, currency, rates) * 100) / 100
+    return String(convertedAmount)
+  })
+  const [quantity, setQuantity] = useState(() =>
+    String(initialExpense?.type === "income" ? 1 : initialExpense?.quantity || 1),
+  )
+  const [categoryId, setCategoryId] = useState(
+    () => initialExpense?.categoryId ?? defaultCategoryId,
+  )
+  const [item, setItem] = useState(() => initialExpense?.item ?? "")
+  const [note, setNote] = useState(() => initialExpense?.note ?? "")
 
   const getTodayLocalString = () => {
     const d = new Date()
@@ -95,7 +143,7 @@ export default function AddExpenseSheet({
     return `${year}-${month}-${day}`
   }
 
-  const [date, setDate] = useState(getTodayLocalString)
+  const [date, setDate] = useState(() => initialExpense?.date ?? getTodayLocalString())
 
   const [isRecurring, setIsRecurring] = useState(false)
   const [frequency, setFrequency] = useState<RecurringFrequency>("monthly")
@@ -103,62 +151,12 @@ export default function AddExpenseSheet({
   const submitLock = useRef(false)
 
   const [time, setTime] = useState(() => {
+    if (initialExpense) return toTimeInputValue(initialExpense.time)
     const now = new Date()
     return `${String(now.getHours()).padStart(2, "0")}:${String(
       now.getMinutes()
     ).padStart(2, "0")}`
   })
-
-  // Pre-fill when editing or opening
-  useEffect(() => {
-    if (open) {
-      setIsRecurring(false)
-      setFrequency("monthly")
-      if (initialExpense) {
-        setType(initialExpense.type || "expense")
-        setQuantity(String(initialExpense.type === "income" ? 1 : initialExpense.quantity || 1))
-        const initialVal = currency === "VND" 
-          ? initialExpense.type === "income" ? initialExpense.amount : initialExpense.unitPrice ?? initialExpense.amount
-          : Math.round(convertAmount(
-              initialExpense.type === "income" ? initialExpense.amount : initialExpense.unitPrice ?? initialExpense.amount,
-              currency,
-              rates,
-            ) * 100) / 100
-        setAmount(String(initialVal))
-        setCategoryId(initialExpense.categoryId)
-        setItem(initialExpense.item)
-        setNote(initialExpense.note || "")
-        setDate(initialExpense.date)
-        setTime(toTimeInputValue(initialExpense.time))
-      } else {
-        const isIncomeCat = INCOME_CATEGORIES.some((c) => c.id === defaultCategoryId)
-        setType(isIncomeCat ? "income" : "expense")
-        setAmount("")
-        setQuantity("1")
-        setCategoryId(defaultCategoryId || (isIncomeCat ? "salary" : "drinks"))
-        setItem("")
-        setNote("")
-        setDate(getTodayLocalString())
-        const now = new Date()
-        setTime(
-          `${String(now.getHours()).padStart(2, "0")}:${String(
-            now.getMinutes()
-          ).padStart(2, "0")}`
-        )
-      }
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = ""
-    }
-
-    return () => {
-      document.body.style.overflow = ""
-    }
-  }, [open, initialExpense, defaultCategoryId])
-
-  if (!open) {
-    return null
-  }
 
   const activeCategories = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
 
@@ -292,7 +290,7 @@ export default function AddExpenseSheet({
   }
 
   return (
-    <div className="fixed inset-x-0 top-[var(--keyboard-viewport-offset)] z-50 flex h-[var(--keyboard-viewport-height)] items-end justify-center overflow-hidden overscroll-none md:items-center">
+    <div className="fixed inset-x-0 top-[var(--keyboard-viewport-offset)] z-50 flex h-[var(--keyboard-viewport-height)] items-end justify-center overflow-hidden overscroll-none pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:items-center">
       {/* Overlay */}
       <div
         aria-label="Close modal"
@@ -316,7 +314,11 @@ export default function AddExpenseSheet({
               {isEditing ? "Edit Transaction" : type === "income" ? "Add Income" : "Add Expense"}
             </h2>
             <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 md:text-sm">
-              {isEditing ? "Update your transaction details" : type === "income" ? "Record your earnings" : "Record what you spent"}
+              {isEditing
+                ? `${type === "income" ? "Income" : "Expense"} · Update transaction details`
+                : type === "income"
+                  ? "Record your earnings"
+                  : "Record what you spent"}
             </p>
           </div>
 
@@ -463,14 +465,14 @@ export default function AddExpenseSheet({
               {type === "income" ? "Source / Description" : "Item / What did you use?"}
             </label>
 
-            <input
+            <textarea
               id="expense-item"
-              type="text"
+              rows={Math.max(3, Math.min(6, Math.ceil(item.length / 22)))}
               value={item}
-              onChange={(event) => setItem(event.target.value)}
+              onChange={(event) => setItem(event.target.value.replace(/[\r\n]+/g, " "))}
               maxLength={120}
               placeholder={type === "income" ? "e.g. Monthly Salary, Freelance project" : "e.g. Vietnamese Coffee, Lunch"}
-              className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-xs text-zinc-800 dark:text-zinc-200 outline-none transition placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:text-sm"
+              className="w-full resize-y break-words rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-xs leading-relaxed text-zinc-800 dark:text-zinc-200 outline-none transition placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 md:px-4 md:py-2.5 md:text-sm"
             />
 
             {/* Recent suggestions */}
