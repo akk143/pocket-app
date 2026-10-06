@@ -30,11 +30,83 @@ export interface SessionUser {
   displayName: string | null
 }
 
+interface RateLimitOptions {
+  bucket: string
+  limit: number
+  windowMs: number
+}
+
 const PRODUCTION_SESSION_COOKIE = "__Host-pocket_session"
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 5
+const RATE_LIMIT_MAX_KEYS = 5_000
+const rateLimitHits = new Map<string, { count: number; resetAt: number }>()
+
+export const RATE_LIMITS = {
+  authLogin: { bucket: "auth-login", limit: 10, windowMs: 60 * 1000 },
+  authRegister: { bucket: "auth-register", limit: 5, windowMs: 60 * 1000 },
+  sessionRead: { bucket: "session-read", limit: 120, windowMs: 60 * 1000 },
+  apiRead: { bucket: "api-read", limit: 180, windowMs: 60 * 1000 },
+  apiWrite: { bucket: "api-write", limit: 60, windowMs: 60 * 1000 },
+  bulkWrite: { bucket: "bulk-write", limit: 20, windowMs: 60 * 1000 },
+  cron: { bucket: "cron", limit: 10, windowMs: 60 * 1000 },
+} satisfies Record<string, RateLimitOptions>
 
 function sessionCookieName() {
   return process.env.NODE_ENV === "production" ? PRODUCTION_SESSION_COOKIE : "pocket_session"
+}
+
+function clientIp(req: ApiRequest) {
+  const forwardedFor = req.headers["x-forwarded-for"]
+  const forwardedValue = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor
+  if (typeof forwardedValue === "string") {
+    const firstIp = forwardedValue.split(",")[0]?.trim()
+    if (firstIp) return firstIp
+  }
+
+  const realIp = req.headers["x-real-ip"]
+  if (typeof realIp === "string" && realIp.trim()) return realIp.trim()
+
+  return req.socket.remoteAddress ?? "unknown"
+}
+
+function pruneRateLimitHits(now: number) {
+  for (const [key, value] of rateLimitHits) {
+    if (value.resetAt <= now) rateLimitHits.delete(key)
+  }
+  if (rateLimitHits.size <= RATE_LIMIT_MAX_KEYS) return
+
+  const keysToDelete = rateLimitHits.size - RATE_LIMIT_MAX_KEYS
+  let deleted = 0
+  for (const key of rateLimitHits.keys()) {
+    rateLimitHits.delete(key)
+    deleted += 1
+    if (deleted >= keysToDelete) break
+  }
+}
+
+export function rateLimit(
+  req: ApiRequest,
+  res: ApiResponse,
+  options: RateLimitOptions,
+) {
+  const now = Date.now()
+  if (rateLimitHits.size > RATE_LIMIT_MAX_KEYS) pruneRateLimitHits(now)
+
+  const key = `${options.bucket}:${clientIp(req)}`
+  const current = rateLimitHits.get(key)
+  const hit = !current || current.resetAt <= now
+    ? { count: 1, resetAt: now + options.windowMs }
+    : { count: current.count + 1, resetAt: current.resetAt }
+  rateLimitHits.set(key, hit)
+
+  res.setHeader("X-RateLimit-Limit", String(options.limit))
+  res.setHeader("X-RateLimit-Remaining", String(Math.max(0, options.limit - hit.count)))
+  res.setHeader("X-RateLimit-Reset", String(Math.ceil(hit.resetAt / 1000)))
+
+  if (hit.count > options.limit) {
+    res.setHeader("Retry-After", String(Math.ceil((hit.resetAt - now) / 1000)))
+    throw new ApiError(429, "Too many requests. Please try again shortly.")
+  }
 }
 
 export function requireMethod(
