@@ -38,8 +38,8 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-[var(--keyboard-viewport-height)] items-start justify-center overflow-y-auto bg-[#f7f7f5] px-4 py-4 dark:bg-zinc-950 sm:items-center sm:py-8">
-      <div className="w-full max-w-sm">
+    <div className="flex min-h-[var(--keyboard-viewport-height)] items-center justify-center overflow-y-auto bg-[#f7f7f5] px-4 py-8 dark:bg-zinc-950">
+      <div className="my-auto w-full max-w-sm">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-500/10">
