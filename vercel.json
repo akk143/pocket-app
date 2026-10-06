@@ -1,14 +1,15 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    {
-      "source": "/((?!api(?:/|$)).*)",
-      "destination": "/index.html"
-    }
+    { "source": "/api/auth/:path*", "destination": "/api/auth" },
+    { "source": "/api/transactions/:path*", "destination": "/api/transactions" },
+    { "source": "/api/recurring/:path*", "destination": "/api/recurring" },
+    { "source": "/api/cron", "destination": "/api/cron" },
+    { "source": "/((?!api(?:/|$)).*)", "destination": "/index.html" }
   ],
   "crons": [
     {
-      "path": "/api/cron/recurring",
+      "path": "/api/cron",
       "schedule": "0 0 * * *"
     }
   ]

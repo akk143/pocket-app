@@ -1,7 +1,7 @@
 import { timingSafeEqual } from "node:crypto"
-import { adminDb } from "../../server/firebaseAdmin"
-import { postRecurring } from "../../server/recurring"
-import { RATE_LIMITS, preventCaching, rateLimit, type ApiRequest, type ApiResponse } from "../../server/http"
+import { adminDb } from "../server/firebaseAdmin"
+import { postRecurring } from "../server/recurring"
+import { RATE_LIMITS, preventCaching, rateLimit, type ApiRequest, type ApiResponse } from "../server/http"
 
 function authorized(req: ApiRequest) {
   const secret = process.env.CRON_SECRET
@@ -14,6 +14,11 @@ function authorized(req: ApiRequest) {
   return supplied.length === expected.length && timingSafeEqual(supplied, expected)
 }
 
+/**
+ * Cron handler — called daily by Vercel Cron.
+ * Previously at /api/cron/recurring; now at /api/cron.
+ * vercel.json cron path updated accordingly.
+ */
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   preventCaching(res)
   try {
@@ -36,13 +41,14 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       .collectionGroup("recurring")
       .where("nextDueDate", "<=", latestPossibleLocalDate)
       .get()
-    const dueItems = snapshot.docs
-      .filter((document) => {
-        const userDocument = document.ref.parent.parent
-        return document.get("active") === true &&
-          document.ref.parent.id === "recurring" &&
-          userDocument?.parent.id === "users"
-      })
+    const dueItems = snapshot.docs.filter((document) => {
+      const userDocument = document.ref.parent.parent
+      return (
+        document.get("active") === true &&
+        document.ref.parent.id === "recurring" &&
+        userDocument?.parent.id === "users"
+      )
+    })
     let postedCount = 0
     let failureCount = 0
     let processedCount = 0
