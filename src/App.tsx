@@ -19,6 +19,7 @@ import {
 import AddExpenseSheet from "./components/AddExpenseSheet"
 import TransactionDetailsSheet from "./components/TransactionDetailsSheet"
 import StartupSplash from "./components/StartupSplash"
+import DashboardSkeleton from "./components/DashboardSkeleton"
 import { ThemeToggle } from "./components/ThemeToggle"
 import HomePage from "./pages/Home"
 import HistoryPage from "./pages/History"
@@ -80,6 +81,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [deletedExpenses, setDeletedExpenses] = useState<Expense[]>([])
   const [recurringList, setRecurringList] = useState<RecurringTransaction[]>([])
+  const [isDataLoading, setIsDataLoading] = useState(false)
   const [addExpenseOpen, setAddExpenseOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [viewingExpenseId, setViewingExpenseId] = useState<string | null>(null)
@@ -175,6 +177,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
   useEffect(() => {
     if (!user) return
     let active = true
+    setIsDataLoading(true)
     Promise.all([fetchExpenses(), fetchDeletedExpenses(), fetchRecurring()])
       .then(([activeExpenses, deletedExpenses, recurringItems]) => {
         if (!active) return
@@ -186,6 +189,9 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       .catch((error: unknown) => {
         console.error("Account data could not be loaded:", error)
         if (active) setAccountDataError(true)
+      })
+      .finally(() => {
+        if (active) setIsDataLoading(false)
       })
     return () => {
       active = false
@@ -748,9 +754,32 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
             </div>
           </header>
 
-          {accountDataError && (
-            <div role="alert" className="mx-4 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-500/10 dark:text-amber-300 sm:mx-8">
-              Could not load your financial data. Check your connection and refresh the page.
+          {accountDataError && !isDataLoading && (
+            <div role="alert" className="mx-4 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-500/10 dark:text-amber-300 sm:mx-8">
+              <p className="font-semibold">Unable to load your spending data.</p>
+              <p className="mt-0.5 text-xs font-normal opacity-80">Check your connection and try again.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setAccountDataError(false)
+                  setIsDataLoading(true)
+                  Promise.all([fetchExpenses(), fetchDeletedExpenses(), fetchRecurring()])
+                    .then(([activeExpenses, deletedExpenses, recurringItems]) => {
+                      setExpenses(activeExpenses)
+                      setDeletedExpenses(deletedExpenses)
+                      setRecurringList(recurringItems)
+                      setAccountDataError(false)
+                    })
+                    .catch((error: unknown) => {
+                      console.error("Retry — account data could not be loaded:", error)
+                      setAccountDataError(true)
+                    })
+                    .finally(() => setIsDataLoading(false))
+                }}
+                className="mt-3 rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition"
+              >
+                Try again
+              </button>
             </div>
           )}
 
@@ -760,14 +789,18 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
               <Route
                 path="/"
                 element={
-                  <HomePage
-                    expenses={expenses}
-                    userName={firstName}
-                    onAddExpense={openAddExpense}
-                    onViewExpense={openExpenseDetails}
-                    onDeleteExpense={handleDeleteExpense}
-                    
-                  />
+                  isDataLoading ? (
+                    <DashboardSkeleton />
+                  ) : (
+                    <HomePage
+                      expenses={expenses}
+                      userName={firstName}
+                      onAddExpense={openAddExpense}
+                      onViewExpense={openExpenseDetails}
+                      onDeleteExpense={handleDeleteExpense}
+                      
+                    />
+                  )
                 }
               />
               <Route
