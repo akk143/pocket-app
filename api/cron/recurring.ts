@@ -1,7 +1,7 @@
 import { timingSafeEqual } from "node:crypto"
 import { adminDb } from "../../server/firebaseAdmin"
 import { postRecurring } from "../../server/recurring"
-import { preventCaching, type ApiRequest, type ApiResponse } from "../../server/http"
+import { RATE_LIMITS, preventCaching, rateLimit, type ApiRequest, type ApiResponse } from "../../server/http"
 
 function authorized(req: ApiRequest) {
   const secret = process.env.CRON_SECRET
@@ -16,6 +16,11 @@ function authorized(req: ApiRequest) {
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   preventCaching(res)
+  try {
+    rateLimit(req, res, RATE_LIMITS.cron)
+  } catch (error) {
+    return res.status(429).json({ error: error instanceof Error ? error.message : "Too many requests" })
+  }
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET")
     return res.status(405).json({ error: "Method not allowed" })

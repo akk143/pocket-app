@@ -1,8 +1,10 @@
 import {
   ApiError,
+  RATE_LIMITS,
   type ApiRequest,
   type ApiResponse,
   preventCaching,
+  rateLimit,
   requireUser,
   sendError,
 } from "../../server/http"
@@ -15,6 +17,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   }
 
   try {
+    rateLimit(req, res, RATE_LIMITS.sessionRead)
     return res.status(200).json({
       user: await requireUser(req, { includeCurrentProfile: true }),
     })

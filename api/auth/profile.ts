@@ -3,9 +3,11 @@ import {
   type ApiRequest,
   type ApiResponse,
   ApiError,
+  RATE_LIMITS,
   assertAllowedFields,
   assertSameOrigin,
   preventCaching,
+  rateLimit,
   requestBody,
   requireMethod,
   requireUser,
@@ -15,6 +17,7 @@ import {
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   preventCaching(res)
   try {
+    rateLimit(req, res, RATE_LIMITS.apiWrite)
     requireMethod(req, res, "PATCH")
     assertSameOrigin(req)
     const user = await requireUser(req, { includeCurrentProfile: true })

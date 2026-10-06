@@ -1,10 +1,12 @@
 import { adminDb } from "../../server/firebaseAdmin"
 import {
   ApiError,
+  RATE_LIMITS,
   type ApiRequest,
   type ApiResponse,
   assertSameOrigin,
   preventCaching,
+  rateLimit,
   requiredDocumentId,
   requestBody,
   requireUser,
@@ -16,6 +18,7 @@ import type { RecurringTransaction } from "../../src/types/expense"
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   preventCaching(res)
   try {
+    rateLimit(req, res, RATE_LIMITS.apiWrite)
     const user = await requireUser(req)
     const id = requiredDocumentId(req)
     const document = adminDb().collection("users").doc(user.uid).collection("recurring").doc(id)

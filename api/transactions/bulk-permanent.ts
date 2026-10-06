@@ -1,11 +1,13 @@
 import { adminDb } from "../../server/firebaseAdmin"
 import {
   ApiError,
+  RATE_LIMITS,
   type ApiRequest,
   type ApiResponse,
   assertAllowedFields,
   assertSameOrigin,
   preventCaching,
+  rateLimit,
   requestBody,
   requireMethod,
   requireUser,
@@ -15,6 +17,7 @@ import {
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   preventCaching(res)
   try {
+    rateLimit(req, res, RATE_LIMITS.bulkWrite)
     requireMethod(req, res, "POST")
     assertSameOrigin(req)
     const user = await requireUser(req)

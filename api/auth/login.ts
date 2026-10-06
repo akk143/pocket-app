@@ -4,9 +4,11 @@ import {
   type ApiRequest,
   type ApiResponse,
   ApiError,
+  RATE_LIMITS,
   assertAllowedFields,
   assertSameOrigin,
   preventCaching,
+  rateLimit,
   requestBody,
   requireMethod,
   sendError,
@@ -15,6 +17,7 @@ import {
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   preventCaching(res)
   try {
+    rateLimit(req, res, RATE_LIMITS.authLogin)
     requireMethod(req, res, "POST")
     assertSameOrigin(req)
     const body = requestBody(req)

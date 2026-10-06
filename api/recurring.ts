@@ -1,9 +1,11 @@
 import { adminDb } from "../server/firebaseAdmin"
 import {
+  RATE_LIMITS,
   type ApiRequest,
   type ApiResponse,
   preventCaching,
   assertSameOrigin,
+  rateLimit,
   requireUser,
   sendError,
 } from "../server/http"
@@ -13,6 +15,7 @@ import { requestBody } from "../server/http"
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   preventCaching(res)
   try {
+    rateLimit(req, res, req.method === "GET" ? RATE_LIMITS.apiRead : RATE_LIMITS.apiWrite)
     const user = await requireUser(req)
     const collection = adminDb().collection("users").doc(user.uid).collection("recurring")
 
