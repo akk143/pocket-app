@@ -9,6 +9,7 @@ import {
   TrendingDown,
   TrendingUp,
   Repeat,
+  Pencil,
 } from "lucide-react"
 
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
@@ -289,6 +290,238 @@ function ExpenseSheetForm({
     }
   }
 
+  // ── Edit mode: dedicated, clearly-form-styled sheet ────────────────────────
+  if (isEditing) {
+    return (
+      <div className="fixed inset-x-0 top-[var(--keyboard-viewport-offset)] z-50 flex h-[var(--keyboard-viewport-height)] items-end justify-center pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] sm:items-center sm:p-4">
+        {/* Overlay */}
+        <div
+          aria-label="Close"
+          onClick={() => { if (!isSaving) onClose() }}
+          className="absolute inset-0 bg-zinc-950/40 backdrop-blur-[2px] dark:bg-zinc-950/60"
+        />
+
+        {/* Edit sheet — slightly wider than Details, clearly a form */}
+        <div
+          className="relative z-10 flex w-full max-w-[520px] flex-col overflow-hidden rounded-t-[28px] bg-white shadow-2xl dark:bg-zinc-900 sm:rounded-3xl"
+          style={{ maxHeight: "min(90dvh, calc(var(--keyboard-viewport-height) - 0.5rem))" }}
+        >
+          {/* Drag handle */}
+          <div className="flex justify-center pt-2.5 sm:hidden">
+            <div className="h-[5px] w-10 rounded-full bg-zinc-200 dark:bg-zinc-700" />
+          </div>
+
+          {/* ── Edit header ── */}
+          <div className="flex shrink-0 items-center gap-3 border-b border-zinc-100 px-5 py-3.5 dark:border-zinc-800 sm:px-6 sm:py-4">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800">
+              <Pencil className="h-4 w-4 text-zinc-600 dark:text-zinc-300" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-[17px] font-semibold leading-tight tracking-tight text-zinc-900 dark:text-white">
+                Edit Transaction
+              </h2>
+              <p className="text-[12px] text-zinc-500 dark:text-zinc-400">
+                {type === "income" ? "Income" : "Expense"} · Update details below
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              disabled={isSaving}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-50"
+            >
+              <X className="h-4.5 w-4.5" />
+            </button>
+          </div>
+
+          {/* ── Scrollable form fields ── */}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain no-scrollbar">
+            <div className="space-y-4 px-5 py-4 sm:px-6 sm:py-5">
+
+              {/* Amount + Quantity row */}
+              <div className={type === "income" ? "" : "grid grid-cols-[minmax(0,0.65fr)_minmax(0,1.35fr)] gap-3"}>
+                {type !== "income" && (
+                  <FormField label="Quantity" htmlFor="edit-quantity">
+                    <input
+                      id="edit-quantity"
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value.replace(/\D/g, ""))}
+                      className={inputCls}
+                    />
+                  </FormField>
+                )}
+                <FormField label={type === "income" ? "Amount" : "Unit price"} htmlFor="edit-amount">
+                  <div className="relative">
+                    <input
+                      id="edit-amount"
+                      type="text"
+                      inputMode={currency === "VND" ? "numeric" : "decimal"}
+                      value={displayInputValue}
+                      onChange={handleAmountChange}
+                      placeholder="0"
+                      className={`${inputCls} pr-10`}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-400">
+                      {activeCurrencyConfig.symbol}
+                    </span>
+                  </div>
+                  {currency !== "VND" && numericAmount > 0 && (
+                    <p className="mt-1 text-[11px] text-zinc-400 dark:text-zinc-500">
+                      ≈ {new Intl.NumberFormat("vi-VN").format(convertToBaseVND(numericAmount, currency, rates))} ₫
+                    </p>
+                  )}
+                </FormField>
+              </div>
+
+              {/* Total summary */}
+              {type !== "income" && numericQuantity > 0 && numericAmount > 0 && (
+                <p className="text-right text-[12px] font-semibold text-zinc-500 dark:text-zinc-400">
+                  Total: {currency === "VND"
+                    ? `${new Intl.NumberFormat("vi-VN").format(numericQuantity * numericAmount)} ${activeCurrencyConfig.symbol}`
+                    : `${new Intl.NumberFormat("en-US", { style: "currency", currency }).format(numericQuantity * numericAmount)}`}
+                </p>
+              )}
+
+              {/* Category */}
+              <FormField label="Category" htmlFor="edit-category">
+                <div className="relative">
+                  <select
+                    id="edit-category"
+                    value={categoryId}
+                    onChange={(e) => {
+                      setCategoryId(e.target.value)
+                      setItem("")
+                    }}
+                    className={`${inputCls} appearance-none pr-9`}
+                  >
+                    {activeCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id} className="dark:bg-zinc-800 dark:text-zinc-200">
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                </div>
+              </FormField>
+
+              {/* Item name */}
+              <FormField label="Transaction name" htmlFor="edit-item">
+                <textarea
+                  id="edit-item"
+                  rows={Math.max(2, Math.min(5, Math.ceil(item.length / 26)))}
+                  value={item}
+                  onChange={(e) => setItem(e.target.value.replace(/[\r\n]+/g, " "))}
+                  maxLength={120}
+                  placeholder={type === "income" ? "e.g. Monthly Salary, Freelance project" : "e.g. Vietnamese Coffee, Lunch"}
+                  className={`${inputCls} resize-none leading-relaxed`}
+                />
+                {recentItems.length > 0 && (
+                  <div className="mt-2">
+                    <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                      Suggestions
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {recentItems.map((ri) => (
+                        <button
+                          key={ri}
+                          type="button"
+                          onClick={() => setItem(ri)}
+                          className={`rounded-lg border px-2 py-1 text-[11px] transition ${
+                            item === ri
+                              ? "border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-500/10 font-medium text-emerald-700 dark:text-emerald-400"
+                              : "border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                          }`}
+                        >
+                          {ri}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </FormField>
+
+              {/* Date + Time */}
+              <FormField label="When">
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="relative">
+                    <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className={`${inputCls} pl-9`}
+                    />
+                  </div>
+                  <div className="relative">
+                    <Clock3 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                    <input
+                      type="time"
+                      value={time}
+                      onChange={(e) => setTime(e.target.value)}
+                      className={`${inputCls} pl-9`}
+                    />
+                  </div>
+                </div>
+              </FormField>
+
+              {/* Note */}
+              <FormField label={<>Note <span className="font-normal normal-case text-zinc-400">(optional)</span></>} htmlFor="edit-note">
+                <textarea
+                  id="edit-note"
+                  rows={2}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  maxLength={500}
+                  placeholder="Any details you'd like to remember..."
+                  className={`${inputCls} resize-none`}
+                />
+              </FormField>
+
+            </div>
+          </div>
+
+          {/* ── Footer: Save + Cancel ── */}
+          <div className="shrink-0 border-t border-zinc-100 bg-white px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 dark:border-zinc-800 dark:bg-zinc-900 sm:px-6">
+            {saveError && (
+              <p role="alert" className="mb-2 text-center text-[12px] font-medium text-red-600 dark:text-red-400">
+                {saveError}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={isSaving || !amount || numericAmount <= 0 || !item.trim()}
+              aria-busy={isSaving}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-[15px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-zinc-200 dark:disabled:bg-zinc-700 disabled:text-zinc-400 dark:disabled:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+            >
+              {isSaving ? (
+                "Updating…"
+              ) : (
+                <>
+                  <Check className="h-4 w-4" />
+                  Save Changes
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSaving}
+              className="mt-2 flex w-full items-center justify-center rounded-xl px-4 py-2 text-[13px] font-medium text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Add mode: original layout ───────────────────────────────────────────────
   return (
     <div className="fixed inset-x-0 top-[var(--keyboard-viewport-offset)] z-50 flex h-[var(--keyboard-viewport-height)] items-end justify-center overflow-hidden overscroll-none pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:items-center">
       {/* Overlay */}
@@ -311,14 +544,10 @@ function ExpenseSheetForm({
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2 md:px-6 md:py-3.5">
           <div>
             <h2 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-white md:text-xl">
-              {isEditing ? "Edit Transaction" : type === "income" ? "Add Income" : "Add Expense"}
+              {type === "income" ? "Add Income" : "Add Expense"}
             </h2>
             <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 md:text-sm">
-              {isEditing
-                ? `${type === "income" ? "Income" : "Expense"} · Update transaction details`
-                : type === "income"
-                  ? "Record your earnings"
-                  : "Record what you spent"}
+              {type === "income" ? "Record your earnings" : "Record what you spent"}
             </p>
           </div>
 
@@ -608,18 +837,43 @@ function ExpenseSheetForm({
             className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-zinc-200 dark:disabled:bg-zinc-800 disabled:text-zinc-400 dark:disabled:text-zinc-600 md:py-3.5 md:text-sm"
           >
             {isSaving ? (
-              <>
-                {isEditing ? "Updating..." : "Saving..."}
-              </>
+              <>{type === "income" ? "Saving..." : "Saving..."}</>
             ) : (
               <>
                 <Check className="h-4 w-4" />
-                {isEditing ? "Update Transaction" : type === "income" ? "Save Income" : "Save Expense"}
+                {type === "income" ? "Save Income" : "Save Expense"}
               </>
             )}
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Shared form field wrapper (Edit mode only) ────────────────────────────────
+
+const inputCls =
+  "w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2.5 text-sm font-medium text-zinc-800 dark:text-zinc-200 outline-none transition placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+
+function FormField({
+  label,
+  htmlFor,
+  children,
+}: {
+  label: React.ReactNode
+  htmlFor?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div>
+      <label
+        htmlFor={htmlFor}
+        className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400"
+      >
+        {label}
+      </label>
+      {children}
     </div>
   )
 }
