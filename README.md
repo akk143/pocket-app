@@ -247,17 +247,23 @@ The Vercel development server runs both the frontend and `/api/*` functions. Cop
 
 The browser talks only to same-origin `/api/*` routes. Vercel serverless functions use Firebase Admin for Firestore operations and Firebase Authentication REST calls for email/password sign-in. Authentication is maintained in an HttpOnly, Secure-in-production session cookie; Firebase tokens and credentials are never stored in browser storage.
 
-The API derives the user UID from the verified session cookie and stores data under user-specific Firestore paths. The included Firestore rules remain restrictive as defense in depth. Since Firebase Admin bypasses Firestore rules, the API also validates payloads and scopes every document path to the session UID.
+The API derives the user UID from the verified session cookie and stores data under user-specific Firestore paths. Firestore rules deny all direct client SDK access; the trusted server API is the only intended Firestore entry point. Since Firebase Admin bypasses Firestore rules, the API validates payloads and scopes every document path to the session UID.
 
-The current rule structure follows:
+Data is stored under:
 
 ```text
 /users/{userId}/...
 ```
 
-with access limited to the authenticated user's UID.
+but direct browser reads and writes to Firestore are denied by default.
 
 Before deploying your own Firebase project, review and test the provided `firestore.rules` against your application's data model.
+
+Deploy Firestore rules with a Firebase account that has permission to manage the project:
+
+```bash
+npx firebase-tools deploy --only firestore:rules --project pocket-app-production
+```
 
 The Vercel cron at `/api/cron/recurring` runs daily. It uses `CRON_SECRET` and Firestore transactions with deterministic expense IDs to ensure a recurring rule can post no more than once for a given local calendar day.
 
@@ -320,7 +326,7 @@ npm run build
 
 ### Vercel
 
-Set the required `VITE_FIREBASE_*` environment variables in your Vercel project.
+Set the required server environment variables from the Firebase setup section in your Vercel project.
 
 For the SPA routing configuration, the repository includes:
 
@@ -366,8 +372,8 @@ Preview the production build locally.
 
 * Firebase credentials are provided through environment variables.
 * Environment files are excluded from Git.
-* Firestore access is restricted by authenticated user ID.
-* Firebase API keys are not treated as private server secrets; authorization should be enforced through Firebase Authentication and Firestore Security Rules.
+* Direct browser access to Firestore is denied; application data access goes through same-origin `/api/*` routes.
+* Firebase API keys are not treated as private server secrets; authorization is enforced by the server session and Firebase Security Rules.
 * Review Firebase rules carefully before exposing a production database.
 
 ---
