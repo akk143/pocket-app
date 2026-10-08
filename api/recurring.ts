@@ -13,7 +13,7 @@ import {
 } from "../server/http.js"
 import { validateNewRecurring, validateRecurringPatch } from "../server/validation.js"
 import { postRecurring } from "../server/recurring.js"
-import type { RecurringTransaction } from "../src/types/expense"
+import type { RecurringTransaction } from "../src/types/expense.js"
 
 /**
  * Consolidated recurring handler — routes by path and method:
