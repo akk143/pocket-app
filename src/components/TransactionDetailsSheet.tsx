@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import type { PointerEvent } from "react"
-import { CalendarDays, Clock3, FileText, Pencil, Repeat, Tag, Trash2, X } from "lucide-react"
+import { CalendarDays, Clock3, FileText, Layers, Pencil, Repeat, Tag, Trash2, X } from "lucide-react"
 import type { Expense } from "../types/expense"
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
 import { useCurrency } from "../contexts/CurrencyContext"
@@ -211,6 +211,26 @@ export default function TransactionDetailsSheet({
                   label="Category"
                   value={expense.categoryName}
                 />
+
+                {/* Quantity & Unit Price */}
+                {expense.quantity !== undefined && expense.quantity > 1 && (
+                  <>
+                    <MetaRow
+                      icon={<Layers className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500" />}
+                      label="Quantity"
+                      value={String(expense.quantity)}
+                    />
+                    <MetaRow
+                      icon={<Tag className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500" />}
+                      label="Unit Price"
+                      value={convertAndFormatCurrency(
+                        expense.unitPrice ?? Math.round(expense.amount / expense.quantity),
+                        currency,
+                        rates,
+                      )}
+                    />
+                  </>
+                )}
 
                 {/* Recurring badge */}
                 {recurringLabel && (

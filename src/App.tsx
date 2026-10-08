@@ -81,7 +81,8 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [deletedExpenses, setDeletedExpenses] = useState<Expense[]>([])
   const [recurringList, setRecurringList] = useState<RecurringTransaction[]>([])
-  const [isDataLoading, setIsDataLoading] = useState(false)
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null)
+  const isDataLoading = Boolean(user && loadedUserId !== user.uid)
   const [addExpenseOpen, setAddExpenseOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [viewingExpenseId, setViewingExpenseId] = useState<string | null>(null)
@@ -141,6 +142,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
   useEffect(() => {
     const handleSessionExpired = () => {
       setUser(null)
+      setLoadedUserId(null)
       setExpenses([])
       setDeletedExpenses([])
       setRecurringList([])
@@ -175,9 +177,8 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
   }, [onAppReady])
 
   useEffect(() => {
-    if (!user) return
+    if (!user || loadedUserId === user.uid) return
     let active = true
-    setIsDataLoading(true)
     Promise.all([fetchExpenses(), fetchDeletedExpenses(), fetchRecurring()])
       .then(([activeExpenses, deletedExpenses, recurringItems]) => {
         if (!active) return
@@ -191,12 +192,12 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
         if (active) setAccountDataError(true)
       })
       .finally(() => {
-        if (active) setIsDataLoading(false)
+        if (active) setLoadedUserId(user.uid)
       })
     return () => {
       active = false
     }
-  }, [user])
+  }, [user, loadedUserId])
 
   async function handleSaveExpense(
     expense: Omit<Expense, "id">,
@@ -441,6 +442,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
         body: JSON.stringify({}),
       })
       setUser(null)
+      setLoadedUserId(null)
       setExpenses([])
       setDeletedExpenses([])
       setRecurringList([])
@@ -762,19 +764,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
                 type="button"
                 onClick={() => {
                   setAccountDataError(false)
-                  setIsDataLoading(true)
-                  Promise.all([fetchExpenses(), fetchDeletedExpenses(), fetchRecurring()])
-                    .then(([activeExpenses, deletedExpenses, recurringItems]) => {
-                      setExpenses(activeExpenses)
-                      setDeletedExpenses(deletedExpenses)
-                      setRecurringList(recurringItems)
-                      setAccountDataError(false)
-                    })
-                    .catch((error: unknown) => {
-                      console.error("Retry — account data could not be loaded:", error)
-                      setAccountDataError(true)
-                    })
-                    .finally(() => setIsDataLoading(false))
+                  setLoadedUserId(null)
                 }}
                 className="mt-3 rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition"
               >

@@ -16,6 +16,7 @@ import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
 import type { Expense, TransactionType, RecurringTransaction, RecurringFrequency } from "../types/expense"
 import { useCurrency } from "../contexts/CurrencyContext"
 import { SUPPORTED_CURRENCIES, convertAmount, convertToBaseVND } from "../lib/currency"
+import { computeNextDueDate } from "../lib/recurring"
 
 interface AddExpenseSheetProps {
   open: boolean
@@ -267,7 +268,7 @@ function ExpenseSheetForm({
             dayOfMonth,
             dayOfWeek,
             lastRunDate: date,
-            nextDueDate: date,
+            nextDueDate: computeNextDueDate(frequency, date, dayOfMonth, dayOfWeek),
             active: true,
             createdAt: Date.now(),
             timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
