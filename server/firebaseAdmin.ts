@@ -8,10 +8,19 @@ function getAdminApp() {
 
   const projectId = process.env.FIREBASE_PROJECT_ID
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY
 
   if (!projectId || !clientEmail || !privateKey) {
     throw new Error("Firebase Admin environment is not configured")
+  }
+
+  // If the user pasted the key with surrounding quotes in Vercel, strip them
+  if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+    privateKey = privateKey.slice(1, -1)
+  }
+  // If the user pasted the key with surrounding single quotes, strip them
+  if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
+    privateKey = privateKey.slice(1, -1)
   }
 
   return initializeApp({

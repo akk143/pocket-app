@@ -3,6 +3,9 @@
   "private": true,
   "version": "1.0.2",
   "type": "module",
+  "engines": {
+    "node": ">=20.x"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && tsc -p tsconfig.api.json && vite build",
