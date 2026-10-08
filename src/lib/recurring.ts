@@ -1,4 +1,4 @@
-import type { RecurringTransaction } from "../types/expense"
+import type { RecurringTransaction } from "../types/expense.js"
 import { apiRequest } from "./api"
 
 export async function addRecurring(
