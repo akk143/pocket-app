@@ -64,3 +64,6 @@ coverage/
 
 # Local AI coding instructions
 AGENTS.md
+
+test-admin.ts
+vercel.local.json
