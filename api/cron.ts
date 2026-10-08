@@ -1,7 +1,7 @@
 import { timingSafeEqual } from "node:crypto"
-import { adminDb } from "../server/firebaseAdmin"
-import { postRecurring } from "../server/recurring"
-import { RATE_LIMITS, preventCaching, rateLimit, type ApiRequest, type ApiResponse } from "../server/http"
+import { adminDb } from "../server/firebaseAdmin.js"
+import { postRecurring } from "../server/recurring.js"
+import { RATE_LIMITS, preventCaching, rateLimit, type ApiRequest, type ApiResponse } from "../server/http.js"
 
 function authorized(req: ApiRequest) {
   const secret = process.env.CRON_SECRET
