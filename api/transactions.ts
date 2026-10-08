@@ -13,7 +13,7 @@ import {
   sendError,
 } from "../server/http.js"
 import { validateNewTransaction, validateTransactionPatch } from "../server/validation.js"
-import type { Expense } from "../src/types/expense"
+import type { Expense } from "../src/types/expense.js"
 
 /**
  * Consolidated transactions handler — routes by path and method:
