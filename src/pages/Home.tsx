@@ -205,6 +205,8 @@ export default function Home({
   const activeExpenses = expenses
 
   const now = new Date()
+  const currentHour = now.getHours()
+  const greeting = currentHour < 12 ? "Good morning" : currentHour < 18 ? "Good afternoon" : "Good evening"
   const today = toLocalDateKey(now)
   const currentMonthKey = monthKey(now)
   const lastMonthKey = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1))
@@ -362,20 +364,21 @@ export default function Home({
     0
   ).getDate()
 
+  const startDayOffset =
+    (new Date(calendarViewMonth.getFullYear(), calendarViewMonth.getMonth(), 1).getDay() + 6) % 7
+  const effectiveCalendarDay = Math.min(selectedCalendarDay, calendarDaysInMonth)
+
   const selectedDayExpenses = useMemo(() => {
     const targetMonthStr = monthKey(calendarViewMonth)
-    const dayStr = String(selectedCalendarDay).padStart(2, "0")
+    const dayStr = String(effectiveCalendarDay).padStart(2, "0")
     const fullDateKey = `${targetMonthStr}-${dayStr}`
-    return activeExpenses.filter((e) => {
-      const createdDateKey = toLocalDateKey(new Date(e.createdAt))
-      return e.date === fullDateKey || createdDateKey === fullDateKey
-    })
-  }, [activeExpenses, calendarViewMonth, selectedCalendarDay])
+    return activeExpenses.filter((e) => e.date === fullDateKey)
+  }, [activeExpenses, calendarViewMonth, effectiveCalendarDay])
 
   const isCalendarDayToday =
     calendarViewMonth.getFullYear() === now.getFullYear() &&
     calendarViewMonth.getMonth() === now.getMonth() &&
-    selectedCalendarDay === now.getDate()
+    effectiveCalendarDay === now.getDate()
 
   const calendarDaySpent = useMemo(() => {
     return selectedDayExpenses
@@ -458,7 +461,7 @@ export default function Home({
                 {new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" }).format(now)}
               </p>
               <h1 className="mt-0.5 break-words text-base font-bold text-white">
-                Good morning, {userName} 👋
+                {greeting}, {userName} 👋
               </h1>
             </div>
 
@@ -530,8 +533,8 @@ export default function Home({
         <div className="hidden sm:block">
           <div className="mb-7 flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white dark:text-white">
-                Good morning, {userName} 👋
+              <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                {greeting}, {userName} 👋
               </h1>
               <p className="mt-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-400">
                 {new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(now)}
@@ -715,15 +718,15 @@ export default function Home({
                     tickLine={false}
                     axisLine={false}
                     tick={{ fill: isDark ? "#71717a" : "#a1a1aa", fontSize: 10 }}
-                    tickFormatter={(v) => (v === 0 ? "0" : `${v / 1000}k`)}
-                    domain={[0, 400000]}
-                    ticks={[0, 100000, 200000, 300000, 400000]}
+                    tickFormatter={(v) => (v === 0 ? "0" : v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : `${v / 1000}k`)}
                   />
                   <Tooltip
                     formatter={(value: unknown) => [formatCurrency(Number(value) || 0), "Spending"]}
                     contentStyle={{
                       borderRadius: "12px",
-                      border: "1px solid #e4e4e7",
+                      border: isDark ? "1px solid #3f3f46" : "1px solid #e4e4e7",
+                      background: isDark ? "#18181b" : "#fff",
+                      color: isDark ? "#fafafa" : "#09090b",
                       fontSize: "12px",
                       boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.05)",
                     }}
@@ -1052,9 +1055,12 @@ export default function Home({
           </div>
 
           <div className="mt-2 grid grid-cols-7 gap-1 text-center text-xs">
+            {Array.from({ length: startDayOffset }, (_, i) => (
+              <span key={`pad-${i}`} aria-hidden="true" />
+            ))}
             {Array.from({ length: calendarDaysInMonth }, (_, idx) => {
               const day = idx + 1
-              const isSelected = selectedCalendarDay === day
+              const isSelected = effectiveCalendarDay === day
               return (
                 <button
                   key={day}
@@ -1081,7 +1087,7 @@ export default function Home({
               <span>
                 {isCalendarDayToday
                   ? "Today's Summary"
-                  : `${new Intl.DateTimeFormat("en-US", { month: "short" }).format(calendarViewMonth)} ${selectedCalendarDay} Summary`}
+                  : `${new Intl.DateTimeFormat("en-US", { month: "short" }).format(calendarViewMonth)} ${effectiveCalendarDay} Summary`}
               </span>
             </div>
             <span className="text-[10px] font-normal text-zinc-400">
