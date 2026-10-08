@@ -1,10 +1,10 @@
-import { adminAuth } from "./firebaseAdmin"
+import { adminAuth } from "./firebaseAdmin.js"
 import {
   ApiError,
   SESSION_MAX_AGE_SECONDS,
   setSessionCookie,
   type ApiResponse,
-} from "./http"
+} from "./http.js"
 
 interface FirebaseCredentialResult {
   idToken: string

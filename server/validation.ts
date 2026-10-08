@@ -1,11 +1,11 @@
-import { TRANSACTION_CATEGORIES } from "../src/constants/categories"
+import { TRANSACTION_CATEGORIES } from "../src/constants/categories.js"
 import type {
   Expense,
   RecurringFrequency,
   RecurringTransaction,
   TransactionType,
-} from "../src/types/expense"
-import { ApiError, assertAllowedFields } from "./http"
+} from "../src/types/expense.js"
+import { ApiError, assertAllowedFields } from "./http.js"
 
 const TRANSACTION_FIELDS = [
   "type",

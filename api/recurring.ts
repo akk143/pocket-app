@@ -1,4 +1,4 @@
-import { adminDb } from "../server/firebaseAdmin"
+import { adminDb } from "../server/firebaseAdmin.js"
 import {
   ApiError,
   RATE_LIMITS,
@@ -10,9 +10,9 @@ import {
   requestBody,
   requireUser,
   sendError,
-} from "../server/http"
-import { validateNewRecurring, validateRecurringPatch } from "../server/validation"
-import { postRecurring } from "../server/recurring"
+} from "../server/http.js"
+import { validateNewRecurring, validateRecurringPatch } from "../server/validation.js"
+import { postRecurring } from "../server/recurring.js"
 import type { RecurringTransaction } from "../src/types/expense"
 
 /**

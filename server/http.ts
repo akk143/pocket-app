@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
-import { adminAuth } from "./firebaseAdmin"
+import { adminAuth } from "./firebaseAdmin.js"
 
 export interface ApiRequest extends IncomingMessage {
   body?: unknown

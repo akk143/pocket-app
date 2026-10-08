@@ -1,8 +1,8 @@
 import type { DocumentReference } from "firebase-admin/firestore"
-import { adminDb } from "./firebaseAdmin"
-import { ApiError } from "./http"
-import { validateNewRecurring } from "./validation"
-import type { RecurringTransaction } from "../src/types/expense"
+import { adminDb } from "./firebaseAdmin.js"
+import { ApiError } from "./http.js"
+import { validateNewRecurring } from "./validation.js"
+import type { RecurringTransaction } from "../src/types/expense.js"
 
 function localDateForTimeZone(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-CA", {

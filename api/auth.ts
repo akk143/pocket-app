@@ -1,5 +1,5 @@
-import { adminAuth } from "../server/firebaseAdmin"
-import { authenticatePassword, establishSession } from "../server/auth"
+import { adminAuth } from "../server/firebaseAdmin.js"
+import { authenticatePassword, establishSession } from "../server/auth.js"
 import {
   type ApiRequest,
   type ApiResponse,
@@ -14,7 +14,7 @@ import {
   requireMethod,
   requireUser,
   sendError,
-} from "../server/http"
+} from "../server/http.js"
 
 /**
  * Consolidated auth handler — routes by path suffix:

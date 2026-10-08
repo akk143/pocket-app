@@ -1,4 +1,4 @@
-import { adminDb } from "../server/firebaseAdmin"
+import { adminDb } from "../server/firebaseAdmin.js"
 import {
   ApiError,
   RATE_LIMITS,
@@ -11,8 +11,8 @@ import {
   requestBody,
   requireUser,
   sendError,
-} from "../server/http"
-import { validateNewTransaction, validateTransactionPatch } from "../server/validation"
+} from "../server/http.js"
+import { validateNewTransaction, validateTransactionPatch } from "../server/validation.js"
 import type { Expense } from "../src/types/expense"
 
 /**
