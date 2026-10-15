@@ -11,6 +11,7 @@ import {
   TrendingDown,
   TrendingUp,
   DollarSign,
+  Loader2,
 } from "lucide-react"
 import type { RecurringTransaction, TransactionType, RecurringFrequency } from "../types/expense"
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
@@ -111,7 +112,10 @@ export default function Recurring({
 
   const handleCreateRule = async (e: React.FormEvent) => {
     e.preventDefault()
-    const numericAmount = Number(amount.replace(/,/g, ""))
+    const numericAmount =
+      currency === "VND"
+        ? Number(amount.replace(/\D/g, ""))
+        : Number(amount.replace(/,/g, ""))
     if (!numericAmount || numericAmount <= 0 || !item.trim()) {
       setFormError("Enter a valid amount and schedule name.")
       return
@@ -470,7 +474,9 @@ export default function Recurring({
         open={recurringPendingDeletion !== null}
         title="Delete recurring schedule?"
         message={recurringPendingDeletion ? `Are you sure you want to delete "${recurringPendingDeletion.item}"? This action cannot be undone.` : ""}
-        confirmLabel={deletingId ? "Deleting..." : "Delete"}
+        confirmLabel={deletingId ? "Deleting…" : "Delete"}
+        confirmDisabled={Boolean(deletingId)}
+        isLoading={Boolean(deletingId)}
         onCancel={() => {
           if (!deletingId) setRecurringPendingDeletion(null)
         }}
@@ -555,9 +561,9 @@ export default function Recurring({
                     {activeCurrencyConfig.symbol}
                   </span>
                 </div>
-                {currency !== "VND" && Number(amount) > 0 && (
+                {currency !== "VND" && Number(amount.replace(/,/g, "")) > 0 && (
                   <p className="mt-1 text-[11px] text-zinc-400">
-                    ≈ {new Intl.NumberFormat("vi-VN").format(convertToBaseVND(Number(amount), currency, rates))} ₫ (base)
+                    ≈ {new Intl.NumberFormat("vi-VN").format(convertToBaseVND(Number(amount.replace(/,/g, "")), currency, rates))} ₫ (base)
                   </p>
                 )}
               </div>
@@ -697,8 +703,17 @@ export default function Recurring({
                   disabled={isSaving}
                   className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50"
                 >
-                  <Check className="h-4 w-4" />
-                  {isSaving ? "Saving..." : "Save Schedule"}
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                      <span>Saving…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4" />
+                      <span>Save Schedule</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

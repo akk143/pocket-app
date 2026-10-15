@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import { X } from "lucide-react"
+import { Loader2, X } from "lucide-react"
 
 interface ConfirmDialogProps {
   open: boolean
@@ -8,6 +8,7 @@ interface ConfirmDialogProps {
   message: string
   confirmLabel?: string
   confirmDisabled?: boolean
+  isLoading?: boolean
   variant?: "soft" | "danger"
   onConfirm: () => void
   onCancel: () => void
@@ -20,6 +21,7 @@ export default function ConfirmDialog({
   message,
   confirmLabel = "Delete",
   confirmDisabled = false,
+  isLoading = false,
   variant = "danger",
   onConfirm,
   onCancel,
@@ -33,7 +35,7 @@ export default function ConfirmDialog({
     const previouslyFocused = document.activeElement as HTMLElement | null
     cancelButtonRef.current?.focus()
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCancel()
+      if (event.key === "Escape" && !isLoading) onCancel()
       if (event.key !== "Tab" || !dialogRef.current) return
 
       const focusable = Array.from(
@@ -62,7 +64,7 @@ export default function ConfirmDialog({
       document.body.style.overflow = previousOverflow
       previouslyFocused?.focus()
     }
-  }, [open, onCancel])
+  }, [open, isLoading, onCancel])
 
   if (!open) return null
   const isSoftDelete = variant === "soft"
@@ -95,8 +97,9 @@ export default function ConfirmDialog({
           <button
             type="button"
             onClick={onCancel}
+            disabled={isLoading}
             aria-label="Close confirmation dialog"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-zinc-400 dark:text-zinc-500 transition hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 sm:h-9 sm:w-9"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-zinc-400 dark:text-zinc-500 transition hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 sm:h-9 sm:w-9"
           >
             <X className="h-4 w-4" />
           </button>
@@ -106,22 +109,21 @@ export default function ConfirmDialog({
           <button
             type="button"
             onClick={onCancel}
+            disabled={isLoading}
             ref={cancelButtonRef}
-            className="min-h-10 rounded-xl border border-zinc-200 dark:border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-50 dark:hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 sm:min-w-20"
+            className="min-h-10 rounded-xl border border-zinc-200 dark:border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-50 dark:hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 sm:min-w-20"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            disabled={confirmDisabled}
-            className={`min-h-10 rounded-xl px-4 py-2 text-sm font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:min-w-28 ${
-              isSoftDelete
-                ? "bg-amber-600 hover:bg-amber-700 focus-visible:ring-amber-500"
-                : "bg-red-600 hover:bg-red-700 focus-visible:ring-red-500 dark:bg-red-700 dark:hover:bg-red-600"
-            }`}
+            disabled={confirmDisabled || isLoading}
+            aria-busy={isLoading}
+            className="flex min-h-10 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-red-700 active:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-600 dark:hover:bg-red-500 dark:active:bg-red-700 sm:min-w-28"
           >
-            {confirmLabel}
+            {isLoading && <Loader2 className="h-4 w-4 animate-spin shrink-0" />}
+            <span>{confirmLabel}</span>
           </button>
         </div>
       </div>

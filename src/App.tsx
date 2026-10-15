@@ -9,6 +9,7 @@ import {
   LoaderCircle,
   LogOut,
   Plus,
+  QrCode,
   ReceiptText,
   Repeat,
   Settings as SettingsIcon,
@@ -90,23 +91,33 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
     "saving" | "saving-recurring" | "updating" | null
   >(null)
   const transactionSaveLock = useRef(false)
+  const deleteInProgressIds = useRef<Set<string>>(new Set())
+  const bulkDeleteLock = useRef(false)
+  const restoreInProgressIds = useRef<Set<string>>(new Set())
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("drinks")
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const [headerSearch, setHeaderSearch] = useState("")
   const [toast, setToast] = useState<{
     message: string
-    type?: "success" | "info"
+    type?: "success" | "info" | "error"
     action?: { label: string; onClick: () => void }
   } | null>(null)
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const showToast = (
     message: string,
-    type: "success" | "info" = "success",
+    type: "success" | "info" | "error" = "success",
     action?: { label: string; onClick: () => void },
   ) => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current)
+    }
     setToast({ message, type, action })
-    setTimeout(() => setToast(null), 3000)
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null)
+      toastTimeoutRef.current = null
+    }, 3000)
   }
 
   useEffect(() => {
@@ -147,6 +158,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       setDeletedExpenses([])
       setRecurringList([])
       navigate("/login", { replace: true })
+      showToast("Session expired. Please sign in again.", "info")
     }
     window.addEventListener("pockettrack:session-expired", handleSessionExpired)
     return () => window.removeEventListener("pockettrack:session-expired", handleSessionExpired)
@@ -214,7 +226,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       if (recurring) {
         setTransactionSaveState("saving-recurring")
         try {
-          await handleAddRecurring(recurring)
+          await handleAddRecurring(recurring, true)
         } catch {
           setAddExpenseOpen(false)
           setEditingExpense(null)
@@ -224,13 +236,20 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       }
       setAddExpenseOpen(false)
       setEditingExpense(null)
-      showToast(expense.type === "income" ? "Income saved successfully" : "Expense recorded successfully")
+      const successMessage = recurring
+        ? expense.type === "income"
+          ? "Income and recurring schedule saved"
+          : "Expense and recurring schedule saved"
+        : expense.type === "income"
+        ? "Income saved successfully"
+        : "Expense recorded successfully"
+      showToast(successMessage)
     } catch (error) {
       if (transactionSaved) {
         showToast("Transaction saved, but recurring schedule could not be created.", "info")
         return
       }
-      showToast("Failed to save. Check your connection.", "info")
+      showToast("Failed to save transaction. Check your connection.", "error")
       throw error
     } finally {
       transactionSaveLock.current = false
@@ -252,9 +271,15 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       )
       setAddExpenseOpen(false)
       setEditingExpense(null)
-      showToast("Transaction updated successfully")
+      const updateMessage =
+        updated.type === "income"
+          ? "Income updated successfully"
+          : updated.type === "expense"
+          ? "Expense updated successfully"
+          : "Transaction updated successfully"
+      showToast(updateMessage)
     } catch (error) {
-      showToast("Update failed. Check your connection.", "info")
+      showToast("Failed to update transaction. Check your connection.", "error")
       throw error
     } finally {
       transactionSaveLock.current = false
@@ -263,7 +288,8 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
   }
 
   async function handleDeleteExpense(expenseId: string) {
-    if (!user) return
+    if (!user || deleteInProgressIds.current.has(expenseId)) return
+    deleteInProgressIds.current.add(expenseId)
     try {
       await deleteExpense(expenseId)
       const deletedExpense = expenses.find((expense) => expense.id === expenseId)
@@ -280,21 +306,34 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
           void handleRestoreExpense(expenseId)
         },
       })
-    } catch {
-      showToast("Delete failed. Check your connection.", "info")
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed to move transaction to Trash. Check your connection."
+      showToast(msg, "error")
+    } finally {
+      deleteInProgressIds.current.delete(expenseId)
     }
   }
 
   async function handleBulkDeleteExpenses(expenseIds: string[]) {
-    if (!user) return
+    if (!user || bulkDeleteLock.current) return
+    bulkDeleteLock.current = true
 
     let deletedIds: string[]
     try {
       deletedIds = await deleteExpenses(expenseIds)
-    } catch {
-      showToast("Failed to move transactions to Trash. Check your connection.", "info")
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed to move transactions to Trash. Check your connection."
+      showToast(msg, "error")
+      return
+    } finally {
+      bulkDeleteLock.current = false
+    }
+
+    if (deletedIds.length === 0) {
+      showToast("No transactions were moved to Trash.", "info")
       return
     }
+
     const movedExpenses = expenses.filter((expense) => deletedIds.includes(expense.id))
     setExpenses((current) => current.filter((expense) => !deletedIds.includes(expense.id)))
     setDeletedExpenses((current) => [
@@ -302,28 +341,41 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       ...current.filter((expense) => !deletedIds.includes(expense.id)),
     ])
 
-    const deletedLabel = `${deletedIds.length} transaction${deletedIds.length === 1 ? "" : "s"} moved to Trash`
+    const deletedLabel =
+      deletedIds.length < expenseIds.length
+        ? `${deletedIds.length} of ${expenseIds.length} transactions moved to Trash`
+        : deletedIds.length === 1
+        ? "Transaction moved to Trash"
+        : "Transactions moved to Trash"
+
     showToast(deletedLabel, "success", {
-        label: "Undo",
-        onClick: () => {
-          void restoreExpenses(deletedIds).then(async (restoredIds) => {
-            const restoredCount = restoredIds.length
-            const [activeExpenses, deletedExpenses] = await Promise.all([
-              fetchExpenses(),
-              fetchDeletedExpenses(),
-            ])
-            setExpenses(activeExpenses)
-            setDeletedExpenses(deletedExpenses)
-            showToast(`${restoredCount} transaction${restoredCount === 1 ? "" : "s"} restored`)
-          }).catch(() => {
-            showToast("Could not restore transactions. Please try again.", "info")
-          })
-        },
-      })
+      label: "Undo",
+      onClick: () => {
+        void restoreExpenses(deletedIds).then(async (restoredIds) => {
+          const restoredCount = restoredIds.length
+          const [activeExpenses, deletedExpenses] = await Promise.all([
+            fetchExpenses(),
+            fetchDeletedExpenses(),
+          ])
+          setExpenses(activeExpenses)
+          setDeletedExpenses(deletedExpenses)
+          if (restoredCount === 0) {
+            showToast("Could not restore transactions.", "error")
+          } else if (restoredCount < deletedIds.length) {
+            showToast(`${restoredCount} of ${deletedIds.length} transactions restored`)
+          } else {
+            showToast(restoredCount === 1 ? "Transaction restored" : "Transactions restored")
+          }
+        }).catch(() => {
+          showToast("Could not restore transactions. Please try again.", "error")
+        })
+      },
+    })
   }
 
   async function handleRestoreExpense(expenseId: string) {
-    if (!user) return
+    if (!user || restoreInProgressIds.current.has(expenseId)) return
+    restoreInProgressIds.current.add(expenseId)
     try {
       await restoreExpense(expenseId)
       const [activeExpenses, deletedExpenses] = await Promise.all([
@@ -333,19 +385,26 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       setExpenses(activeExpenses)
       setDeletedExpenses(deletedExpenses)
       showToast("Transaction restored")
-    } catch {
-      showToast("Could not restore transaction. Please try again.", "info")
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Could not restore transaction. Please try again."
+      showToast(msg, "error")
+    } finally {
+      restoreInProgressIds.current.delete(expenseId)
     }
   }
 
-  async function handleAddRecurring(item: Omit<RecurringTransaction, "id">) {
+  async function handleAddRecurring(item: Omit<RecurringTransaction, "id">, silent = false) {
     if (!user) return
     try {
       const id = await addRecurring(item)
       setRecurringList((current) => [{ ...item, id }, ...current])
-      showToast("Recurring schedule created")
+      if (!silent) {
+        showToast("Recurring schedule created")
+      }
     } catch (error) {
-      showToast("Failed to create recurring schedule.", "info")
+      if (!silent) {
+        showToast("Failed to create recurring schedule.", "error")
+      }
       throw error
     }
   }
@@ -359,7 +418,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       )
       showToast(active ? "Recurring schedule resumed" : "Recurring schedule paused")
     } catch (error) {
-      showToast("Update failed. Check your connection.", "info")
+      showToast(`Failed to ${active ? "resume" : "pause"} recurring schedule. Check your connection.`, "error")
       throw error
     }
   }
@@ -371,7 +430,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       setRecurringList((current) => current.filter((item) => item.id !== id))
       showToast("Recurring schedule deleted")
     } catch (error) {
-      showToast("Delete failed. Check your connection.", "info")
+      showToast("Failed to delete recurring schedule. Check your connection.", "error")
       throw error
     }
   }
@@ -390,13 +449,13 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       } catch (error) {
         console.error("Posted recurring transaction but could not refresh the dashboard:", error)
       }
-      showToast(`Recorded: ${item.item}`)
+      showToast(`Transaction recorded: ${item.item}`)
     } catch (err) {
       const msg = err instanceof Error ? err.message : ""
       if (msg.includes("Already posted")) {
         showToast("Already posted today — no duplicate created.", "info")
       } else {
-        showToast("Failed to record. Check your connection.", "info")
+        showToast("Failed to record recurring transaction. Check your connection.", "error")
       }
     }
   }
@@ -410,13 +469,16 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
     setViewingExpenseId(expense.id)
   }, [])
 
-  const openAddExpense = (categoryId?: string) => {
+  const [startWithScanner, setStartWithScanner] = useState(false)
+
+  const openAddExpense = (categoryId?: string, withScanner = false) => {
     if (transactionSaveLock.current) return
     setViewingExpenseId(null)
     setEditingExpense(null)
     if (categoryId) {
       setSelectedCategoryId(categoryId)
     }
+    setStartWithScanner(withScanner)
     setAddExpenseOpen(true)
   }
 
@@ -447,8 +509,9 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       setDeletedExpenses([])
       setRecurringList([])
       navigate("/login")
+      showToast("Signed out successfully")
     } catch {
-      showToast("Could not sign out. Please try again.", "info")
+      showToast("Could not sign out. Please try again.", "error")
     }
   }
 
@@ -669,6 +732,17 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
             </form>
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+              {/* Desktop Scan QR Button */}
+              <button
+                type="button"
+                onClick={() => openAddExpense(undefined, true)}
+                className="hidden lg:flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-200 shadow-2xs transition hover:border-emerald-300 dark:hover:border-emerald-700 hover:text-emerald-700 dark:hover:text-emerald-400 active:scale-95"
+                title="Scan QR Code or receipt image"
+              >
+                <QrCode className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Scan QR</span>
+              </button>
+
               {/* Currency Quick Switcher */}
               <div className="relative">
                 <select
@@ -840,6 +914,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
                     expenses={expenses}
                     onSignOut={handleSignOut}
                     onUserUpdated={setUser}
+                    onShowToast={showToast}
                   />
                 }
               />
@@ -849,14 +924,16 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
                   <TrashPage
                     deletedExpenses={deletedExpenses}
                     onRestore={handleRestoreExpense}
-                    onTrashChanged={async () => {
+                    onTrashChanged={async (message?: string) => {
                       const [activeExpenses, deletedExpenses] = await Promise.all([
                         fetchExpenses(),
                         fetchDeletedExpenses(),
                       ])
                       setExpenses(activeExpenses)
                       setDeletedExpenses(deletedExpenses)
-                      showToast("Trash updated")
+                      if (message) {
+                        showToast(message)
+                      }
                     }}
                   />
                 }
@@ -949,17 +1026,18 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
         </div>
       </nav>
 
-      {/* Mobile Floating Add Expense Button */}
-      <button
-        type="button"
-        aria-label="Add expense"
-        onClick={() => openAddExpense()}
-        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-[max(1rem,calc(env(safe-area-inset-right)+0.75rem))] z-40 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-600/30 transition hover:bg-emerald-700 active:scale-95 lg:hidden"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
-
-      
+      {/* Mobile Floating Action Button: Add Expense */}
+      <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-[max(1rem,calc(env(safe-area-inset-right)+0.75rem))] z-40 lg:hidden">
+        <button
+          type="button"
+          aria-label="Add expense"
+          title="Add expense"
+          onClick={() => openAddExpense()}
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-600/30 transition hover:bg-emerald-700 active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/20"
+        >
+          <Plus className="h-6 w-6" />
+        </button>
+      </div>
 
       {/* Add / Edit Transaction */}
       <AddExpenseSheet
@@ -967,10 +1045,13 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
         isSaving={transactionSaveState !== null}
         defaultCategoryId={selectedCategoryId}
         initialExpense={editingExpense}
+        existingExpenses={expenses}
+        startWithScanner={startWithScanner}
         onClose={() => {
           if (transactionSaveLock.current) return
           setAddExpenseOpen(false)
           setEditingExpense(null)
+          setStartWithScanner(false)
         }}
         onSave={handleSaveExpense}
         onUpdate={handleUpdateExpense}
@@ -987,8 +1068,16 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       {toast && (
         <div className="fixed bottom-[calc(9rem+env(safe-area-inset-bottom))] left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center justify-between gap-4 rounded-2xl border border-zinc-200/80 bg-zinc-900 px-4 py-3 text-xs font-semibold text-white shadow-xl lg:bottom-6 lg:left-auto lg:right-6 lg:w-auto lg:translate-x-0">
           <div className="flex items-center gap-2">
-          <span className="flex h-2 w-2 rounded-full bg-emerald-400" />
-          {toast.message}
+            <span
+              className={`flex h-2 w-2 rounded-full ${
+                toast.type === "error"
+                  ? "bg-red-400"
+                  : toast.type === "info"
+                  ? "bg-amber-400"
+                  : "bg-emerald-400"
+              }`}
+            />
+            {toast.message}
           </div>
           {toast.action && (
             <button

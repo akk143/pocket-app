@@ -37,10 +37,17 @@ import type { Expense } from "../src/types/expense.js"
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   preventCaching(res)
 
-  const url = req.url ?? ""
-  const path = url.split("?")[0].replace(/\/+$/, "")
-  // Strip /api/transactions prefix; what remains is the sub-path
-  const sub = path.replace(/^\/api\/transactions\/?/, "") // e.g. "" | "trash" | "bulk-trash" | "<id>" | "<id>/restore"
+  let sub = ""
+  if (req.query?.path) {
+    const queryPath = Array.isArray(req.query.path) ? req.query.path.join("/") : String(req.query.path)
+    sub = queryPath.split("?")[0].replace(/^\/+|\/+$/g, "")
+  }
+  if (!sub) {
+    const url = req.url ?? ""
+    const path = url.split("?")[0].replace(/\/+$/, "")
+    // Strip /api/transactions prefix; what remains is the sub-path
+    sub = path.replace(/^\/api\/transactions\/?/, "").replace(/^\/+|\/+$/g, "")
+  }
 
   try {
     // ── Static keyword routes (must come before the :id wildcard) ─────────────
@@ -245,8 +252,11 @@ async function handleDocument(req: ApiRequest, res: ApiResponse, id: string) {
   if (req.method === "DELETE") {
     assertSameOrigin(req)
     const snapshot = await document.get()
-    if (!snapshot.exists || snapshot.get("deletedAt")) {
+    if (!snapshot.exists) {
       throw new ApiError(404, "Transaction not found")
+    }
+    if (snapshot.get("deletedAt")) {
+      return res.status(200).json({ ok: true, alreadyTrashed: true })
     }
     await document.update({ deletedAt: Date.now() })
     return res.status(200).json({ ok: true })

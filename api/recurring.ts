@@ -29,9 +29,16 @@ import type { RecurringTransaction } from "../src/types/expense.js"
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   preventCaching(res)
 
-  const url = req.url ?? ""
-  const path = url.split("?")[0].replace(/\/+$/, "")
-  const sub = path.replace(/^\/api\/recurring\/?/, "") // "" | "<id>" | "<id>/post"
+  let sub = ""
+  if (req.query?.path) {
+    const queryPath = Array.isArray(req.query.path) ? req.query.path.join("/") : String(req.query.path)
+    sub = queryPath.split("?")[0].replace(/^\/+|\/+$/g, "")
+  }
+  if (!sub) {
+    const url = req.url ?? ""
+    const path = url.split("?")[0].replace(/\/+$/, "")
+    sub = path.replace(/^\/api\/recurring\/?/, "").replace(/^\/+|\/+$/g, "")
+  }
 
   try {
     // ── GET/POST /api/recurring ───────────────────────────────────────────────
