@@ -42,6 +42,8 @@ export default function TransactionDetailsSheet({
 }: TransactionDetailsSheetProps) {
   const { currency, rates } = useCurrency()
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const deleteLock = useRef(false)
   const dragStart = useRef<{ x: number; y: number } | null>(null)
 
   const isIncome = expense.type === "income"
@@ -73,27 +75,37 @@ export default function TransactionDetailsSheet({
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = "hidden"
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose() }
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !isDeleting) onClose() }
     document.addEventListener("keydown", onKey)
     return () => {
       document.body.style.overflow = prev
       document.removeEventListener("keydown", onKey)
     }
-  }, [onClose])
+  }, [onClose, isDeleting])
 
   const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (isDeleting) return
     dragStart.current = { x: e.clientX, y: e.clientY }
   }
   const handlePointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    if (isDeleting) return
     const s = dragStart.current
     dragStart.current = null
     if (s && e.clientY - s.y > 80 && Math.abs(e.clientX - s.x) < 60) onClose()
   }
 
   const handleDelete = async () => {
-    await onDelete(expense.id)
-    setIsDeleteConfirmOpen(false)
-    onClose()
+    if (deleteLock.current || isDeleting) return
+    deleteLock.current = true
+    setIsDeleting(true)
+    try {
+      await onDelete(expense.id)
+      setIsDeleteConfirmOpen(false)
+      onClose()
+    } finally {
+      deleteLock.current = false
+      setIsDeleting(false)
+    }
   }
 
   return (
@@ -274,19 +286,21 @@ export default function TransactionDetailsSheet({
             <button
               type="button"
               onClick={() => onEdit(expense)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-[15px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+              disabled={isDeleting}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-[15px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
             >
               <Pencil className="h-4 w-4" />
               Edit Transaction
             </button>
 
-            {/* Destructive: Delete — subtle, text-danger */}
+            {/* Destructive: Delete Transaction — clear danger button in both views */}
             <button
               type="button"
               onClick={() => setIsDeleteConfirmOpen(true)}
-              className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-medium text-red-500 transition hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/30 dark:hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              disabled={isDeleting}
+              className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50/70 px-4 py-2.5 text-[14px] font-semibold text-red-600 shadow-xs transition hover:border-red-300 hover:bg-red-100 hover:text-red-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400 dark:hover:border-red-800 dark:hover:bg-red-900/50 dark:hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-4 w-4 text-red-500 dark:text-red-400" />
               Delete Transaction
             </button>
           </div>
@@ -298,9 +312,13 @@ export default function TransactionDetailsSheet({
         title="Move transaction to Trash?"
         subject={expense.item}
         message="This will move"
-        confirmLabel="Move to Trash"
+        confirmLabel={isDeleting ? "Moving to Trash…" : "Move to Trash"}
+        confirmDisabled={isDeleting}
+        isLoading={isDeleting}
         variant="soft"
-        onCancel={() => setIsDeleteConfirmOpen(false)}
+        onCancel={() => {
+          if (!isDeleting) setIsDeleteConfirmOpen(false)
+        }}
         onConfirm={() => void handleDelete()}
       />
     </>

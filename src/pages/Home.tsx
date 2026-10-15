@@ -1,5 +1,5 @@
 import { useTheme } from "../hooks/useTheme"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef } from "react"
 import {
   ArrowDownRight,
   ArrowRight,
@@ -187,6 +187,8 @@ export default function Home({
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(() => new Date().getDate())
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null)
   const [expensePendingDeletion, setExpensePendingDeletion] = useState<Expense | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const deleteLock = useRef(false)
   const [monthlySpendingTimeframe, setMonthlySpendingTimeframe] = useState<"this_month" | "last_month" | "all_time">("this_month")
   const [topSpendingTimeframe, setTopSpendingTimeframe] = useState<"this_month" | "last_month">("this_month")
 
@@ -485,42 +487,59 @@ export default function Home({
             </div>
           </div>
 
-          {/* Two compact tiles: This Month + This Year */}
+          {/* Two compact tiles: This Month + Net Flow */}
           <div className="mt-2.5 grid grid-cols-2 gap-2.5">
-            <div className="min-w-0 rounded-2xl border border-zinc-200/90 bg-white px-3.5 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="flex items-center gap-1.5">
-                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400 dark:bg-purple-900/20 dark:text-purple-400">
-                  <Calendar className="h-3.5 w-3.5" />
+            <div className="flex min-w-0 flex-col justify-between rounded-2xl border border-zinc-200/90 bg-white px-3.5 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400">
+                    <Calendar className="h-3.5 w-3.5" />
+                  </div>
+                  <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">This Month</span>
                 </div>
-                <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-400">This Month</span>
+                <p className="mt-2 whitespace-nowrap text-[clamp(0.875rem,5vw,1.25rem)] font-bold tracking-tight text-zinc-900 dark:text-white tabular-nums">
+                  {formatCompact(thisMonthTotal)}
+                </p>
               </div>
-              <p className="mt-2 whitespace-nowrap text-[clamp(0.875rem,5vw,1.25rem)] font-bold tracking-tight text-zinc-900 dark:text-white tabular-nums">{formatCompact(thisMonthTotal)}</p>
-              <div className="mt-1">
-                <MonthlySpendingComparison
-                  values={weeklySpendingTrend}
-                  difference={monthVsLastMonthDiff}
-                  compact
-                />
-              </div>
+
+              {monthVsLastMonthDiff !== null ? (
+                <div className={`mt-1 flex items-center gap-1 text-[11px] font-medium ${
+                  monthVsLastMonthDiff <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
+                }`}>
+                  {monthVsLastMonthDiff <= 0 ? (
+                    <ArrowDownRight className="h-3.5 w-3.5 shrink-0" />
+                  ) : (
+                    <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
+                  )}
+                  <span className="truncate">{Math.abs(monthVsLastMonthDiff)}% vs. Last Month</span>
+                </div>
+              ) : (
+                <p className="mt-1 truncate text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                  vs. Last Month
+                </p>
+              )}
             </div>
 
-            <div className="min-w-0 rounded-2xl border border-zinc-200/90 bg-white px-3.5 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="flex items-center gap-1.5">
-                <div className={`flex h-6 w-6 items-center justify-center rounded-lg ${
-                  thisMonthNet >= 0
-                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
-                    : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
-                }`}>
-                  <TrendingUp className="h-3.5 w-3.5" />
+            <div className="flex min-w-0 flex-col justify-between rounded-2xl border border-zinc-200/90 bg-white px-3.5 py-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <div className={`flex h-6 w-6 items-center justify-center rounded-lg ${
+                    thisMonthNet >= 0
+                      ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
+                      : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                  }`}>
+                    <TrendingUp className="h-3.5 w-3.5" />
+                  </div>
+                  <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Net Flow</span>
                 </div>
-                <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Net Flow</span>
+                <p className={`mt-2 break-words text-[clamp(0.875rem,5vw,1.25rem)] font-bold tracking-tight tabular-nums ${
+                  thisMonthNet >= 0 ? "text-zinc-900 dark:text-white" : "text-red-600 dark:text-red-400"
+                }`}>
+                  {thisMonthNet >= 0 ? "+" : ""}{formatCompact(thisMonthNet)}
+                </p>
               </div>
-              <p className={`mt-2 break-words text-[clamp(0.875rem,5vw,1.25rem)] font-bold tracking-tight tabular-nums ${
-                thisMonthNet >= 0 ? "text-zinc-900 dark:text-white" : "text-red-600 dark:text-red-400"
-              }`}>
-                {thisMonthNet >= 0 ? "+" : ""}{formatCompact(thisMonthNet)}
-              </p>
-              <p className={`mt-1 text-[11px] font-medium ${
+
+              <p className={`mt-1 truncate text-[11px] font-medium ${
                 thisMonthNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
               }`}>
                 {thisMonthNet >= 0 ? "Savings on track" : "Over spending"}
@@ -966,14 +985,24 @@ export default function Home({
             title="Move transaction to Trash?"
             subject={expensePendingDeletion?.item}
             message="This will move"
-            confirmLabel="Move to Trash"
+            confirmLabel={isDeleting ? "Moving to Trash…" : "Move to Trash"}
+            confirmDisabled={isDeleting}
+            isLoading={isDeleting}
             variant="soft"
-            onCancel={() => setExpensePendingDeletion(null)}
-            onConfirm={() => {
-              if (expensePendingDeletion) {
-                void onDeleteExpense?.(expensePendingDeletion.id)
+            onCancel={() => {
+              if (!isDeleting) setExpensePendingDeletion(null)
+            }}
+            onConfirm={async () => {
+              if (!expensePendingDeletion || !onDeleteExpense || deleteLock.current || isDeleting) return
+              deleteLock.current = true
+              setIsDeleting(true)
+              try {
+                await onDeleteExpense(expensePendingDeletion.id)
+                setExpensePendingDeletion(null)
+              } finally {
+                deleteLock.current = false
+                setIsDeleting(false)
               }
-              setExpensePendingDeletion(null)
             }}
           />
 
