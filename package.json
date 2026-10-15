@@ -1,7 +1,7 @@
 {
   "name": "pocket_app",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.1.0",
   "type": "module",
   "engines": {
     "node": ">=20.x"
@@ -17,6 +17,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "firebase-admin": "13.10.0",
     "lucide-react": "^1.43.0",
+    "qr-scanner": "^1.4.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.3",
