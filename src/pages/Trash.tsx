@@ -1,5 +1,5 @@
 import { useRef, useState } from "react"
-import { ArchiveRestore, Trash2 } from "lucide-react"
+import { ArchiveRestore, Loader2, Trash2 } from "lucide-react"
 import type { Expense } from "../types/expense"
 import {
   emptyTrash,
@@ -13,7 +13,7 @@ import ConfirmDialog from "../components/ConfirmDialog"
 interface TrashProps {
   deletedExpenses: Expense[]
   onRestore: (expenseId: string) => Promise<void>
-  onTrashChanged: () => Promise<void>
+  onTrashChanged: (message?: string) => Promise<void>
 }
 
 export default function Trash({ deletedExpenses, onRestore, onTrashChanged }: TrashProps) {
@@ -44,14 +44,26 @@ export default function Trash({ deletedExpenses, onRestore, onTrashChanged }: Tr
   }
 
   const handleRestoreSelected = async () => {
+    if (activeSelectedIds.length === 0) return
     setError(null)
     setIsRestoring(true)
+    const count = activeSelectedIds.length
     try {
-      await restoreExpenses(activeSelectedIds)
-      await onTrashChanged()
+      const restoredIds = await restoreExpenses(activeSelectedIds)
       setSelectedIds([])
+      const message =
+        restoredIds.length < count
+          ? `${restoredIds.length} of ${count} transactions restored`
+          : count === 1
+          ? "Transaction restored"
+          : "Transactions restored"
+      await onTrashChanged(message)
     } catch {
-      setError("Some transactions could not be restored. Please try again.")
+      setError(
+        count === 1
+          ? "Could not restore the selected transaction. Please try again."
+          : "Could not restore the selected transactions. Please try again."
+      )
     } finally {
       setIsRestoring(false)
     }
@@ -62,17 +74,36 @@ export default function Trash({ deletedExpenses, onRestore, onTrashChanged }: Tr
     permanentDeleteLock.current = true
     setError(null)
     setIsEmptying(true)
+    const isSelective = activeSelectedIds.length > 0 && !allSelected
+    const count = activeSelectedIds.length
     try {
-      if (activeSelectedIds.length > 0 && !allSelected) {
-        await permanentlyDeleteExpenses(activeSelectedIds)
+      let deletedCount = 0
+      if (isSelective) {
+        deletedCount = await permanentlyDeleteExpenses(activeSelectedIds)
       } else {
-        await emptyTrash()
+        deletedCount = await emptyTrash()
       }
       setIsEmptyDialogOpen(false)
       setSelectedIds([])
-      await onTrashChanged()
+      let message = ""
+      if (isSelective) {
+        if (deletedCount < count) {
+          message = `${deletedCount} of ${count} transactions permanently deleted`
+        } else {
+          message = count === 1 ? "Transaction permanently deleted" : "Transactions permanently deleted"
+        }
+      } else {
+        message = "Trash emptied"
+      }
+      await onTrashChanged(message)
     } catch {
-      setError("Could not permanently delete the selected transactions. Please try again.")
+      setError(
+        isSelective
+          ? count === 1
+            ? "Could not permanently delete the selected transaction. Please try again."
+            : "Could not permanently delete the selected transactions. Please try again."
+          : "Could not empty Trash. Please try again."
+      )
     } finally {
       permanentDeleteLock.current = false
       setIsEmptying(false)
@@ -123,10 +154,19 @@ export default function Trash({ deletedExpenses, onRestore, onTrashChanged }: Tr
                   type="button"
                   disabled={isRestoring || isEmptying}
                   onClick={() => void handleRestoreSelected()}
-                  className="flex min-h-10 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20 disabled:opacity-50 sm:min-h-0"
+                  className="flex min-h-10 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0"
                 >
-                  <ArchiveRestore className="h-3.5 w-3.5" />
-                  {isRestoring ? "Restoring..." : `Restore selected (${activeSelectedIds.length})`}
+                  {isRestoring ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Restoring…</span>
+                    </>
+                  ) : (
+                    <>
+                      <ArchiveRestore className="h-3.5 w-3.5" />
+                      <span>Restore selected ({activeSelectedIds.length})</span>
+                    </>
+                  )}
                 </button>
               )}
               <button
@@ -136,9 +176,9 @@ export default function Trash({ deletedExpenses, onRestore, onTrashChanged }: Tr
                 aria-label={isDeletingSelected
                   ? `Delete selected permanently (${activeSelectedIds.length})`
                   : `Empty Trash, all ${deletedExpenses.length} transactions`}
-                className="flex min-h-10 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 dark:border-red-900/50 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0"
+                className="flex min-h-10 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 hover:text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/50 dark:hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-3.5 w-3.5 text-red-500 dark:text-red-400" />
                 {isDeletingSelected
                   ? `Delete selected permanently (${activeSelectedIds.length})`
                   : "Empty Trash"}
@@ -191,12 +231,21 @@ export default function Trash({ deletedExpenses, onRestore, onTrashChanged }: Tr
               </div>
               <button
                 type="button"
-                disabled={restoringId === expense.id}
+                disabled={restoringId !== null || isRestoring || isEmptying}
                 onClick={() => void handleRestore(expense.id)}
-                className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20 disabled:opacity-50 sm:px-3"
+                className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
               >
-                <ArchiveRestore className="h-3.5 w-3.5" />
-                {restoringId === expense.id ? "Restoring..." : "Restore"}
+                {restoringId === expense.id ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Restoring…</span>
+                  </>
+                ) : (
+                  <>
+                    <ArchiveRestore className="h-3.5 w-3.5" />
+                    <span>Restore</span>
+                  </>
+                )}
               </button>
             </div>
           ))}
@@ -205,14 +254,31 @@ export default function Trash({ deletedExpenses, onRestore, onTrashChanged }: Tr
 
       <ConfirmDialog
         open={isEmptyDialogOpen}
-        title={isDeletingSelected ? "Delete selected transactions?" : "Empty trash?"}
-        message={isDeletingSelected
-          ? `${deleteConfirmationCount} selected transactions will be permanently removed. This action cannot be undone.`
-          : `All ${deleteConfirmationCount} deleted transactions will be permanently removed. This action cannot be undone.`}
-        confirmLabel={isEmptying
-          ? isDeletingSelected ? "Deleting..." : "Emptying..."
-          : isDeletingSelected ? "Delete Permanently" : "Empty Trash"}
+        title={
+          isDeletingSelected
+            ? deleteConfirmationCount === 1
+              ? "Delete selected transaction?"
+              : "Delete selected transactions?"
+            : "Empty Trash?"
+        }
+        message={
+          isDeletingSelected
+            ? deleteConfirmationCount === 1
+              ? "1 selected transaction will be permanently removed. This action cannot be undone."
+              : `${deleteConfirmationCount} selected transactions will be permanently removed. This action cannot be undone.`
+            : `All ${deleteConfirmationCount} deleted transaction${deleteConfirmationCount === 1 ? "" : "s"} will be permanently removed. This action cannot be undone.`
+        }
+        confirmLabel={
+          isEmptying
+            ? isDeletingSelected
+              ? "Deleting…"
+              : "Emptying Trash…"
+            : isDeletingSelected
+            ? "Delete Permanently"
+            : "Empty Trash"
+        }
         confirmDisabled={isEmptying}
+        isLoading={isEmptying}
         onCancel={() => {
           if (!isEmptying) setIsEmptyDialogOpen(false)
         }}
