@@ -51,5 +51,8 @@ export default defineConfig({
         changeOrigin: false,
       },
     },
+    allowedHosts: [
+      'similarly-analog-panel-already.trycloudflare.com',
+    ],
   },
 })

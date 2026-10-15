@@ -67,3 +67,8 @@ AGENTS.md
 
 test-admin.ts
 vercel.local.json
+.vercel
+.env*
+
+# Local Chrome profile and cache
+.chrome-cache/

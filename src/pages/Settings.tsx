@@ -33,9 +33,10 @@ interface SettingsProps {
   expenses: Expense[]
   onSignOut: () => void
   onUserUpdated: (user: AppUser) => void
+  onShowToast?: (message: string, type?: "success" | "info" | "error") => void
 }
 
-export default function Settings({ user, expenses, onSignOut, onUserUpdated }: SettingsProps) {
+export default function Settings({ user, expenses, onSignOut, onUserUpdated, onShowToast }: SettingsProps) {
   const { currency, setCurrency, rates, isLoadingRates } = useCurrency()
   const { themePreference, setThemePreference } = useTheme()
   const formatCurrency = (amount: number) => convertAndFormatCurrency(amount, currency, rates)
@@ -82,6 +83,7 @@ export default function Settings({ user, expenses, onSignOut, onUserUpdated }: S
       })
       onUserUpdated(result.user)
       setNameSaved(true)
+      onShowToast?.("Profile updated successfully")
       setTimeout(() => setNameSaved(false), 2500)
     } catch (err) {
       console.error(err)
@@ -100,13 +102,18 @@ export default function Settings({ user, expenses, onSignOut, onUserUpdated }: S
     localStorage.setItem("pocket_budget", String(newBase))
     setBaseBudget(newBase)
     setBudgetSaved(true)
+    onShowToast?.("Monthly budget updated successfully")
     setTimeout(() => setBudgetSaved(false), 2500)
   }
 
   // Export to CSV
   const handleExportCSV = () => {
     if (expenses.length === 0) {
-      alert("No expenses to export.")
+      if (onShowToast) {
+        onShowToast("No transactions to export.", "info")
+      } else {
+        alert("No transactions to export.")
+      }
       return
     }
 
@@ -136,6 +143,7 @@ export default function Settings({ user, expenses, onSignOut, onUserUpdated }: S
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    onShowToast?.("Transactions exported to CSV")
   }
 
   return (

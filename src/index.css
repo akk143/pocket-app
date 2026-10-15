@@ -33,6 +33,25 @@
   animation: doraemon-run-across 3.5s linear forwards;
 }
 
+@keyframes qr-scan-line {
+  0% {
+    top: 4%;
+    opacity: 0.8;
+  }
+  50% {
+    top: 96%;
+    opacity: 1;
+  }
+  100% {
+    top: 4%;
+    opacity: 0.8;
+  }
+}
+
+.animate-qr-scan {
+  animation: qr-scan-line 2.2s ease-in-out infinite;
+}
+
 * {
   box-sizing: border-box;
 }
