@@ -1,13 +1,13 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import {
+  CheckSquare,
   ChevronLeft,
   ChevronRight,
   Search,
   Trash2,
   TrendingDown,
   TrendingUp,
-  
 } from "lucide-react"
 import type { Expense } from "../types/expense"
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
@@ -62,10 +62,13 @@ export default function History({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [expensePendingDeletion, setExpensePendingDeletion] = useState<Expense | null>(null)
   const [selectedExpenseIds, setSelectedExpenseIds] = useState<string[]>([])
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [bulkDeleteSnapshot, setBulkDeleteSnapshot] = useState<Expense[] | null>(null)
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null)
+  const [isSingleDeleting, setIsSingleDeleting] = useState(false)
+  const singleDeleteLock = useRef(false)
 
   const handleQueryChange = (val: string) => {
     if (val) {
@@ -79,12 +82,14 @@ export default function History({
     const d = new Date(viewDate)
     d.setMonth(d.getMonth() - 1)
     setViewDate(d)
+    setSelectedExpenseIds([])
   }
 
   const nextMonth = () => {
     const d = new Date(viewDate)
     d.setMonth(d.getMonth() + 1)
     setViewDate(d)
+    setSelectedExpenseIds([])
   }
 
   const monthLabel = viewDate.toLocaleDateString("en-US", {
@@ -137,6 +142,7 @@ export default function History({
   )
   const allFilteredSelected =
     selectableExpenses.length > 0 && selectedExpenses.length === selectableExpenses.length
+  const inSelectionMode = isSelectionMode || selectedExpenseIds.length > 0
 
   // Group by date
   const grouped = useMemo(() => {
@@ -176,14 +182,18 @@ export default function History({
         }
       }
       map[e.date].items.push(e)
-      // If income, calculate total expenses
-      if (e.type !== "income") {
+      // When viewing Income, sum income; otherwise sum expenses for the daily total
+      if (typeFilter === "income") {
+        if (e.type === "income") {
+          map[e.date].total += e.amount
+        }
+      } else if (e.type !== "income") {
         map[e.date].total += e.amount
       }
     })
 
     return Object.values(map).sort((a, b) => b.dateStr.localeCompare(a.dateStr))
-  }, [filtered])
+  }, [filtered, typeFilter])
 
   const { totalExpense, totalIncome } = useMemo(() => {
     let exp = 0
@@ -201,30 +211,104 @@ export default function History({
   const handleTypeFilterChange = (next: "all" | "expense" | "income") => {
     setTypeFilter(next)
     setSelectedCategoryId("all")
+    setSelectedExpenseIds((prevIds) => {
+      if (prevIds.length === 0) return []
+      const selectedMonth = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}`
+      const allowedIds = new Set(
+        displayExpenses
+          .filter((e) => {
+            if (!e.date.startsWith(selectedMonth)) return false
+            if (next === "expense" && e.type === "income") return false
+            if (next === "income" && e.type !== "income") return false
+            return true
+          })
+          .map((e) => e.id),
+      )
+      return prevIds.filter((id) => allowedIds.has(id))
+    })
+  }
+
+  const handleCategoryFilterChange = (catId: string) => {
+    const nextCat = catId === selectedCategoryId ? "all" : catId
+    setSelectedCategoryId(nextCat)
+    setSelectedExpenseIds((prevIds) => {
+      if (prevIds.length === 0 || nextCat === "all") return prevIds
+      const selectedMonth = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}`
+      const allowedIds = new Set(
+        displayExpenses
+          .filter((e) => {
+            if (!e.date.startsWith(selectedMonth)) return false
+            if (typeFilter === "expense" && e.type === "income") return false
+            if (typeFilter === "income" && e.type !== "income") return false
+            return e.categoryId === nextCat
+          })
+          .map((e) => e.id),
+      )
+      return prevIds.filter((id) => allowedIds.has(id))
+    })
+  }
+
+  const handleCancelSelection = () => {
+    setSelectedExpenseIds([])
+    setIsSelectionMode(false)
+  }
+
+  const handleToggleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelectedExpenseIds((ids) =>
+        ids.filter((id) => !selectableExpenses.some((expense) => expense.id === id)),
+      )
+    } else {
+      setSelectedExpenseIds((ids) => [
+        ...new Set([...ids, ...selectableExpenses.map((expense) => expense.id)]),
+      ])
+    }
   }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-5 sm:px-8 sm:py-6">
 
-      <div className="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold leading-tight tracking-tight text-zinc-950 dark:text-white">
-            History
-          </h1>
-          <p className="mt-1 break-words text-[13px] font-medium leading-relaxed text-zinc-500 dark:text-zinc-400">
-            {filtered.length} {filtered.length === 1 ? "transaction" : "transactions"} ·{" "}
-            {typeFilter === "expense"
-              ? `Total spending: ${formatCurrency(totalExpense)}`
-              : typeFilter === "income"
-              ? `Total income: ${formatCurrency(totalIncome)}`
-              : `Spent: ${formatCurrency(totalExpense)} · Received: ${formatCurrency(totalIncome)}`}
-          </p>
+      <div className="mb-3.5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-bold leading-tight tracking-tight text-zinc-950 dark:text-white">
+              History
+            </h1>
+            <p className="mt-0.5 break-words text-[13px] font-medium leading-relaxed text-zinc-500 dark:text-zinc-400">
+              {filtered.length} {filtered.length === 1 ? "transaction" : "transactions"} ·{" "}
+              {typeFilter === "expense"
+                ? `Total spending: ${formatCurrency(totalExpense)}`
+                : typeFilter === "income"
+                ? `Total income: ${formatCurrency(totalIncome)}`
+                : `Spent: ${formatCurrency(totalExpense)} · Received: ${formatCurrency(totalIncome)}`}
+            </p>
+          </div>
+          {!inSelectionMode && onBulkDeleteExpenses && selectableExpenses.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsSelectionMode(true)}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 sm:hidden"
+            >
+              <CheckSquare className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
+              <span>Select</span>
+            </button>
+          )}
         </div>
 
         <div className="flex w-full items-center justify-between gap-2 sm:w-auto">
+          {!inSelectionMode && onBulkDeleteExpenses && selectableExpenses.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsSelectionMode(true)}
+              className="hidden shrink-0 items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-zinc-700 shadow-sm shadow-zinc-900/[0.03] transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 sm:flex"
+            >
+              <CheckSquare className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+              <span>Select</span>
+            </button>
+          )}
           <Link
             to="/trash"
-            className="flex min-h-12 shrink-0 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3.5 text-[13px] font-semibold text-zinc-700 shadow-sm shadow-zinc-900/[0.03] transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3.5 text-[13px] font-semibold text-zinc-700 shadow-sm shadow-zinc-900/[0.03] transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 sm:min-h-12"
           >
             <Trash2 className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
             Trash{trashCount > 0 ? ` · ${trashCount}` : ""}
@@ -234,7 +318,7 @@ export default function History({
               type="button"
               onClick={prevMonth}
               aria-label="Previous month"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 sm:h-8 sm:w-8"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 sm:h-8 sm:w-8"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -243,7 +327,7 @@ export default function History({
               type="button"
               onClick={nextMonth}
               aria-label="Next month"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 sm:h-8 sm:w-8"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 sm:h-8 sm:w-8"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -252,7 +336,7 @@ export default function History({
       </div>
 
       {/* Search Bar */}
-      <div className="relative mb-4 w-full min-w-0">
+      <div className="relative mb-3 w-full min-w-0 sm:mb-4">
         <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-zinc-500 dark:text-zinc-400" />
         <input
           type="text"
@@ -260,7 +344,7 @@ export default function History({
           onChange={(e) => handleQueryChange(e.target.value)}
           placeholder="Search transactions..."
           aria-label="Search transactions"
-          className={`w-full min-w-0 rounded-2xl border border-zinc-200 bg-white py-3.5 pl-11 ${query ? "pr-16" : "pr-4"} text-[15px] leading-5 text-zinc-900 shadow-sm shadow-zinc-900/[0.03] outline-none transition placeholder:text-zinc-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 md:hidden`}
+          className={`w-full min-w-0 rounded-2xl border border-zinc-200 bg-white py-3 pl-11 ${query ? "pr-16" : "pr-4"} text-[15px] leading-5 text-zinc-900 shadow-sm shadow-zinc-900/[0.03] outline-none transition placeholder:text-zinc-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 md:hidden`}
         />
         <input
           type="text"
@@ -274,7 +358,7 @@ export default function History({
           <button
             type="button"
             onClick={() => handleQueryChange("")}
-            className="absolute right-1 top-1/2 flex h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-lg px-2 text-xs font-semibold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            className="absolute right-1 top-1/2 flex h-10 min-w-10 -translate-y-1/2 items-center justify-center rounded-lg px-2 text-xs font-semibold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
           >
             Clear
           </button>
@@ -282,13 +366,13 @@ export default function History({
       </div>
 
       {/* Type Filter & Category Filter */}
-      <div className="mb-5 min-w-0 space-y-3 sm:mb-6">
-        <div className="-mx-4 max-w-full min-w-0 overflow-x-auto overscroll-x-contain px-4 pb-1 no-scrollbar sm:mx-0 sm:w-fit sm:overflow-visible sm:px-0 sm:pb-0">
-          <div className="flex w-max min-w-full items-center gap-1 rounded-2xl border border-zinc-200/90 bg-white p-1 text-[13px] shadow-sm shadow-zinc-900/[0.03] dark:border-zinc-800 dark:bg-zinc-900 sm:min-w-0">
+      <div className="mb-3.5 min-w-0 space-y-2.5 sm:mb-6 sm:space-y-3">
+        <div className="w-full sm:w-fit">
+          <div className="flex w-full items-center gap-1 rounded-2xl border border-zinc-200/90 bg-white p-1 text-[13px] shadow-sm shadow-zinc-900/[0.03] dark:border-zinc-800 dark:bg-zinc-900 sm:w-fit">
             <button
               type="button"
               onClick={() => handleTypeFilterChange("all")}
-              className={`min-h-11 shrink-0 whitespace-nowrap rounded-xl px-3 py-1 font-semibold leading-5 transition sm:px-4 ${
+              className={`flex min-h-10 flex-1 items-center justify-center rounded-xl px-3 py-1 font-semibold leading-5 transition sm:min-h-11 sm:flex-initial sm:px-4 ${
                 typeFilter === "all"
                   ? "bg-zinc-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900"
                   : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
@@ -299,26 +383,26 @@ export default function History({
             <button
               type="button"
               onClick={() => handleTypeFilterChange("expense")}
-              className={`flex min-h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-1 font-semibold leading-5 transition sm:px-4 ${
+              className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-1 font-semibold leading-5 transition sm:min-h-11 sm:flex-initial sm:px-4 ${
                 typeFilter === "expense"
                   ? "bg-rose-50 text-rose-700 shadow-sm dark:bg-rose-500/10 dark:text-rose-300"
                   : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
               }`}
             >
               <TrendingDown className="h-4 w-4 shrink-0" />
-              Expenses
+              <span>Expenses</span>
             </button>
             <button
               type="button"
               onClick={() => handleTypeFilterChange("income")}
-              className={`flex min-h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-1 font-semibold leading-5 transition sm:px-4 ${
+              className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-1 font-semibold leading-5 transition sm:min-h-11 sm:flex-initial sm:px-4 ${
                 typeFilter === "income"
                   ? "bg-emerald-50 text-emerald-700 shadow-sm dark:bg-emerald-500/10 dark:text-emerald-300"
                   : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800"
               }`}
             >
               <TrendingUp className="h-4 w-4 shrink-0" />
-              Income
+              <span>Income</span>
             </button>
           </div>
         </div>
@@ -327,14 +411,18 @@ export default function History({
         <div className="-mx-4 flex max-w-full min-w-0 items-center gap-2 overflow-x-auto overscroll-x-contain px-4 pb-1 text-[13px] leading-5 no-scrollbar sm:mx-0 sm:px-0">
           <button
             type="button"
-            onClick={() => setSelectedCategoryId("all")}
-            className={`min-h-11 shrink-0 whitespace-nowrap rounded-full px-4 py-1 font-semibold leading-5 transition ${
+            onClick={() => handleCategoryFilterChange("all")}
+            className={`min-h-10 shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 font-semibold leading-5 transition sm:min-h-11 sm:px-4 ${
               selectedCategoryId === "all"
                 ? "bg-emerald-700 text-white shadow-sm shadow-emerald-700/20 dark:bg-emerald-500"
                 : "border border-zinc-200 bg-white text-zinc-700 shadow-sm shadow-zinc-900/[0.02] hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
             }`}
           >
-            All Categories
+            {typeFilter === "expense"
+              ? "All Expense Categories"
+              : typeFilter === "income"
+              ? "All Income Categories"
+              : "All Categories"}
           </button>
           {visibleCategories.map((c) => {
             const isSelected = selectedCategoryId === c.id
@@ -342,8 +430,8 @@ export default function History({
               <button
                 key={c.id}
                 type="button"
-                onClick={() => setSelectedCategoryId(isSelected ? "all" : c.id)}
-                className={`flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-1 font-medium leading-5 transition ${
+                onClick={() => handleCategoryFilterChange(c.id)}
+                className={`flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 font-medium leading-5 transition sm:min-h-11 sm:gap-2 sm:px-4 ${
                   isSelected
                     ? "bg-emerald-700 font-semibold text-white shadow-sm shadow-emerald-700/20 dark:bg-emerald-500"
                     : "border border-zinc-200 bg-white text-zinc-700 shadow-sm shadow-zinc-900/[0.02] hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
@@ -357,47 +445,53 @@ export default function History({
         </div>
       </div>
 
-      {onBulkDeleteExpenses && selectableExpenses.length > 0 && (
-        <div className="mb-3 flex min-h-12 flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex items-center gap-3">
-            <label className="flex min-h-11 items-center gap-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-              <input
-                type="checkbox"
-                checked={allFilteredSelected}
-                onChange={() =>
-                  setSelectedExpenseIds((ids) =>
-                    allFilteredSelected
-                      ? ids.filter((id) => !selectableExpenses.some((expense) => expense.id === id))
-                      : [...new Set([...ids, ...selectableExpenses.map((expense) => expense.id)])],
-                  )
-                }
-                className="h-5 w-5 rounded border-zinc-300 accent-emerald-600"
-              />
-              Select all
-            </label>
-            <span className="text-xs text-zinc-400 dark:text-zinc-500">
-              {selectedExpenses.length > 0
-                ? `${selectedExpenses.length} selected`
-                : `${selectableExpenses.length} items`}
+      {inSelectionMode && onBulkDeleteExpenses && (
+        <div className="mb-4 rounded-2xl border border-zinc-200/90 bg-white p-3 shadow-sm shadow-zinc-900/[0.03] dark:border-zinc-800 dark:bg-zinc-900">
+          {/* First row: Selection count & Cancel */}
+          <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5 dark:border-zinc-800">
+            <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 sm:text-[13px]">
+              {selectedExpenses.length} selected
             </span>
-          </div>
-          {selectedExpenses.length > 0 && (
             <button
               type="button"
-              onClick={() => setIsBulkDeleteDialogOpen(true)}
-              className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-500/10 dark:text-red-400"
+              onClick={handleCancelSelection}
+              className="rounded-lg px-2.5 py-1 text-xs font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 sm:text-[13px]"
             >
-              <Trash2 className="h-3.5 w-3.5" />
-              Move to Trash
+              Cancel
             </button>
-          )}
+          </div>
+
+          {/* Second row: Select all / Deselect all & Move to Trash */}
+          <div className="flex items-center justify-between pt-2.5">
+            <button
+              type="button"
+              disabled={selectableExpenses.length === 0}
+              onClick={handleToggleSelectAll}
+              className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700/80 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+            >
+              <CheckSquare className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>{allFilteredSelected ? "Deselect all" : "Select all"}</span>
+            </button>
+
+            {selectedExpenses.length > 0 && (
+              <button
+                type="button"
+                disabled={isBulkDeleting}
+                onClick={() => setIsBulkDeleteDialogOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 hover:text-red-800 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/50 dark:hover:text-red-300"
+              >
+                <Trash2 className="h-3.5 w-3.5 text-red-500 dark:text-red-400" />
+                <span>Move to Trash</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
 
       {/* Date Groups List */}
       <div className="space-y-6">
         {grouped.length === 0 ? (
-          <div className="rounded-2xl border border-zinc-200 bg-white py-16 text-center text-sm text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-500">
+          <div className="rounded-2xl border border-zinc-200 bg-white py-12 text-center text-sm text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-500 sm:py-16">
             No transactions found matching your filters.
           </div>
         ) : (
@@ -425,7 +519,7 @@ export default function History({
                   return (
                     <div
                       key={expense.id}
-                      className={`group relative flex min-w-0 items-center justify-between gap-1.5 px-2.5 py-4 sm:gap-2 sm:px-4 ${
+                      className={`group relative flex min-w-0 items-center justify-between gap-2 px-3 py-3.5 sm:gap-3 sm:px-4 ${
                         selectedExpenseIds.includes(expense.id)
                           ? "bg-emerald-50/50 dark:bg-emerald-500/10"
                           : ""
@@ -434,27 +528,41 @@ export default function History({
                       {onViewExpense && (
                         <button
                           type="button"
-                          onClick={() => onViewExpense(expense)}
-                          aria-label={`View transaction details for ${expense.item}`}
-                          className="absolute inset-0 z-0 cursor-pointer rounded-xl text-left transition-colors hover:bg-emerald-50/40 active:bg-emerald-50 dark:hover:bg-emerald-500/5 dark:active:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500"
-                        />
-                      )}
-                      <div className="pointer-events-none relative z-10 flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-                        {onBulkDeleteExpenses && (
-                          <label className="pointer-events-auto relative z-20 flex h-9 w-9 shrink-0 items-center justify-center sm:h-11 sm:w-11">
-                          <input
-                            type="checkbox"
-                            checked={selectedExpenseIds.includes(expense.id)}
-                            onChange={() =>
+                          onClick={() => {
+                            if (inSelectionMode) {
                               setSelectedExpenseIds((ids) =>
                                 ids.includes(expense.id)
                                   ? ids.filter((id) => id !== expense.id)
                                   : [...ids, expense.id],
                               )
+                            } else {
+                              onViewExpense(expense)
                             }
-                            aria-label={`Select ${expense.item}`}
-                            className="h-5 w-5 shrink-0 rounded border-zinc-300 accent-emerald-600"
-                          />
+                          }}
+                          aria-label={
+                            inSelectionMode
+                              ? `Toggle selection for ${expense.item}`
+                              : `View transaction details for ${expense.item}`
+                          }
+                          className="absolute inset-0 z-0 cursor-pointer rounded-xl text-left transition-colors hover:bg-emerald-50/40 active:bg-emerald-50 dark:hover:bg-emerald-500/5 dark:active:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500"
+                        />
+                      )}
+                      <div className="pointer-events-none relative z-10 flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+                        {inSelectionMode && onBulkDeleteExpenses && (
+                          <label className="pointer-events-auto relative z-20 flex h-9 w-9 shrink-0 items-center justify-center sm:h-11 sm:w-11">
+                            <input
+                              type="checkbox"
+                              checked={selectedExpenseIds.includes(expense.id)}
+                              onChange={() =>
+                                setSelectedExpenseIds((ids) =>
+                                  ids.includes(expense.id)
+                                    ? ids.filter((id) => id !== expense.id)
+                                    : [...ids, expense.id],
+                                )
+                              }
+                              aria-label={`Select ${expense.item}`}
+                              className="h-4 w-4 shrink-0 rounded border-zinc-300 accent-emerald-600 focus:ring-emerald-500/20 sm:h-5 sm:w-5"
+                            />
                           </label>
                         )}
                         <div
@@ -478,22 +586,14 @@ export default function History({
                             {expense.categoryName} · {formatTimeStr(expense.time)}
                             {expense.quantity && expense.quantity > 1 ? ` · Qty ${expense.quantity}` : ""}
                           </p>
-                          <span
-                            aria-label={isIncome ? `+ ${formatCurrency(expense.amount)}` : formatCurrency(expense.amount)}
-                            className={`mt-1 block whitespace-nowrap text-sm font-semibold leading-tight tracking-tight sm:hidden ${
-                              isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-900 dark:text-zinc-100"
-                            }`}
-                          >
-                            {isIncome ? `+ ${formatCurrency(expense.amount)}` : formatCurrency(expense.amount)}
-                          </span>
                         </div>
                       </div>
 
-                      <div className="pointer-events-none relative z-10 flex shrink-0 items-center gap-1 sm:gap-3">
+                      <div className="pointer-events-none relative z-10 flex shrink-0 items-center gap-1 sm:gap-2.5">
                         <span
                           aria-label={isIncome ? `+ ${formatCurrency(expense.amount)}` : formatCurrency(expense.amount)}
                           title={isIncome ? `+ ${formatCurrency(expense.amount)}` : formatCurrency(expense.amount)}
-                          className={`hidden max-w-none whitespace-nowrap text-right text-sm font-semibold leading-tight tracking-tight sm:block ${
+                          className={`whitespace-nowrap text-right text-[13px] font-semibold tabular-nums leading-tight tracking-tight sm:text-sm ${
                             isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-900 dark:text-zinc-100"
                           }`}
                         >
@@ -524,14 +624,24 @@ export default function History({
         title="Move transaction to Trash?"
         subject={expensePendingDeletion?.item}
         message="This will move"
-        confirmLabel="Move to Trash"
+        confirmLabel={isSingleDeleting ? "Moving to Trash…" : "Move to Trash"}
+        confirmDisabled={isSingleDeleting}
+        isLoading={isSingleDeleting}
         variant="soft"
-        onCancel={() => setExpensePendingDeletion(null)}
-        onConfirm={() => {
-          if (expensePendingDeletion) {
-            void onDeleteExpense?.(expensePendingDeletion.id)
+        onCancel={() => {
+          if (!isSingleDeleting) setExpensePendingDeletion(null)
+        }}
+        onConfirm={async () => {
+          if (!expensePendingDeletion || !onDeleteExpense || singleDeleteLock.current || isSingleDeleting) return
+          singleDeleteLock.current = true
+          setIsSingleDeleting(true)
+          try {
+            await onDeleteExpense(expensePendingDeletion.id)
+            setExpensePendingDeletion(null)
+          } finally {
+            singleDeleteLock.current = false
+            setIsSingleDeleting(false)
           }
-          setExpensePendingDeletion(null)
         }}
       />
       {bulkDeleteError && (
@@ -541,10 +651,15 @@ export default function History({
       )}
       <ConfirmDialog
         open={isBulkDeleteDialogOpen}
-        title="Move selected transactions to Trash?"
-        message={`This will move ${selectedExpenses.length} selected transactions`}
-        confirmLabel={isBulkDeleting ? "Moving..." : "Move to Trash"}
+        title={
+          selectedExpenses.length === 1
+            ? "Move selected transaction to Trash?"
+            : "Move selected transactions to Trash?"
+        }
+        message={`This will move ${selectedExpenses.length} selected transaction${selectedExpenses.length === 1 ? "" : "s"} to Trash.`}
+        confirmLabel={isBulkDeleting ? "Moving to Trash…" : "Move to Trash"}
         confirmDisabled={isBulkDeleting}
+        isLoading={isBulkDeleting}
         variant="soft"
         onCancel={() => {
           if (!isBulkDeleting) {
@@ -563,8 +678,15 @@ export default function History({
                 ids.filter((id) => !selectedExpenses.some((expense) => expense.id === id)),
               )
               setIsBulkDeleteDialogOpen(false)
+              setIsSelectionMode(false)
             })
-            .catch(() => setBulkDeleteError("Could not move the selected transactions to Trash. Please try again."))
+            .catch(() =>
+              setBulkDeleteError(
+                selectedExpenses.length === 1
+                  ? "Could not move the selected transaction to Trash. Please try again."
+                  : "Could not move the selected transactions to Trash. Please try again.",
+              ),
+            )
             .finally(() => {
               setBulkDeleteSnapshot(null)
               setIsBulkDeleting(false)

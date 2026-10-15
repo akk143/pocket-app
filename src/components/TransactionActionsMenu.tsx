@@ -137,9 +137,9 @@ export default function TransactionActionsMenu({
                 onOpenChange(false)
                 onDelete()
               }}
-              className="flex min-h-10 w-full items-center gap-2 px-3 text-left text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+              className="flex min-h-10 w-full items-center gap-2 px-3 text-left text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-3.5 w-3.5 text-red-500 dark:text-red-400" />
               Delete
             </button>
           )}
