@@ -6,6 +6,20 @@ Built with **React, TypeScript, Firebase, Tailwind CSS, and Recharts**, PocketTr
 
 **Live Demo:** https://pocket-app-beige.vercel.app/
 
+---
+
+## 🚀 What's New in v1.1.0
+
+The **v1.1.0** update introduces instant QR code expense scanning, a redesigned bulk-management History selection toolbar, hardened Trash reliability, and mobile interaction polish:
+
+* **📷 QR Code & Receipt Scanner:** Scan QR codes and receipts directly from your phone camera or upload receipt images. Automatically extracts amounts, items, timestamps, categories, and itemized line-item notes, complete with duplicate expense detection.
+* **📋 Redesigned History Selection Toolbar:** Brand-new responsive two-row toolbar for bulk operations, featuring dynamic selected counts, one-tap Select All / Deselect All, and a safe Move to Trash workflow.
+* **🛡️ Hardened Trash & Concurrency Architecture:** Idempotent soft-delete API preventing 404 race conditions, in-flight mutation locks across client and server, and animated loading spinners (`Saving…`, `Moving to Trash…`, `Restoring…`, `Deleting…`, `Emptying Trash…`).
+* **🔔 Action-Specific Notification Audit:** Completely revamped toast notifications providing truthful, accurate messaging for every create, update, trash, restore, and permanent deletion action.
+* **📱 Mobile Layout Polish:** Seamless `+ Add Expense` primary action with an integrated compact `Scan QR` trigger; metrics badges aligned side-by-side with zero wasted whitespace.
+
+---
+
 ## ✨ Features
 
 ### 📊 Dashboard
@@ -27,6 +41,16 @@ Built with **React, TypeScript, Firebase, Tailwind CSS, and Recharts**, PocketTr
 * Edit and delete transactions
 * Validate transaction types against supported income and expense categories
 
+### 📷 QR Code Scanner & Receipt Parser
+
+* Scan QR codes in real time using device camera with rear-camera preference and flashlight toggle
+* Upload receipt images and QR screenshots with automated file scanning
+* Decode VietQR banking codes and merchant payment standards
+* Parse supermarket bills and retail receipts (e.g. WinMart, convenience stores, and standard POS)
+* Automatically extracts total amount, item name, suggested category, date, and time
+* Itemized line-items extraction formatted into transaction notes with a dedicated review drawer
+* Smart duplicate detection warning against already-recorded expenses
+
 ### 🔁 Recurring Transactions
 
 * Create recurring income or expense transactions
@@ -34,13 +58,14 @@ Built with **React, TypeScript, Firebase, Tailwind CSS, and Recharts**, PocketTr
 * Automatically processes due transactions daily on the server
 * Tracks the next due date
 
-### 📅 History
+### 📅 History & Bulk Management
 
-* Browse transactions by month
-* Search transactions
-* Filter by income or expense
-* Filter by category
-* View standardized transaction dates and times
+* Browse transactions grouped chronologically by date and month
+* Fast search across transaction titles and categories
+* Filter by All / Expense / Income and granular category chips
+* Dedicated multi-select mode with responsive two-row action toolbar
+* Dynamic selected count and one-tap Select All / Deselect All
+* Safe bulk Move to Trash with confirmation dialog and quick Undo toast
 
 ### 📈 Analytics
 
@@ -57,9 +82,11 @@ Built with **React, TypeScript, Firebase, Tailwind CSS, and Recharts**, PocketTr
 
 ### 🗑️ Trash & Restore
 
-* Move deleted transactions to Trash
-* Restore deleted transactions
-* Permanently remove unwanted records
+* Soft-delete data model preserving deleted items by month
+* Single-item and batch restore with instant dashboard synchronization
+* Single-item and batch permanent deletion with confirmation protection
+* Empty entire Trash with safety confirmation and loading spinner
+* Truthful notifications reflecting specific actions ("Transaction moved to Trash", "Trash emptied", etc.)
 
 ### 💱 Multi-Currency
 
@@ -114,10 +141,11 @@ PocketTrack can be installed as a PWA for a more app-like experience.
 
 * Tailwind CSS v4
 
-### UI & Visualization
+### UI, Scanning & Visualization
 
 * Lucide React
 * Recharts
+* qr-scanner (camera & receipt image QR decoding)
 
 ### Routing
 
@@ -148,10 +176,10 @@ PocketTrack can be installed as a PWA for a more app-like experience.
 ```text
 pocket_app/
 ├── api/
-│   ├── auth/
-│   ├── cron/
-│   ├── recurring/
-│   └── transactions/
+│   ├── auth.ts
+│   ├── cron.ts
+│   ├── recurring.ts
+│   └── transactions.ts
 ├── server/
 │   ├── auth.ts
 │   ├── firebaseAdmin.ts
@@ -168,11 +196,28 @@ pocket_app/
 ├── src/
 │   ├── assets/
 │   ├── components/
+│   │   ├── AddExpenseSheet.tsx
+│   │   ├── ConfirmDialog.tsx
+│   │   ├── QRScannerModal.tsx
+│   │   ├── QRLineItemsReview.tsx
+│   │   ├── TransactionDetailsSheet.tsx
+│   │   └── TransactionActionsMenu.tsx
 │   ├── constants/
 │   ├── contexts/
 │   ├── hooks/
 │   ├── lib/
+│   │   ├── api.ts
+│   │   ├── currency.ts
+│   │   ├── expenses.ts
+│   │   ├── qrParser.ts
+│   │   └── recurring.ts
 │   ├── pages/
+│   │   ├── Analytics.tsx
+│   │   ├── History.tsx
+│   │   ├── Home.tsx
+│   │   ├── Recurring.tsx
+│   │   ├── Settings.tsx
+│   │   └── Trash.tsx
 │   ├── types/
 │   ├── App.tsx
 │   ├── App.css
@@ -380,23 +425,26 @@ Preview the production build locally.
 
 ## 📌 Current Release
 
-**PocketTrack v1.0.1**
+**PocketTrack v1.1.0**
 
 Current application capabilities include:
 
+* Instant QR code and supermarket receipt scanning with auto-fill
+* VietQR, WinMart, and standard retail bill parser
+* Receipt line-items extraction and duplicate transaction prevention
 * Personal income and expense tracking
-* Dashboard statistics
-* Net cash flow
-* Recurring transactions
-* Transaction history
-* Analytics
-* Category breakdowns
-* Trash and restore
-* Multi-currency display
-* Dark/light mode
-* Firebase authentication
-* Responsive desktop/mobile interface
-* Progressive Web App support
+* Redesigned History selection toolbar with batch Move to Trash
+* Hardened Trash architecture with idempotent soft-delete and concurrency locks
+* Action-specific, accurate toast notifications
+* In-flight loading spinners and disabled state protections across all forms
+* Dashboard statistics, spending trends, and net cash flow
+* Recurring transactions with automated daily server execution
+* Analytics and interactive category breakdowns
+* Multi-currency display with live cached exchange rates
+* Dark and light theme support
+* Secure Firebase Authentication with HttpOnly session cookies
+* Responsive desktop and mobile interface
+* Progressive Web App (PWA) installation and offline asset caching
 
 ---
 
