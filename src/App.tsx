@@ -50,7 +50,14 @@ import {
   fetchRecurring,
   triggerRecurringImmediately,
 } from "./lib/recurring"
+import {
+  fetchCustomCategories,
+  createCustomCategory,
+  updateCustomCategory,
+  deleteCustomCategory,
+} from "./lib/categories"
 import type { Expense, RecurringTransaction } from "./types/expense"
+import type { CustomCategory, CreateCategoryPayload, UpdateCategoryPayload } from "./types/category"
 import type { AppUser } from "./types/user"
 import { useCurrency } from "./contexts/CurrencyContext"
 import { SUPPORTED_CURRENCIES } from "./lib/currency"
@@ -82,6 +89,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [deletedExpenses, setDeletedExpenses] = useState<Expense[]>([])
   const [recurringList, setRecurringList] = useState<RecurringTransaction[]>([])
+  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([])
   const [loadedUserId, setLoadedUserId] = useState<string | null>(null)
   const isDataLoading = Boolean(user && loadedUserId !== user.uid)
   const [addExpenseOpen, setAddExpenseOpen] = useState(false)
@@ -157,6 +165,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       setExpenses([])
       setDeletedExpenses([])
       setRecurringList([])
+      setCustomCategories([])
       navigate("/login", { replace: true })
       showToast("Session expired. Please sign in again.", "info")
     }
@@ -191,12 +200,18 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
   useEffect(() => {
     if (!user || loadedUserId === user.uid) return
     let active = true
-    Promise.all([fetchExpenses(), fetchDeletedExpenses(), fetchRecurring()])
-      .then(([activeExpenses, deletedExpenses, recurringItems]) => {
+    Promise.all([
+      fetchExpenses(),
+      fetchDeletedExpenses(),
+      fetchRecurring(),
+      fetchCustomCategories(),
+    ])
+      .then(([activeExpenses, deletedExpenses, recurringItems, userCategories]) => {
         if (!active) return
         setExpenses(activeExpenses)
         setDeletedExpenses(deletedExpenses)
         setRecurringList(recurringItems)
+        setCustomCategories(userCategories)
         setAccountDataError(false)
       })
       .catch((error: unknown) => {
@@ -508,10 +523,58 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       setExpenses([])
       setDeletedExpenses([])
       setRecurringList([])
+      setCustomCategories([])
       navigate("/login")
       showToast("Signed out successfully")
     } catch {
       showToast("Could not sign out. Please try again.", "error")
+    }
+  }
+
+  async function handleAddCategory(payload: CreateCategoryPayload) {
+    try {
+      const created = await createCustomCategory(payload)
+      setCustomCategories((prev) => [...prev, created])
+      showToast(`Category "${created.name}" created`)
+      return created
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to create category"
+      showToast(msg, "error")
+      throw err
+    }
+  }
+
+  async function handleUpdateCategory(id: string, payload: UpdateCategoryPayload) {
+    try {
+      const updated = await updateCustomCategory(id, payload)
+      setCustomCategories((prev) => prev.map((c) => (c.id === id ? updated : c)))
+      if (payload.archived !== undefined) {
+        showToast(
+          payload.archived
+            ? `Category "${updated.name}" archived`
+            : `Category "${updated.name}" restored`,
+        )
+      } else {
+        showToast(`Category "${updated.name}" updated`)
+      }
+      return updated
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to update category"
+      showToast(msg, "error")
+      throw err
+    }
+  }
+
+  async function handleDeleteCategory(id: string) {
+    try {
+      await deleteCustomCategory(id)
+      const cat = customCategories.find((c) => c.id === id)
+      setCustomCategories((prev) => prev.filter((c) => c.id !== id))
+      showToast(`Category "${cat?.name || ""}" deleted`)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to delete category"
+      showToast(msg, "error")
+      throw err
     }
   }
 
@@ -858,11 +921,11 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
                   ) : (
                     <HomePage
                       expenses={expenses}
+                      customCategories={customCategories}
                       userName={firstName}
                       onAddExpense={openAddExpense}
                       onViewExpense={openExpenseDetails}
                       onDeleteExpense={handleDeleteExpense}
-                      
                     />
                   )
                 }
@@ -872,6 +935,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
                 element={
                   <HistoryPage
                     expenses={expenses}
+                    customCategories={customCategories}
                     trashCount={deletedExpenses.length}
                     onViewExpense={openExpenseDetails}
                     onDeleteExpense={handleDeleteExpense}
@@ -881,15 +945,18 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
               />
               <Route
                 path="/analytics"
-                element={<AnalyticsPage expenses={expenses} />}
+                element={<AnalyticsPage expenses={expenses} customCategories={customCategories} />}
               />
               <Route
                 path="/categories"
                 element={
                   <CategoriesPage
                     expenses={expenses}
+                    customCategories={customCategories}
                     onSelectCategory={(catId) => openAddExpense(catId)}
-                    onAddCategory={() => showToast("Custom categories coming in v1.1", "info")}
+                    onAddCategory={handleAddCategory}
+                    onUpdateCategory={handleUpdateCategory}
+                    onDeleteCategory={handleDeleteCategory}
                     onViewExpense={openExpenseDetails}
                   />
                 }
@@ -899,6 +966,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
                 element={
                   <RecurringPage
                     recurringList={recurringList}
+                    customCategories={customCategories}
                     onAddRecurring={handleAddRecurring}
                     onToggleActive={handleToggleRecurringActive}
                     onDeleteRecurring={handleDeleteRecurring}
@@ -1042,6 +1110,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       {/* Add / Edit Transaction */}
       <AddExpenseSheet
         open={addExpenseOpen}
+        customCategories={customCategories}
         isSaving={transactionSaveState !== null}
         defaultCategoryId={selectedCategoryId}
         initialExpense={editingExpense}
@@ -1059,6 +1128,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
       {viewingExpense && !addExpenseOpen && (
         <TransactionDetailsSheet
           expense={viewingExpense}
+          customCategories={customCategories}
           onClose={closeTransactionDetails}
           onEdit={openEditExpense}
           onDelete={handleDeleteExpense}

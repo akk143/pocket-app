@@ -2,13 +2,15 @@ import { useEffect, useRef, useState } from "react"
 import type { PointerEvent } from "react"
 import { CalendarDays, Clock3, FileText, Layers, Pencil, Repeat, Tag, Trash2, X } from "lucide-react"
 import type { Expense } from "../types/expense"
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
+import { findCategory } from "../constants/categories"
+import type { CustomCategory } from "../constants/categories"
 import { useCurrency } from "../contexts/CurrencyContext"
 import { convertAndFormatCurrency } from "../lib/currency"
 import ConfirmDialog from "./ConfirmDialog"
 
 interface TransactionDetailsSheetProps {
   expense: Expense
+  customCategories?: CustomCategory[]
   onClose: () => void
   onEdit: (expense: Expense) => void
   onDelete: (expenseId: string) => void | Promise<void>
@@ -36,6 +38,7 @@ function formatTime(time: string) {
 
 export default function TransactionDetailsSheet({
   expense,
+  customCategories = [],
   onClose,
   onEdit,
   onDelete,
@@ -47,9 +50,11 @@ export default function TransactionDetailsSheet({
   const dragStart = useRef<{ x: number; y: number } | null>(null)
 
   const isIncome = expense.type === "income"
-  const categories = isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
-  const category = categories.find((c) => c.id === expense.categoryId)
-  const CategoryIcon = category?.component ?? Tag
+  const category = findCategory(expense.categoryId, customCategories, {
+    type: expense.type,
+    name: expense.categoryName,
+  })
+  const CategoryIcon = category.component ?? Tag
   const amount = convertAndFormatCurrency(expense.amount, currency, rates)
 
   // Detect if this was posted by a recurring schedule

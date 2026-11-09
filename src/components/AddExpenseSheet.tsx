@@ -21,7 +21,11 @@ import QRLineItemsReview from "./QRLineItemsReview"
 import { parseQRCode, checkDuplicateExpense } from "../lib/qrParser"
 import type { ParsedQRResult, DuplicateCheckResult } from "../lib/qrParser"
 
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
+import {
+  getCombinedCategories,
+  findCategory,
+} from "../constants/categories"
+import type { CustomCategory } from "../constants/categories"
 import type { Expense, TransactionType, RecurringTransaction, RecurringFrequency } from "../types/expense"
 import { useCurrency } from "../contexts/CurrencyContext"
 import { SUPPORTED_CURRENCIES, convertAmount, convertToBaseVND } from "../lib/currency"
@@ -40,6 +44,7 @@ interface AddExpenseSheetProps {
   defaultCategoryId?: string
   existingExpenses?: Expense[]
   startWithScanner?: boolean
+  customCategories?: CustomCategory[]
 }
 
 const recentItemsByCategory: Record<string, string[]> = {
@@ -116,11 +121,14 @@ function ExpenseSheetForm({
   defaultCategoryId = "drinks",
   existingExpenses = [],
   startWithScanner = false,
+  customCategories = [],
 }: Omit<AddExpenseSheetProps, "open">) {
   const { currency, rates } = useCurrency()
   const activeCurrencyConfig = SUPPORTED_CURRENCIES.find((c) => c.code === currency) || SUPPORTED_CURRENCIES[0]
 
   const isEditing = !!initialExpense
+
+  const combined = getCombinedCategories(customCategories)
 
   const [showQRScanner, setShowQRScanner] = useState(startWithScanner)
   const [scannedQRData, setScannedQRData] = useState<ParsedQRResult | null>(null)
@@ -129,7 +137,7 @@ function ExpenseSheetForm({
   const [type, setType] = useState<TransactionType>(
     () =>
       initialExpense?.type ??
-      (INCOME_CATEGORIES.some((category) => category.id === defaultCategoryId)
+      (combined.income.some((category) => category.id === defaultCategoryId)
         ? "income"
         : "expense"),
   )
@@ -177,11 +185,27 @@ function ExpenseSheetForm({
     ).padStart(2, "0")}`
   })
 
-  const activeCategories = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
+  const baseActiveCategories = type === "income" ? combined.income : combined.expense
 
-  const selectedCategory = activeCategories.find(
-    (category) => category.id === categoryId
-  ) || activeCategories[0]
+  // When editing, if transaction category is archived, ensure it remains in the selectable options
+  const activeCategories = (() => {
+    if (initialExpense && initialExpense.type === type && initialExpense.categoryId) {
+      const exists = baseActiveCategories.some((c) => c.id === initialExpense.categoryId)
+      if (!exists) {
+        const archivedCat = findCategory(initialExpense.categoryId, customCategories, {
+          type: initialExpense.type,
+          name: initialExpense.categoryName,
+        })
+        return [...baseActiveCategories, { ...archivedCat, name: `${archivedCat.name} (Archived)` }]
+      }
+    }
+    return baseActiveCategories
+  })()
+
+  const selectedCategory =
+    activeCategories.find((category) => category.id === categoryId) ||
+    findCategory(categoryId, customCategories, { type, name: initialExpense?.categoryName }) ||
+    activeCategories[0]
 
   const recentItems = recentItemsByCategory[categoryId] || (
     type === "income" ? recentItemsByCategory.salary : recentItemsByCategory.drinks
@@ -218,8 +242,8 @@ function ExpenseSheetForm({
     setType(newType)
     setQuantity("1")
     // Switch to first category of new type
-    const newCats = newType === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
-    setCategoryId(newCats[0].id)
+    const newCats = newType === "income" ? combined.income : combined.expense
+    setCategoryId(newCats[0]?.id || (newType === "income" ? "salary" : "drinks"))
     setItem("")
   }
   const handleQRScanned = (rawText: string) => {

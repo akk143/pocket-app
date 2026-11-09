@@ -14,7 +14,11 @@ import {
   Loader2,
 } from "lucide-react"
 import type { RecurringTransaction, TransactionType, RecurringFrequency } from "../types/expense"
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
+import {
+  getCombinedCategories,
+  findCategory,
+} from "../constants/categories"
+import type { CustomCategory } from "../constants/categories"
 import { useCurrency } from "../contexts/CurrencyContext"
 import { convertAndFormatCurrency, convertToBaseVND, SUPPORTED_CURRENCIES } from "../lib/currency"
 import ConfirmDialog from "../components/ConfirmDialog"
@@ -22,6 +26,7 @@ import { getLocalDateString } from "../lib/recurring"
 
 interface RecurringProps {
   recurringList: RecurringTransaction[]
+  customCategories?: CustomCategory[]
   onAddRecurring: (item: Omit<RecurringTransaction, "id">) => Promise<void>
   onToggleActive: (id: string, active: boolean) => Promise<void>
   onDeleteRecurring: (id: string) => Promise<void>
@@ -30,6 +35,7 @@ interface RecurringProps {
 
 export default function Recurring({
   recurringList,
+  customCategories = [],
   onAddRecurring,
   onToggleActive,
   onDeleteRecurring,
@@ -89,12 +95,17 @@ export default function Recurring({
     })
   }, [displayList, filterType])
 
+  const combined = useMemo(
+    () => getCombinedCategories(customCategories),
+    [customCategories],
+  )
+
   const handleOpenAddModal = (defaultType: TransactionType = "expense") => {
     setFormError(null)
     setType(defaultType)
     setAmount("")
-    const cats = defaultType === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
-    setCategoryId(cats[0].id)
+    const cats = defaultType === "income" ? combined.income : combined.expense
+    setCategoryId(cats[0]?.id || (defaultType === "income" ? "salary" : "rent"))
     setItem("")
     setNote("")
     setFrequency("monthly")
@@ -106,8 +117,8 @@ export default function Recurring({
 
   const handleTypeChange = (newType: TransactionType) => {
     setType(newType)
-    const cats = newType === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
-    setCategoryId(cats[0].id)
+    const cats = newType === "income" ? combined.income : combined.expense
+    setCategoryId(cats[0]?.id || (newType === "income" ? "salary" : "rent"))
   }
 
   const handleCreateRule = async (e: React.FormEvent) => {
@@ -122,8 +133,10 @@ export default function Recurring({
     }
 
     const baseAmount = convertToBaseVND(numericAmount, currency, rates)
-    const cats = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
-    const selectedCat = cats.find((c) => c.id === categoryId)
+    const cats = type === "income" ? combined.income : combined.expense
+    const selectedCat =
+      cats.find((c) => c.id === categoryId) ||
+      findCategory(categoryId, customCategories, { type })
 
     setIsSaving(true)
     setFormError(null)
@@ -342,10 +355,12 @@ export default function Recurring({
           <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {filteredList.map((r) => {
               const isIncome = r.type === "income"
-              const activeCats = isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
-              const cat = activeCats.find((c) => c.id === r.categoryId)
-              const Icon = cat?.component || Repeat
-              const color = cat?.color || (isIncome ? "#10b981" : "#9ca3af")
+              const cat = findCategory(r.categoryId, customCategories, {
+                type: r.type,
+                name: r.categoryName,
+              })
+              const Icon = cat.component || Repeat
+              const color = cat.color || (isIncome ? "#10b981" : "#9ca3af")
               const isTriggering = triggeringId === r.id
               const isUpdating = updatingId === r.id
 
@@ -578,7 +593,7 @@ export default function Recurring({
                   onChange={(e) => setCategoryId(e.target.value)}
                   className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm outline-none transition focus:border-emerald-500 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:bg-zinc-700"
                 >
-                  {(type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((c) => (
+                  {(type === "income" ? combined.income : combined.expense).map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
