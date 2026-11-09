@@ -10,12 +10,15 @@ Built with **React, TypeScript, Firebase, Tailwind CSS, and Recharts**, PocketTr
 
 ## 🚀 What's New in v1.1.0
 
-The **v1.1.0** update introduces instant QR code expense scanning, a redesigned bulk-management History selection toolbar, hardened Trash reliability, and mobile interaction polish:
+The **v1.1.0** update introduces custom categories management, instant QR code expense scanning, smooth direction-aware pagination animations, a redesigned History selection toolbar, and hardened reliability:
 
+* **🏷️ Custom Categories Management:** Create, customize, and manage personal income and expense categories with custom icons and color pickers. Includes real-time client & server duplicate name validation, error feedback, and a desktop-optimized 8-item category grid.
+* **✨ Smooth Direction-Aware Pagination:** Fluid page transitions (fade-in + subtle horizontal slide with smooth cubic-bezier easing) across all paginated sections—Categories grid, category transactions, History month views, Analytics periods, and the Home calendar. Fully respects `prefers-reduced-motion`.
+* **📊 Top Spending Analytics Refinements:** Streamlined Top Spending Items list with inline category badges placed cleanly alongside item names, plus quick-fact metric cards.
 * **📷 QR Code & Receipt Scanner:** Scan QR codes and receipts directly from your phone camera or upload receipt images. Automatically extracts amounts, items, timestamps, categories, and itemized line-item notes, complete with duplicate expense detection.
-* **📋 Redesigned History Selection Toolbar:** Brand-new responsive two-row toolbar for bulk operations, featuring dynamic selected counts, one-tap Select All / Deselect All, and a safe Move to Trash workflow.
+* **📋 Redesigned History Selection Toolbar:** Responsive two-row toolbar for bulk operations, featuring dynamic selected counts, one-tap Select All / Deselect All, and a safe Move to Trash workflow.
 * **🛡️ Hardened Trash & Concurrency Architecture:** Idempotent soft-delete API preventing 404 race conditions, in-flight mutation locks across client and server, and animated loading spinners (`Saving…`, `Moving to Trash…`, `Restoring…`, `Deleting…`, `Emptying Trash…`).
-* **🔔 Action-Specific Notification Audit:** Completely revamped toast notifications providing truthful, accurate messaging for every create, update, trash, restore, and permanent deletion action.
+* **🔔 Action-Specific Notification Audit:** Revamped toast notifications providing truthful messaging for create, update, trash, restore, and permanent deletion actions.
 * **📱 Mobile Layout Polish:** Seamless `+ Add Expense` primary action with an integrated compact `Scan QR` trigger; metrics badges aligned side-by-side with zero wasted whitespace.
 
 ---
@@ -69,16 +72,28 @@ The **v1.1.0** update introduces instant QR code expense scanning, a redesigned 
 
 ### 📈 Analytics
 
-* Analyze spending patterns
-* View category breakdowns
-* Compare spending across periods
-* Explore category-level details with drill-down views
+* Analyze spending patterns with week, month, and year period selectors
+* View interactive category breakdowns and cash flow charts
+* Top Spending Items ranking with clean inline category badges
+* Quick Facts summary cards (Active days, largest transaction, average spend, savings rate)
+* Compare spending deltas across prior periods with drill-down views
 
-### 🏷️ Categories
+### 🏷️ Categories & Custom Categories
 
-* Organize transactions by category
-* View spending totals by category
-* Explore category-specific transaction data
+* Organize transactions by built-in or user-defined custom categories
+* Add custom categories with custom icons and color schemes
+* Real-time duplicate category name validation on client and server
+* Edit and delete custom categories with cascade protection
+* 8-column responsive desktop layout (2 full rows of 4 cards)
+* View total spending and drill down into category-specific transaction lists
+* Seamless pagination with smooth enter-animation transitions
+
+### 🎭 Smooth Transitions & Animations
+
+* Direction-aware pagination transitions (fade-in and subtle horizontal slide)
+* Natural `cubic-bezier` easing curve for pleasant, smooth UI feel
+* Supported across Categories grid, category transaction lists, History months, Analytics periods, and Home calendar
+* Full `prefers-reduced-motion` compliance for accessibility
 
 ### 🗑️ Trash & Restore
 
@@ -177,6 +192,7 @@ PocketTrack can be installed as a PWA for a more app-like experience.
 pocket_app/
 ├── api/
 │   ├── auth.ts
+│   ├── categories.ts
 │   ├── cron.ts
 │   ├── recurring.ts
 │   └── transactions.ts
@@ -197,28 +213,35 @@ pocket_app/
 │   ├── assets/
 │   ├── components/
 │   │   ├── AddExpenseSheet.tsx
+│   │   ├── CategoryModal.tsx
 │   │   ├── ConfirmDialog.tsx
 │   │   ├── QRScannerModal.tsx
 │   │   ├── QRLineItemsReview.tsx
 │   │   ├── TransactionDetailsSheet.tsx
 │   │   └── TransactionActionsMenu.tsx
 │   ├── constants/
+│   │   └── categories.ts
 │   ├── contexts/
 │   ├── hooks/
+│   │   └── usePaginatedContent.ts
 │   ├── lib/
 │   │   ├── api.ts
+│   │   ├── categories.ts
 │   │   ├── currency.ts
 │   │   ├── expenses.ts
 │   │   ├── qrParser.ts
 │   │   └── recurring.ts
 │   ├── pages/
 │   │   ├── Analytics.tsx
+│   │   ├── Categories.tsx
 │   │   ├── History.tsx
 │   │   ├── Home.tsx
 │   │   ├── Recurring.tsx
 │   │   ├── Settings.tsx
 │   │   └── Trash.tsx
 │   ├── types/
+│   │   ├── category.ts
+│   │   └── expense.ts
 │   ├── App.tsx
 │   ├── App.css
 │   ├── index.css
@@ -429,6 +452,9 @@ Preview the production build locally.
 
 Current application capabilities include:
 
+* Custom categories creation, custom icon selection, color customization, and duplicate-name validation
+* 8-column desktop category grid with category-specific transaction drilldowns
+* Smooth direction-aware pagination transitions with natural cubic-bezier motion across all paginated views
 * Instant QR code and supermarket receipt scanning with auto-fill
 * VietQR, WinMart, and standard retail bill parser
 * Receipt line-items extraction and duplicate transaction prevention
@@ -439,7 +465,7 @@ Current application capabilities include:
 * In-flight loading spinners and disabled state protections across all forms
 * Dashboard statistics, spending trends, and net cash flow
 * Recurring transactions with automated daily server execution
-* Analytics and interactive category breakdowns
+* Analytics, Top Spending Items with inline category badges, and interactive breakdowns
 * Multi-currency display with live cached exchange rates
 * Dark and light theme support
 * Secure Firebase Authentication with HttpOnly session cookies
