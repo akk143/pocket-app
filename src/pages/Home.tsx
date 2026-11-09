@@ -1,5 +1,6 @@
 import { useTheme } from "../hooks/useTheme"
 import { useState, useMemo, useRef } from "react"
+import { usePaginatedContent } from "../hooks/usePaginatedContent"
 import {
   ArrowDownRight,
   ArrowRight,
@@ -33,7 +34,8 @@ import {
 } from "recharts"
 import { Link, useNavigate } from "react-router-dom"
 import type { Expense } from "../types/expense"
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
+import { EXPENSE_CATEGORIES, findCategory } from "../constants/categories"
+import type { CustomCategory } from "../constants/categories"
 import { useCurrency } from "../contexts/CurrencyContext"
 import { convertAndFormatCurrency, compactFormatCurrency } from "../lib/currency"
 import ConfirmDialog from "../components/ConfirmDialog"
@@ -42,6 +44,7 @@ import TransactionActionsMenu from "../components/TransactionActionsMenu"
 
 interface HomeProps {
   expenses: Expense[]
+  customCategories?: CustomCategory[]
   userName?: string
   onAddExpense: (categoryId?: string) => void
   onViewExpense?: (expense: Expense) => void
@@ -121,11 +124,11 @@ function MonthlySpendingComparison({
   const stroke = isHigher ? "#047857" : isLower ? "#dc2626" : "#71717a"
 
   return (
-    <div className="min-w-0">
-      <div className="flex min-w-0 items-center gap-1.5">
+    <div className="min-w-0 space-y-1.5">
+      <div className="flex min-w-0 items-center justify-between gap-1.5">
         <svg
           aria-label="Spending over the last seven weeks"
-          className={`h-6 shrink-0 ${compact ? "w-[3.75rem] sm:w-[5.5rem]" : "w-[5.5rem]"}`}
+          className={`h-5 shrink-0 ${compact ? "w-12 sm:w-14" : "w-14 sm:w-16"}`}
           role="img"
           viewBox="0 0 100 32"
           preserveAspectRatio="none"
@@ -145,25 +148,32 @@ function MonthlySpendingComparison({
             </>
           )}
         </svg>
+
         {difference === null ? (
-          <span className="whitespace-nowrap text-[10px] font-medium text-zinc-400">
+          <span className="truncate text-right text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
             No comparison
           </span>
         ) : (
-          <span className={`inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-[10px] font-semibold tabular-nums ${tone}`}>
-            <TrendArrow className="h-3 w-3" strokeWidth={2.5} />
-            {Math.abs(difference)}%
-          </span>
+          <div className="flex min-w-0 items-center justify-end gap-1 text-[10px]">
+            <span className={`inline-flex shrink-0 items-center gap-0.5 font-semibold tabular-nums ${tone}`}>
+              <TrendArrow className="h-3 w-3" strokeWidth={2.5} />
+              {Math.abs(difference)}%
+            </span>
+            <span className="truncate text-zinc-400 dark:text-zinc-500">
+              vs. Last Month
+            </span>
+          </div>
         )}
       </div>
-      <div className={`mt-1 flex min-w-0 items-center text-[10px] leading-4 text-zinc-500 dark:text-zinc-400 ${yearTotal ? "justify-between gap-2" : ""}`}>
-        <span className="whitespace-nowrap">vs. Last Month</span>
-        {yearTotal && (
-          <span className="whitespace-nowrap">
-            Year total <span className="font-medium text-zinc-700 dark:text-zinc-300">{yearTotal}</span>
+
+      {yearTotal && (
+        <div className="flex min-w-0 items-center justify-between gap-2 border-t border-zinc-100 pt-1.5 text-[10px] leading-tight text-zinc-500 dark:border-zinc-800/60 dark:text-zinc-400">
+          <span className="shrink-0">Year total</span>
+          <span className="truncate font-semibold text-zinc-700 dark:text-zinc-300">
+            {yearTotal}
           </span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -171,6 +181,7 @@ function MonthlySpendingComparison({
 
 export default function Home({
   expenses,
+  customCategories = [],
   userName = "John",
   onAddExpense,
   onViewExpense,
@@ -203,6 +214,8 @@ export default function Home({
     d.setMonth(d.getMonth() + 1)
     setCalendarViewMonth(d)
   }
+
+  const { contentKey: calKey, animClass: calAnim } = usePaginatedContent(calendarViewMonth)
 
   const activeExpenses = expenses
 
@@ -291,13 +304,13 @@ export default function Home({
   const categoryTotal = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0)
   const categoryData = Object.entries(categoryTotals)
     .map(([categoryId, amount]) => {
-      const category = EXPENSE_CATEGORIES.find((item) => item.id === categoryId)
+      const category = findCategory(categoryId, customCategories, { type: "expense" })
       return {
         id: categoryId,
-        name: category?.name || categoryId,
+        name: category.name || categoryId,
         amount,
         percent: categoryTotal > 0 ? (amount / categoryTotal) * 100 : 0,
-        color: category?.color || "#9ca3af",
+        color: category.color || "#9ca3af",
       }
     })
     .sort((a, b) => b.amount - a.amount)
@@ -431,13 +444,13 @@ export default function Home({
 
     return Object.entries(totals)
       .map(([categoryId, amount]) => {
-        const category = EXPENSE_CATEGORIES.find((item) => item.id === categoryId)
+        const category = findCategory(categoryId, customCategories, { type: "expense" })
         return {
-          name: category?.name || categoryId,
+          name: category.name || categoryId,
           amount: compactFormatCurrency(amount, currency, rates),
           percent: `${total ? Math.round((amount / total) * 100) : 0}%`,
-          color: category?.color || "#9ca3af",
-          icon: category?.component || EXPENSE_CATEGORIES[10].component,
+          color: category.color || "#9ca3af",
+          icon: category.component || EXPENSE_CATEGORIES[10].component,
         }
       })
       .sort((a, b) => Number.parseInt(b.percent) - Number.parseInt(a.percent))
@@ -446,6 +459,7 @@ export default function Home({
     topSpendingTimeframe,
     currency,
     rates,
+    customCategories,
   ])
 
   return (
@@ -605,9 +619,9 @@ export default function Home({
               amountFull={formatCurrency(thisMonthIncome)}
               amountColorClass="text-emerald-600 dark:text-emerald-400"
               trendNode={
-                <div className="flex justify-between gap-2">
-                  <span>Year total</span>
-                  <span className="font-medium text-zinc-700 dark:text-zinc-300">{formatCompact(thisYearIncome)}</span>
+                <div className="flex min-w-0 items-center justify-between gap-2 text-[10px] leading-tight text-zinc-500 dark:text-zinc-400">
+                  <span className="shrink-0">Year total</span>
+                  <span className="truncate font-semibold text-zinc-700 dark:text-zinc-300">{formatCompact(thisYearIncome)}</span>
                 </div>
               }
             />
@@ -883,10 +897,12 @@ export default function Home({
                 </p>
               ) : recentExpenses.map((expense) => {
                 const isIncome = expense.type === "income"
-                const activeCats = isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
-                const cat = activeCats.find((c) => c.id === expense.categoryId)
-                const Icon = cat?.component
-                const color = cat?.color || (isIncome ? "#10b981" : "#9ca3af")
+                const cat = findCategory(expense.categoryId, customCategories, {
+                  type: expense.type,
+                  name: expense.categoryName,
+                })
+                const Icon = cat.component
+                const color = cat.color || (isIncome ? "#10b981" : "#9ca3af")
                 const isMenuOpen = openActionMenuId === expense.id
 
                 // Clean date label without time
@@ -1083,7 +1099,7 @@ export default function Home({
             <span>Sun</span>
           </div>
 
-          <div className="mt-2 grid grid-cols-7 gap-1 text-center text-xs">
+          <div key={calKey} className={`mt-2 grid grid-cols-7 gap-1 text-center text-xs ${calAnim}`}>
             {Array.from({ length: startDayOffset }, (_, i) => (
               <span key={`pad-${i}`} aria-hidden="true" />
             ))}

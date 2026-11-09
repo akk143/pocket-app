@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react"
+import { usePaginatedContent } from "../hooks/usePaginatedContent"
 import { Link, useSearchParams } from "react-router-dom"
 import {
   CheckSquare,
@@ -10,7 +11,11 @@ import {
   TrendingUp,
 } from "lucide-react"
 import type { Expense } from "../types/expense"
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../constants/categories"
+import {
+  getCombinedCategories,
+  findCategory,
+} from "../constants/categories"
+import type { CustomCategory } from "../constants/categories"
 import { useCurrency } from "../contexts/CurrencyContext"
 import { convertAndFormatCurrency } from "../lib/currency"
 import ConfirmDialog from "../components/ConfirmDialog"
@@ -37,6 +42,7 @@ const formatTimeStr = (timeStr: string) => {
 
 interface HistoryProps {
   expenses: Expense[]
+  customCategories?: CustomCategory[]
   trashCount?: number
   onViewExpense?: (expense: Expense) => void
   onDeleteExpense?: (id: string) => void | Promise<void>
@@ -45,6 +51,7 @@ interface HistoryProps {
 
 export default function History({
   expenses,
+  customCategories = [],
   trashCount = 0,
   onViewExpense,
   onDeleteExpense,
@@ -97,13 +104,16 @@ export default function History({
     year: "numeric",
   })
 
+  const { contentKey: histKey, animClass: histAnim } = usePaginatedContent(viewDate)
+
   const displayExpenses = expenses
 
   const visibleCategories = useMemo(() => {
-    if (typeFilter === "expense") return EXPENSE_CATEGORIES
-    if (typeFilter === "income") return INCOME_CATEGORIES
-    return [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES]
-  }, [typeFilter])
+    const combined = getCombinedCategories(customCategories)
+    if (typeFilter === "expense") return combined.expense
+    if (typeFilter === "income") return combined.income
+    return [...combined.expense, ...combined.income]
+  }, [typeFilter, customCategories])
 
   const effectiveCategoryId =
     selectedCategoryId !== "all" && visibleCategories.some((c) => c.id === selectedCategoryId)
@@ -489,7 +499,7 @@ export default function History({
       )}
 
       {/* Date Groups List */}
-      <div className="space-y-6">
+      <div key={histKey} className={`space-y-6 ${histAnim}`}>
         {grouped.length === 0 ? (
           <div className="rounded-2xl border border-zinc-200 bg-white py-12 text-center text-sm text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-500 sm:py-16">
             No transactions found matching your filters.
@@ -510,10 +520,12 @@ export default function History({
               <div className="divide-y divide-zinc-100/90 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm shadow-zinc-900/[0.04] dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
                 {group.items.map((expense) => {
                   const isIncome = expense.type === "income"
-                  const activeCats = isIncome ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
-                  const cat = activeCats.find((c) => c.id === expense.categoryId)
-                  const Icon = cat?.component
-                  const color = cat?.color || (isIncome ? "#10b981" : "#9ca3af")
+                  const cat = findCategory(expense.categoryId, customCategories, {
+                    type: expense.type,
+                    name: expense.categoryName,
+                  })
+                  const Icon = cat.component
+                  const color = cat.color || (isIncome ? "#10b981" : "#9ca3af")
                   const isMenuOpen = openMenuId === expense.id
 
                   return (
