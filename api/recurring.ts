@@ -80,7 +80,7 @@ async function handleCollection(req: ApiRequest, res: ApiResponse) {
 
   if (req.method === "POST") {
     assertSameOrigin(req)
-    const item = validateNewRecurring(requestBody(req))
+    const item = await validateNewRecurring(requestBody(req), user.uid)
     const document = await collection.add(item)
     return res.status(201).json({ id: document.id })
   }
@@ -108,9 +108,10 @@ async function handleDocument(req: ApiRequest, res: ApiResponse, id: string) {
     assertSameOrigin(req)
     const snapshot = await document.get()
     if (!snapshot.exists) throw new ApiError(404, "Recurring schedule not found")
-    const patch = validateRecurringPatch(
+    const patch = await validateRecurringPatch(
       snapshot.data() as Omit<RecurringTransaction, "id">,
       requestBody(req),
+      user.uid,
     )
     await document.update(patch)
     return res.status(200).json({ ok: true })

@@ -63,7 +63,9 @@ export async function postRecurring(
     if (!recurringSnapshot.exists) throw new ApiError(404, "Recurring schedule not found")
 
     const item: RecurringTransaction = {
-      ...validateNewRecurring(recurringSnapshot.data()),
+      ...(await validateNewRecurring(recurringSnapshot.data(), userId, {
+        allowArchivedCategory: true,
+      })),
       id: recurringSnapshot.id,
     }
     if (item.active === false) throw new ApiError(409, "This recurring schedule is paused")

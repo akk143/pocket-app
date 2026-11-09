@@ -115,7 +115,7 @@ async function handleCollection(req: ApiRequest, res: ApiResponse) {
 
   if (req.method === "POST") {
     assertSameOrigin(req)
-    const transaction = validateNewTransaction(requestBody(req))
+    const transaction = await validateNewTransaction(requestBody(req), user.uid)
     const document = await collection.add(transaction)
     return res.status(201).json({ id: document.id })
   }
@@ -267,7 +267,11 @@ async function handleDocument(req: ApiRequest, res: ApiResponse, id: string) {
     const snapshot = await document.get()
     if (!snapshot.exists) throw new ApiError(404, "Transaction not found")
     if (snapshot.get("deletedAt")) throw new ApiError(409, "Restore this transaction before editing it")
-    const patch = validateTransactionPatch(snapshot.data() as Omit<Expense, "id">, requestBody(req))
+    const patch = await validateTransactionPatch(
+      snapshot.data() as Omit<Expense, "id">,
+      requestBody(req),
+      user.uid,
+    )
     await document.update(patch)
     return res.status(200).json({ ok: true })
   }

@@ -1,3 +1,4 @@
+import type React from "react"
 import {
   Utensils,
   Coffee,
@@ -15,18 +16,172 @@ import {
   Gift,
   Tag,
   Banknote,
+  Pizza,
+  Wine,
+  Beer,
+  Apple,
+  Cake,
+  IceCream,
+  Plane,
+  Bus,
+  Train,
+  Bike,
+  Fuel,
+  Ship,
+  ShoppingCart,
+  Store,
+  Shirt,
+  Sparkles,
+  Smile,
+  Baby,
+  Dog,
+  Cat,
+  Flower2,
+  Zap,
+  Droplets,
+  Wifi,
+  Phone,
+  ShieldCheck,
+  Wrench,
+  Hammer,
+  Flame,
+  Film,
+  Tv,
+  Music,
+  Ticket,
+  Camera,
+  Headphones,
+  Dumbbell,
+  Pill,
+  Stethoscope,
+  Activity,
+  Book,
+  FileText,
+  Lightbulb,
+  Building,
+  Wallet,
+  CreditCard,
+  Coins,
+  PiggyBank,
+  Landmark,
+  Award,
+  DollarSign,
 } from "lucide-react"
+import type { CategoryDef, CustomCategory } from "../types/category.js"
 
-export interface CategoryDef {
-  id: string
-  type: "expense" | "income"
-  name: string
-  component: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
-  color: string
-  badgeBg: string
-  badgeText: string
-  softBg: string
+export type { CategoryDef, CustomCategory }
+
+export type CategoryIconComponent = React.ComponentType<{
+  className?: string
+  style?: React.CSSProperties
+}>
+
+export const CATEGORY_ICONS: Record<string, CategoryIconComponent> = {
+  // Built-in defaults
+  Utensils,
+  Coffee,
+  Car,
+  ShoppingBag,
+  Home,
+  Receipt,
+  Gamepad2,
+  GraduationCap,
+  HeartPulse,
+  Laptop,
+  Package,
+  Briefcase,
+  TrendingUp,
+  Gift,
+  Tag,
+  Banknote,
+
+  // Food & Dining
+  Pizza,
+  Wine,
+  Beer,
+  Apple,
+  Cake,
+  IceCream,
+
+  // Travel & Transport
+  Plane,
+  Bus,
+  Train,
+  Bike,
+  Fuel,
+  Ship,
+
+  // Shopping & Life
+  ShoppingCart,
+  Store,
+  Shirt,
+  Sparkles,
+  Smile,
+  Baby,
+  Dog,
+  Cat,
+  Flower2,
+
+  // Home & Bills
+  Zap,
+  Droplets,
+  Wifi,
+  Phone,
+  ShieldCheck,
+  Wrench,
+  Hammer,
+  Flame,
+
+  // Entertainment
+  Film,
+  Tv,
+  Music,
+  Ticket,
+  Camera,
+  Headphones,
+
+  // Health & Sports
+  Dumbbell,
+  Pill,
+  Stethoscope,
+  Activity,
+
+  // Work & Education
+  Book,
+  FileText,
+  Lightbulb,
+  Building,
+
+  // Finance & Income
+  Wallet,
+  CreditCard,
+  Coins,
+  PiggyBank,
+  Landmark,
+  Award,
+  DollarSign,
 }
+
+export const CATEGORY_ICON_NAMES = Object.keys(CATEGORY_ICONS) as readonly string[]
+
+export const CATEGORY_COLORS = [
+  "#f97316", // orange
+  "#f59e0b", // amber
+  "#eab308", // yellow
+  "#10b981", // emerald
+  "#22c55e", // green
+  "#14b8a6", // teal
+  "#06b6d4", // cyan
+  "#3b82f6", // blue
+  "#6366f1", // indigo
+  "#8b5cf6", // purple
+  "#a855f7", // violet
+  "#ec4899", // pink
+  "#f43f5e", // rose
+  "#ef4444", // red
+  "#64748b", // slate
+  "#71717a", // zinc
+] as const
 
 export const EXPENSE_CATEGORIES: readonly CategoryDef[] = [
   {
@@ -204,4 +359,70 @@ export const INCOME_CATEGORIES: readonly CategoryDef[] = [
   },
 ] as const
 
-export const TRANSACTION_CATEGORIES = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
+export const TRANSACTION_CATEGORIES = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES]
+
+export function toCategoryDef(custom: CustomCategory): CategoryDef {
+  const IconComponent = CATEGORY_ICONS[custom.icon] ?? Tag
+  const isArchived = Boolean(custom.archivedAt)
+  return {
+    id: custom.id,
+    type: custom.type,
+    name: custom.name,
+    component: IconComponent,
+    color: custom.color || "#10b981",
+    badgeBg: "bg-zinc-100 dark:bg-zinc-800",
+    badgeText: "text-zinc-700 dark:text-zinc-300",
+    softBg: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+    isCustom: true,
+    archived: isArchived,
+  }
+}
+
+export function getCombinedCategories(
+  customCategories: CustomCategory[] = [],
+  options: { includeArchived?: boolean } = {},
+): {
+  expense: CategoryDef[]
+  income: CategoryDef[]
+  all: CategoryDef[]
+} {
+  const filteredCustom = options.includeArchived
+    ? customCategories
+    : customCategories.filter((c) => !c.archivedAt)
+
+  const customDefs = filteredCustom.map(toCategoryDef)
+  const expenseCustom = customDefs.filter((c) => c.type === "expense")
+  const incomeCustom = customDefs.filter((c) => c.type === "income")
+
+  const expense: CategoryDef[] = [...EXPENSE_CATEGORIES, ...expenseCustom]
+  const income: CategoryDef[] = [...INCOME_CATEGORIES, ...incomeCustom]
+  const all: CategoryDef[] = [...expense, ...income]
+
+  return { expense, income, all }
+}
+
+export function findCategory(
+  categoryId: string,
+  customCategories: CustomCategory[] = [],
+  fallback?: { type?: "expense" | "income"; name?: string },
+): CategoryDef {
+  const custom = customCategories.find((c) => c.id === categoryId)
+  if (custom) return toCategoryDef(custom)
+
+  const builtIn = TRANSACTION_CATEGORIES.find((c) => c.id === categoryId)
+  if (builtIn) return builtIn
+
+  // Fallback for deleted/unknown category
+  const isIncome = fallback?.type === "income"
+  return {
+    id: categoryId,
+    type: fallback?.type || "expense",
+    name: fallback?.name || (isIncome ? "Income" : "Expense"),
+    component: isIncome ? Banknote : Package,
+    color: isIncome ? "#10b981" : "#9ca3af",
+    badgeBg: "bg-zinc-100 dark:bg-zinc-800",
+    badgeText: "text-zinc-700 dark:text-zinc-300",
+    softBg: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+    isCustom: true,
+  }
+}

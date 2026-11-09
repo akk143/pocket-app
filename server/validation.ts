@@ -1,3 +1,4 @@
+import { adminDb } from "./firebaseAdmin.js"
 import { TRANSACTION_CATEGORIES } from "../src/constants/categories.js"
 import type {
   Expense,
@@ -113,7 +114,11 @@ function validateMoneyFields(data: Record<string, unknown>) {
   }
 }
 
-function validateCategory(data: Record<string, unknown>) {
+async function validateCategory(
+  data: Record<string, unknown>,
+  userId?: string,
+  options?: { allowArchivedCategory?: boolean },
+): Promise<void> {
   if (data.type !== "expense" && data.type !== "income") {
     throw new ApiError(400, "Transaction type is invalid")
   }
@@ -121,9 +126,45 @@ function validateCategory(data: Record<string, unknown>) {
     throw new ApiError(400, "A valid category is required")
   }
 
-  const category = CATEGORIES.get(data.categoryId)
-  if (!category || category.type !== data.type || category.name !== data.categoryName) {
+  // 1. Check built-in categories
+  const builtIn = CATEGORIES.get(data.categoryId)
+  if (builtIn) {
+    if (builtIn.type !== data.type || builtIn.name !== data.categoryName) {
+      throw new ApiError(400, "Category is not valid for this transaction type")
+    }
+    return
+  }
+
+  // 2. Check user's custom category
+  if (!userId) {
     throw new ApiError(400, "Category is not valid for this transaction type")
+  }
+
+  const docSnapshot = await adminDb()
+    .collection("users")
+    .doc(userId)
+    .collection("categories")
+    .doc(data.categoryId)
+    .get()
+
+  if (!docSnapshot.exists) {
+    throw new ApiError(400, "Category not found")
+  }
+
+  const custom = docSnapshot.data() as {
+    name: string
+    type: string
+    archivedAt?: number | null
+  }
+
+  if (custom.type !== data.type) {
+    throw new ApiError(400, "Category is not valid for this transaction type")
+  }
+  if (custom.name !== data.categoryName) {
+    throw new ApiError(400, "Category name does not match category ID")
+  }
+  if (!options?.allowArchivedCategory && custom.archivedAt) {
+    throw new ApiError(400, "Archived categories cannot be assigned to new transactions")
   }
 }
 
@@ -136,11 +177,14 @@ function validateText(data: Record<string, unknown>) {
   }
 }
 
-export function validateNewTransaction(value: unknown): Omit<Expense, "id"> {
+export async function validateNewTransaction(
+  value: unknown,
+  userId?: string,
+): Promise<Omit<Expense, "id">> {
   if (!isObjectRecord(value)) throw new ApiError(400, "Invalid transaction")
   assertAllowedFields(value, TRANSACTION_FIELDS)
   validateMoneyFields(value)
-  validateCategory(value)
+  await validateCategory(value, userId)
   validateText(value)
 
   if (!isValidDate(value.date)) throw new ApiError(400, "Date must be a valid calendar date")
@@ -172,15 +216,24 @@ export function validateNewTransaction(value: unknown): Omit<Expense, "id"> {
   }
 }
 
-export function validateTransactionPatch(
+export async function validateTransactionPatch(
   current: Omit<Expense, "id">,
   patch: unknown,
-): Partial<Omit<Expense, "id">> {
+  userId?: string,
+): Promise<Partial<Omit<Expense, "id">>> {
   if (!isObjectRecord(patch)) throw new ApiError(400, "Invalid transaction update")
-  assertAllowedFields(patch, TRANSACTION_FIELDS.filter((field) => field !== "createdAt" && field !== "deletedAt"))
+  assertAllowedFields(
+    patch,
+    TRANSACTION_FIELDS.filter((field) => field !== "createdAt" && field !== "deletedAt"),
+  )
   const merged = { ...current, ...patch }
   validateMoneyFields(merged)
-  validateCategory(merged)
+
+  // Allow archived category if keeping current category unchanged
+  const isCategoryChanging =
+    patch.categoryId !== undefined && patch.categoryId !== current.categoryId
+  await validateCategory(merged, userId, { allowArchivedCategory: !isCategoryChanging })
+
   validateText(merged)
   if (!isValidDate(merged.date)) throw new ApiError(400, "Date must be a valid calendar date")
   const time = normalizeTransactionTime(merged.time)
@@ -200,11 +253,15 @@ function validTimeZone(value: unknown): value is string {
   }
 }
 
-export function validateNewRecurring(value: unknown): Omit<RecurringTransaction, "id"> {
+export async function validateNewRecurring(
+  value: unknown,
+  userId?: string,
+  options?: { allowArchivedCategory?: boolean },
+): Promise<Omit<RecurringTransaction, "id">> {
   if (!isObjectRecord(value)) throw new ApiError(400, "Invalid recurring schedule")
   assertAllowedFields(value, RECURRING_FIELDS)
   validateMoneyFields(value)
-  validateCategory(value)
+  await validateCategory(value, userId, options)
   validateText(value)
 
   if (
@@ -218,12 +275,20 @@ export function validateNewRecurring(value: unknown): Omit<RecurringTransaction,
   if (value.active !== undefined && typeof value.active !== "boolean") {
     throw new ApiError(400, "Active status is invalid")
   }
-  if (value.dayOfMonth !== undefined &&
-    (!Number.isInteger(value.dayOfMonth) || (value.dayOfMonth as number) < 1 || (value.dayOfMonth as number) > 31)) {
+  if (
+    value.dayOfMonth !== undefined &&
+    (!Number.isInteger(value.dayOfMonth) ||
+      (value.dayOfMonth as number) < 1 ||
+      (value.dayOfMonth as number) > 31)
+  ) {
     throw new ApiError(400, "Day of month must be from 1 to 31")
   }
-  if (value.dayOfWeek !== undefined &&
-    (!Number.isInteger(value.dayOfWeek) || (value.dayOfWeek as number) < 0 || (value.dayOfWeek as number) > 6)) {
+  if (
+    value.dayOfWeek !== undefined &&
+    (!Number.isInteger(value.dayOfWeek) ||
+      (value.dayOfWeek as number) < 0 ||
+      (value.dayOfWeek as number) > 6)
+  ) {
     throw new ApiError(400, "Day of week is invalid")
   }
   if (value.lastRunDate !== undefined && !isValidDate(value.lastRunDate)) {
@@ -261,13 +326,19 @@ export function validateNewRecurring(value: unknown): Omit<RecurringTransaction,
   }
 }
 
-export function validateRecurringPatch(
+export async function validateRecurringPatch(
   current: Omit<RecurringTransaction, "id">,
   patch: unknown,
-): Partial<Omit<RecurringTransaction, "id">> {
+  userId?: string,
+): Promise<Partial<Omit<RecurringTransaction, "id">>> {
   if (!isObjectRecord(patch)) throw new ApiError(400, "Invalid recurring schedule update")
   assertAllowedFields(patch, RECURRING_FIELDS.filter((field) => field !== "createdAt"))
   const merged = { ...current, ...patch }
-  validateNewRecurring(merged)
+
+  // Allow archived category if category is unchanged
+  const isCategoryChanging =
+    patch.categoryId !== undefined && patch.categoryId !== current.categoryId
+  await validateNewRecurring(merged, userId, { allowArchivedCategory: !isCategoryChanging })
+
   return patch as Partial<Omit<RecurringTransaction, "id">>
 }

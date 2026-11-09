@@ -2,6 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     { "source": "/api/auth/:path*", "destination": "/api/auth" },
+    { "source": "/api/categories/:path*", "destination": "/api/categories" },
     { "source": "/api/transactions/:path*", "destination": "/api/transactions" },
     { "source": "/api/recurring/:path*", "destination": "/api/recurring" },
     { "source": "/api/cron", "destination": "/api/cron" },
