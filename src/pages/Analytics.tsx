@@ -170,7 +170,11 @@ function Delta({
   invert?: boolean
 }) {
   if (pct === null)
-    return <span className="text-[11px] text-zinc-400 dark:text-zinc-500">—</span>
+    return (
+      <span className="inline-flex items-center rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-500 dark:bg-blue-950/50 dark:text-blue-400">
+        New
+      </span>
+    )
   const up = pct > 0
   const good = invert ? !up : up
   const Icon = pct === 0 ? Minus : up ? ArrowUpRight : ArrowDownRight
