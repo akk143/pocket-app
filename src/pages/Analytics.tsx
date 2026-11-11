@@ -456,8 +456,9 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
   return (
     <div className="mx-auto w-full max-w-5xl min-w-0 px-3.5 py-4 min-[400px]:px-4 lg:px-8 lg:py-6">
 
-      {/* ── Header row ── */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      {/* ── Header: title then controls on their own full-width row ── */}
+      <div className="mb-5 space-y-3">
+        {/* Title */}
         <div>
           <h1 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white lg:text-xl">
             Analytics
@@ -467,15 +468,15 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
           </p>
         </div>
 
-        {/* Period tabs + navigator — side by side in one row */}
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+        {/* Controls row: [Week Month Year] on the left | [◀ Nov 2026 ▶] on the right */}
+        <div className="flex w-full items-center justify-between gap-2">
           {/* Week / Month / Year tabs */}
           <div className="inline-flex rounded-xl border border-zinc-200 bg-white p-0.5 dark:border-zinc-800 dark:bg-zinc-900">
             {(["week", "month", "year"] as Period[]).map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold capitalize transition sm:px-3 ${
+                className={`rounded-lg px-2 py-1.5 text-xs font-semibold capitalize transition sm:px-3 ${
                   period === p
                     ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
                     : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
@@ -486,24 +487,24 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
             ))}
           </div>
 
-          {/* ◀ November 2026 ▶ — beside the tabs */}
-          <div className="inline-flex items-center gap-1.5">
+          {/* ◀ November 2026 ▶ */}
+          <div className="inline-flex items-center gap-1">
             <button
               type="button"
               onClick={prevPeriod}
               aria-label="Previous period"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 transition hover:border-zinc-300 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:text-zinc-300"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 transition hover:border-zinc-300 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:text-zinc-300 sm:h-8 sm:w-8"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </button>
-            <span className="min-w-[100px] text-center text-xs font-semibold text-zinc-700 dark:text-zinc-300 sm:min-w-[120px]">
+            <span className="min-w-[88px] text-center text-xs font-semibold text-zinc-700 dark:text-zinc-300 sm:min-w-[120px]">
               {periodLabel}
             </span>
             <button
               type="button"
               onClick={nextPeriod}
               aria-label="Next period"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 transition hover:border-zinc-300 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:text-zinc-300"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 transition hover:border-zinc-300 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:text-zinc-300 sm:h-8 sm:w-8"
             >
               <ChevronRight className="h-3.5 w-3.5" />
             </button>
