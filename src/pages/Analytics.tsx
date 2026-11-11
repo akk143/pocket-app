@@ -467,8 +467,9 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
           </p>
         </div>
 
-        {/* Period tabs + navigator */}
-        <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
+        {/* Period tabs + navigator — side by side in one row */}
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          {/* Week / Month / Year tabs */}
           <div className="inline-flex rounded-xl border border-zinc-200 bg-white p-0.5 dark:border-zinc-800 dark:bg-zinc-900">
             {(["week", "month", "year"] as Period[]).map((p) => (
               <button
@@ -485,7 +486,8 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
             ))}
           </div>
 
-          <div className="inline-flex items-center gap-1.5 sm:gap-2">
+          {/* ◀ November 2026 ▶ — beside the tabs */}
+          <div className="inline-flex items-center gap-1.5">
             <button
               type="button"
               onClick={prevPeriod}
@@ -494,7 +496,7 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </button>
-            <span className="min-w-[110px] text-center text-xs font-semibold text-zinc-700 dark:text-zinc-300 sm:min-w-[130px]">
+            <span className="min-w-[100px] text-center text-xs font-semibold text-zinc-700 dark:text-zinc-300 sm:min-w-[120px]">
               {periodLabel}
             </span>
             <button
