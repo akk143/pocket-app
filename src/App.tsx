@@ -911,7 +911,7 @@ function AppContent({ onAppReady }: { onAppReady: () => void }) {
           )}
 
           {/* Page Routing */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0 w-full">
             <Routes>
               <Route
                 path="/"
