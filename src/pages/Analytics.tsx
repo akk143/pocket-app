@@ -145,12 +145,12 @@ function StatCard({
 
   return (
     <div
-      className={`flex flex-col justify-between rounded-2xl border border-zinc-200/90 bg-white p-3.5 shadow-xs transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 sm:p-4 ${className}`}
+      className={`flex min-w-0 flex-col justify-between rounded-2xl border border-zinc-200/90 bg-white p-3.5 shadow-xs transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 sm:p-4 ${className}`}
     >
       <span className="truncate text-[11px] font-medium text-zinc-400 dark:text-zinc-500">
         {label}
       </span>
-      <div className="my-1.5" title={fullValue}>
+      <div className="my-1.5 min-w-0" title={fullValue}>
         <span className={`break-words text-lg font-bold tracking-tight tabular-nums sm:text-xl ${valueColor}`}>
           {value}
         </span>
@@ -454,10 +454,10 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
   const savingsRate = totalInc > 0 ? Math.max(0, ((totalInc - totalExp) / totalInc) * 100) : null
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-4 lg:px-8 lg:py-6">
+    <div className="mx-auto w-full max-w-5xl min-w-0 px-3.5 py-4 min-[400px]:px-4 lg:px-8 lg:py-6">
 
       {/* ── Header row ── */}
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white lg:text-xl">
             Analytics
@@ -467,14 +467,14 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
           </p>
         </div>
 
-        {/* Period tabs + navigator in one row */}
-        <div className="flex items-center gap-2">
+        {/* Period tabs + navigator */}
+        <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
           <div className="inline-flex rounded-xl border border-zinc-200 bg-white p-0.5 dark:border-zinc-800 dark:bg-zinc-900">
             {(["week", "month", "year"] as Period[]).map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition ${
+                className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold capitalize transition sm:px-3 ${
                   period === p
                     ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
                     : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
@@ -485,22 +485,32 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
             ))}
           </div>
 
-          <button type="button" onClick={prevPeriod} aria-label="Previous period"
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 transition hover:border-zinc-300 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:text-zinc-300">
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </button>
-          <span className="min-w-[140px] text-center text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-            {periodLabel}
-          </span>
-          <button type="button" onClick={nextPeriod} aria-label="Next period"
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 transition hover:border-zinc-300 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:text-zinc-300">
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
+          <div className="inline-flex items-center gap-1.5 sm:gap-2">
+            <button
+              type="button"
+              onClick={prevPeriod}
+              aria-label="Previous period"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 transition hover:border-zinc-300 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:text-zinc-300"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <span className="min-w-[110px] text-center text-xs font-semibold text-zinc-700 dark:text-zinc-300 sm:min-w-[130px]">
+              {periodLabel}
+            </span>
+            <button
+              type="button"
+              onClick={nextPeriod}
+              aria-label="Next period"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 transition hover:border-zinc-300 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:text-zinc-300"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ── KPI Summary Cards ── */}
-      <div key={analyticsKey} className={analyticsAnim}>
+      <div key={analyticsKey} className={`${analyticsAnim} min-w-0 w-full`}>
       <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5 sm:gap-3">
         <StatCard
           label="Total Expenses"
@@ -575,7 +585,7 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
       </div>
 
       {/* ── Cumulative Spend Area Chart ── */}
-      <div className="mb-5 rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 lg:p-5">
+      <div className="mb-5 min-w-0 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 lg:p-5">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
@@ -600,7 +610,7 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
             No transactions recorded for this {period}.
           </div>
         ) : (
-          <div className="h-52 w-full lg:h-64">
+          <div className="h-52 w-full min-w-0 lg:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={areaData} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
                 <defs>
@@ -629,7 +639,7 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
                   width={48}
                 />
                 <Tooltip
-                  formatter={(v: any, name: any) => [fmt(Number(v) || 0), name === "exp" ? "Expenses" : "Income"]}
+                  formatter={(v: unknown, name: unknown) => [fmt(Number(v) || 0), name === "exp" ? "Expenses" : "Income"]}
                   labelFormatter={(l) => areaData.find((d) => d.short === l)?.label ?? l}
                   contentStyle={tooltipStyle}
                   cursor={{ stroke: isDark ? "#52525b" : "#d4d4d8", strokeWidth: 1 }}
@@ -643,11 +653,11 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
       </div>
 
       {/* ── Two-column: Category Table + Period Comparison ── */}
-      <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
+      <div className="mb-5 grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
 
         {/* Category ranked table */}
-        <div className="rounded-2xl border border-zinc-200/90 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex items-center justify-between gap-2 border-b border-zinc-100 px-4 py-3.5 dark:border-zinc-800">
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="flex items-center justify-between gap-2 border-b border-zinc-100 px-3.5 py-3.5 dark:border-zinc-800 sm:px-4">
             <div>
               <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Category Breakdown</h2>
               <p className="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">
@@ -667,17 +677,17 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
           ) : (
             <div className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
               {/* Table header */}
-              <div className="grid grid-cols-[1fr_80px_64px_56px_56px] gap-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 px-3.5 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 sm:grid-cols-[minmax(0,1fr)_80px_64px_56px_56px] sm:px-4">
                 <span>Category</span>
                 <span className="text-right">Amount</span>
-                <span className="text-right">Txns</span>
-                <span className="text-right">Share</span>
+                <span className="hidden text-right sm:block">Txns</span>
+                <span className="hidden text-right sm:block">Share</span>
                 <span className="text-right">Δ Prev</span>
               </div>
               {catBreakdown.map((cat) => {
                 const Icon = cat.component
                 return (
-                  <div key={cat.id} className="grid grid-cols-[1fr_80px_64px_56px_56px] items-center gap-2 px-4 py-2.5 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30">
+                  <div key={cat.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 px-3.5 py-2.5 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30 sm:grid-cols-[minmax(0,1fr)_80px_64px_56px_56px] sm:px-4">
                     {/* Category name + bar */}
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
@@ -692,13 +702,19 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
                         <div className="h-full rounded-full" style={{ width: `${cat.pct}%`, backgroundColor: cat.color }} />
                       </div>
                     </div>
-                    <span className="truncate text-right text-xs font-semibold text-zinc-900 dark:text-zinc-100" title={fmt(cat.amount)}>
-                      {fmtC(cat.amount)}
-                    </span>
-                    <span className="text-right text-xs text-zinc-500 dark:text-zinc-400">
+                    {/* Amount + mobile sub */}
+                    <div className="min-w-[70px] text-right sm:min-w-0">
+                      <div className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100" title={fmt(cat.amount)}>
+                        {fmtC(cat.amount)}
+                      </div>
+                      <div className="text-[10px] text-zinc-400 dark:text-zinc-500 sm:hidden">
+                        {cat.pct.toFixed(0)}% · {cat.count} {cat.count === 1 ? "txn" : "txns"}
+                      </div>
+                    </div>
+                    <span className="hidden text-right text-xs text-zinc-500 dark:text-zinc-400 sm:block">
                       {cat.count}
                     </span>
-                    <span className="text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    <span className="hidden text-right text-xs font-medium text-zinc-600 dark:text-zinc-400 sm:block">
                       {cat.pct.toFixed(1)}%
                     </span>
                     <div className="flex justify-end">
@@ -707,7 +723,7 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
                   </div>
                 )
               })}
-              <div className="flex items-center justify-between px-4 py-2.5 text-xs font-semibold">
+              <div className="flex items-center justify-between px-3.5 py-2.5 text-xs font-semibold sm:px-4">
                 <span className="text-zinc-500 dark:text-zinc-400">Total</span>
                 <span className="text-zinc-900 dark:text-white">{fmt(catTotal)}</span>
               </div>
@@ -716,23 +732,23 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
         </div>
 
         {/* Period comparison + income summary */}
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
 
           {/* Comparison bars */}
-          <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="min-w-0 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
             <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Period Comparison</h2>
             <p className="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">Current vs. previous</p>
 
             {compData.every((d) => d.exp === 0 && d.inc === 0) ? (
               <div className="flex h-32 items-center justify-center text-xs text-zinc-400 dark:text-zinc-500">No prior data</div>
             ) : (
-              <div className="mt-4 h-36">
+              <div className="mt-4 h-36 w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={compData} margin={{ top: 4, right: 8, left: 4, bottom: 0 }} barGap={4}>
                     <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: tickColor, fontSize: 11 }} />
                     <YAxis tickLine={false} axisLine={false} tick={{ fill: tickColor, fontSize: 10 }} tickFormatter={yFmt} width={44} />
                     <Tooltip
-                      formatter={(v: any, n: any) => [fmt(Number(v) || 0), n === "exp" ? "Expenses" : "Income"]}
+                      formatter={(v: unknown, n: unknown) => [fmt(Number(v) || 0), n === "exp" ? "Expenses" : "Income"]}
                       contentStyle={tooltipStyle}
                       cursor={cursorStyle}
                     />
@@ -757,7 +773,7 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
           </div>
 
           {/* Income sources card */}
-          <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="min-w-0 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Income Sources</h2>
               <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{fmtC(totalInc)}</span>
@@ -793,7 +809,7 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
       </div>
 
       {/* ── Day-of-Week Spend Pattern ── */}
-      <div className="mb-5 rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 lg:p-5">
+      <div className="mb-5 min-w-0 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 lg:p-5">
         <div className="mb-4">
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
             Spending Pattern by Day of Week
@@ -808,7 +824,7 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
         ) : (
           <div className="flex items-end gap-1.5 sm:gap-2">
             {dowPattern.map((d) => (
-              <div key={d.name} className="flex flex-1 flex-col items-center gap-1.5">
+              <div key={d.name} className="flex flex-1 min-w-0 flex-col items-center gap-1.5">
                 {/* Heat bar */}
                 <div className="relative w-full" style={{ height: "64px" }}>
                   <div
@@ -820,8 +836,8 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
                   />
                 </div>
                 {/* Amount */}
-                <div className="text-center">
-                  <p className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 tabular-nums leading-tight">
+                <div className="w-full min-w-0 text-center">
+                  <p className="truncate text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 tabular-nums leading-tight">
                     {d.total > 0 ? fmtC(d.total) : "—"}
                   </p>
                   <p className="text-[9px] text-zinc-400 dark:text-zinc-500">{d.name}</p>
@@ -834,7 +850,7 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
 
       {/* ── Month daily heatmap (month view only) ── */}
       {period === "month" && dailyBars.length > 0 && (
-        <div className="mb-5 rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 lg:p-5">
+        <div className="mb-5 min-w-0 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 lg:p-5">
           <div className="mb-3 flex items-start justify-between gap-2">
             <div>
               <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Daily Spending Heatmap</h2>
@@ -855,7 +871,7 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
               <div key={`pad-${i}`} />
             ))}
             {dailyBars.map(({ d, v, ratio }) => (
-              <div key={d} title={`Day ${d}: ${fmt(v)}`} className="group relative">
+              <div key={d} title={`Day ${d}: ${fmt(v)}`} className="group relative min-w-0">
                 <div
                   className="flex aspect-square items-center justify-center rounded-md text-[9px] font-medium transition-transform hover:scale-110"
                   style={{
@@ -878,8 +894,8 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
       )}
 
       {/* ── Top Items ranked table ── */}
-      <div className="mb-5 rounded-2xl border border-zinc-200/90 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="flex items-center justify-between gap-2 border-b border-zinc-100 px-4 py-3.5 dark:border-zinc-800">
+      <div className="mb-5 min-w-0 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="flex items-center justify-between gap-2 border-b border-zinc-100 px-3.5 py-3.5 dark:border-zinc-800 sm:px-4">
           <div>
             <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Top Spending Items</h2>
             <p className="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">Ranked by total amount · exact item names</p>
@@ -896,18 +912,18 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
           </div>
         ) : (
           <div className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
-            <div className="grid grid-cols-[24px_1fr_80px_48px_52px] gap-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+            <div className="grid grid-cols-[20px_minmax(0,1fr)_auto] items-center gap-2 px-3.5 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 sm:grid-cols-[24px_minmax(0,1fr)_80px_48px_52px] sm:px-4">
               <span>#</span>
               <span>Item</span>
               <span className="text-right">Total</span>
-              <span className="text-right">Txns</span>
-              <span className="text-right">Share</span>
+              <span className="hidden text-right sm:block">Txns</span>
+              <span className="hidden text-right sm:block">Share</span>
             </div>
             {topItems.map((item, idx) => {
               const pct = totalExp > 0 ? (item.amount / totalExp) * 100 : 0
               const cat = findCategory(item.catId, customCategories, { type: "expense", name: item.catName })
               return (
-                <div key={item.name} className="grid grid-cols-[24px_1fr_80px_48px_52px] items-center gap-2 px-4 py-2.5 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30">
+                <div key={item.name} className="grid grid-cols-[20px_minmax(0,1fr)_auto] items-center gap-2 px-3.5 py-2.5 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30 sm:grid-cols-[24px_minmax(0,1fr)_80px_48px_52px] sm:px-4">
                   <span className="text-center text-[11px] font-bold text-zinc-300 dark:text-zinc-600">{idx + 1}</span>
                   <div className="flex min-w-0 items-center gap-1.5">
                     <span className="truncate text-xs font-medium text-zinc-800 dark:text-zinc-200" title={item.name}>
@@ -922,11 +938,17 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
                       </span>
                     )}
                   </div>
-                  <span className="text-right text-xs font-semibold text-zinc-900 dark:text-zinc-100" title={fmt(item.amount)}>
-                    {fmtC(item.amount)}
-                  </span>
-                  <span className="text-right text-xs text-zinc-500 dark:text-zinc-400">{item.count}</span>
-                  <span className="text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">{pct.toFixed(1)}%</span>
+                  {/* Total + mobile sub */}
+                  <div className="min-w-[65px] text-right sm:min-w-0">
+                    <div className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100" title={fmt(item.amount)}>
+                      {fmtC(item.amount)}
+                    </div>
+                    <div className="text-[10px] text-zinc-400 dark:text-zinc-500 sm:hidden">
+                      {pct.toFixed(0)}% · {item.count} {item.count === 1 ? "txn" : "txns"}
+                    </div>
+                  </div>
+                  <span className="hidden text-right text-xs text-zinc-500 dark:text-zinc-400 sm:block">{item.count}</span>
+                  <span className="hidden text-right text-xs font-medium text-zinc-600 dark:text-zinc-400 sm:block">{pct.toFixed(1)}%</span>
                 </div>
               )
             })}
@@ -936,58 +958,58 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
 
       {/* ── Quick Facts strip ── */}
       {pExp.length > 0 && (
-        <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
           <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-white">Quick Facts</h2>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-2 text-xs min-[400px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
 
-            <div className="flex items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
-              <span className="text-zinc-500 dark:text-zinc-400">Transactions</span>
+            <div className="flex min-w-0 items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
+              <span className="shrink-0 text-zinc-500 dark:text-zinc-400">Transactions</span>
               <span className="font-semibold text-zinc-900 dark:text-white">{pExp.length}</span>
             </div>
 
-            <div className="flex items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
-              <span className="text-zinc-500 dark:text-zinc-400">Active days</span>
+            <div className="flex min-w-0 items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
+              <span className="shrink-0 text-zinc-500 dark:text-zinc-400">Active days</span>
               <span className="font-semibold text-zinc-900 dark:text-white">{activeDays} / {totalDays}</span>
             </div>
 
             {largestTx && (
-              <div className="flex items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
-                <span className="text-zinc-500 dark:text-zinc-400">Largest item</span>
-                <span className="ml-2 max-w-[120px] truncate text-right font-semibold text-zinc-900 dark:text-white" title={largestTx.item}>
+              <div className="flex min-w-0 items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
+                <span className="shrink-0 text-zinc-500 dark:text-zinc-400">Largest item</span>
+                <span className="ml-2 truncate text-right font-semibold text-zinc-900 dark:text-white" title={largestTx.item}>
                   {largestTx.item || "—"}
                 </span>
               </div>
             )}
 
             {largestTx && (
-              <div className="flex items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
-                <span className="text-zinc-500 dark:text-zinc-400">Largest amount</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">{fmtC(largestTx.amount)}</span>
+              <div className="flex min-w-0 items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
+                <span className="shrink-0 text-zinc-500 dark:text-zinc-400">Largest amount</span>
+                <span className="ml-2 truncate text-right font-semibold text-zinc-900 dark:text-white">{fmtC(largestTx.amount)}</span>
               </div>
             )}
 
             {catBreakdown[0] && (
-              <div className="flex items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
-                <span className="text-zinc-500 dark:text-zinc-400">Top category</span>
+              <div className="flex min-w-0 items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
+                <span className="shrink-0 text-zinc-500 dark:text-zinc-400">Top category</span>
                 <span className="ml-2 truncate text-right font-semibold text-zinc-900 dark:text-white">{catBreakdown[0].name}</span>
               </div>
             )}
 
             {catBreakdown[0] && (
-              <div className="flex items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
-                <span className="text-zinc-500 dark:text-zinc-400">Top share</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">{catBreakdown[0].pct.toFixed(1)}%</span>
+              <div className="flex min-w-0 items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
+                <span className="shrink-0 text-zinc-500 dark:text-zinc-400">Top share</span>
+                <span className="ml-2 font-semibold text-zinc-900 dark:text-white">{catBreakdown[0].pct.toFixed(1)}%</span>
               </div>
             )}
 
-            <div className="flex items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
-              <span className="text-zinc-500 dark:text-zinc-400">Categories used</span>
+            <div className="flex min-w-0 items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
+              <span className="shrink-0 text-zinc-500 dark:text-zinc-400">Categories used</span>
               <span className="font-semibold text-zinc-900 dark:text-white">{catBreakdown.length}</span>
             </div>
 
             {savingsRate !== null && totalInc > 0 && (
-              <div className="flex items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
-                <span className="text-zinc-500 dark:text-zinc-400">Savings rate</span>
+              <div className="flex min-w-0 items-center justify-between border-b border-zinc-100 py-1.5 dark:border-zinc-800">
+                <span className="shrink-0 text-zinc-500 dark:text-zinc-400">Savings rate</span>
                 <span className={`font-semibold ${savingsRate > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>
                   {savingsRate.toFixed(1)}%
                 </span>
