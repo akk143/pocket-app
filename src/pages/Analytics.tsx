@@ -684,7 +684,7 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
           ) : (
             <div className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
               {/* Table header */}
-              <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 px-3.5 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 sm:grid-cols-[minmax(0,1fr)_80px_64px_56px_56px] sm:px-4">
+              <div className="grid grid-cols-[minmax(0,1fr)_72px_52px] items-center gap-x-1 px-3.5 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 sm:grid-cols-[minmax(0,1fr)_80px_64px_56px_56px] sm:gap-x-2 sm:px-4">
                 <span>Category</span>
                 <span className="text-right">Amount</span>
                 <span className="hidden text-right sm:block">Txns</span>
@@ -694,7 +694,7 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
               {catBreakdown.map((cat) => {
                 const Icon = cat.component
                 return (
-                  <div key={cat.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 px-3.5 py-2.5 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30 sm:grid-cols-[minmax(0,1fr)_80px_64px_56px_56px] sm:px-4">
+                  <div key={cat.id} className="grid grid-cols-[minmax(0,1fr)_72px_52px] items-center gap-x-1 px-3.5 py-2.5 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30 sm:grid-cols-[minmax(0,1fr)_80px_64px_56px_56px] sm:gap-x-2 sm:px-4">
                     {/* Category name + bar */}
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
@@ -710,7 +710,7 @@ export default function Analytics({ expenses, customCategories = [] }: Analytics
                       </div>
                     </div>
                     {/* Amount + mobile sub */}
-                    <div className="min-w-[70px] text-right sm:min-w-0">
+                    <div className="text-right sm:min-w-0">
                       <div className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100" title={fmt(cat.amount)}>
                         {fmtC(cat.amount)}
                       </div>
