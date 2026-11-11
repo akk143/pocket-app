@@ -362,7 +362,7 @@ export default function CategoryModal({
                 <label className="mb-2 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                   Color Accent
                 </label>
-                <div className="grid grid-cols-8 gap-2">
+                <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
                   {CATEGORY_COLORS.map((c) => {
                     const isSelected = color.toLowerCase() === c.toLowerCase()
                     return (
